@@ -1,0 +1,13 @@
+services:
+  livego:
+    image: gwuhaolin/livego
+    container_name: livego
+    ports:
+      - "1935:1935"
+      - "7001:7001"
+      - "7002:7002"
+      - "8090:8090"
+    volumes:
+      - ./tmp/recordings:/tmp
+      - ./livego.yaml:/app/livego.yaml
+    restart: always
