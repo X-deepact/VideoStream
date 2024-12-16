@@ -3,13 +3,11 @@ package handler
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"gitlab/live/be-live-api/conf"
 	"gitlab/live/be-live-api/dto"
 	"gitlab/live/be-live-api/model"
 	"gitlab/live/be-live-api/pkg/utils"
 	"gitlab/live/be-live-api/service"
-	"log"
 	"net/http"
 	"time"
 
@@ -182,52 +180,65 @@ func (h *userHandler) ChangeTwoFAStatus(c echo.Context) error {
 
 	pTwoFa, err := h.srv.TwoFA.GetTwoFAInfo(claims.ID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// Create new 2FA record if not exists
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	if *req.IsEnabled {
+		// Create new record if it doesn't exist
+		if pTwoFa == nil {
 			pTwoFa = &model.TwoFA{
 				UserID:       claims.ID,
 				Secret:       "",
+				TempSecret:   "",
 				Is2faEnabled: false,
 			}
 			if err := h.srv.TwoFA.CreateTwoFA(pTwoFa); err != nil {
 				return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 			}
-		} else {
-			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 		}
-	}
 
-	if *req.IsEnabled {
-		// Enabling 2FA - generate new secret and QR code
-		secret, qrCode, err := utils.GetQrCode(claims.Username, "")
+		// Generate new secret only if no temporary secret exists
+		if pTwoFa.TempSecret == "" {
+			secret, qrCode, err := utils.GetQrCode(claims.Username, "")
+			if err != nil {
+				return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+			}
+
+			pTwoFa.TempSecret = secret
+			pTwoFa.UpdatedAt = time.Now()
+
+			if err := h.srv.TwoFA.UpdateTwoFA(pTwoFa); err != nil {
+				return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+			}
+
+			return utils.BuildSuccessResponse(c, http.StatusOK, dto.TwoFADto{
+				Secret:       secret,
+				QrCode:       qrCode,
+				Is2faEnabled: false,
+			})
+		}
+
+		// Return existing temporary secret
+		secret, qrCode, err := utils.GetQrCode(claims.Username, pTwoFa.TempSecret)
 		if err != nil {
 			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 		}
 
-		pTwoFa.Secret = secret
-		pTwoFa.Is2faEnabled = false // Will be enabled after verification
-		pTwoFa.UpdatedAt = time.Now()
-
-		if err := h.srv.TwoFA.UpdateTwoFA(pTwoFa); err != nil {
-			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
-		}
-
 		return utils.BuildSuccessResponse(c, http.StatusOK, dto.TwoFADto{
-			Secret:       secret,
+			Secret:       pTwoFa.TempSecret,
 			QrCode:       qrCode,
 			Is2faEnabled: false,
 		})
 	} else {
-		// Disabling 2FA - clear the secret
-		if !pTwoFa.Is2faEnabled {
-			return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("2FA is not enabled"), nil)
+		// If no record exists, nothing to delete
+		if pTwoFa == nil {
+			return utils.BuildSuccessResponse(c, http.StatusOK, dto.TwoFADto{
+				Is2faEnabled: false,
+			})
 		}
 
-		pTwoFa.Secret = "" // Clear the secret
-		pTwoFa.Is2faEnabled = false
-		pTwoFa.UpdatedAt = time.Now()
-
-		if err := h.srv.TwoFA.UpdateTwoFA(pTwoFa); err != nil {
+		// Force delete the 2FA record
+		if err := h.srv.TwoFA.DeleteTwoFA(claims.ID); err != nil {
 			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 		}
 
@@ -250,13 +261,19 @@ func (h *userHandler) VerifyTwoFA(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, errors.New("can't get the secret key"), nil)
 	}
 
-	// Verify the provided OTP
-	isVerified := utils.CheckTotp(req.OTP, twoFA.Secret)
+	if twoFA == nil || twoFA.Secret == "" {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("2FA is not initialized"), nil)
+	}
+
+	// Verify using the temporary secret
+	isVerified := utils.CheckTotp(req.OTP, twoFA.TempSecret)
 	if !isVerified {
 		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("invalid verification code"), nil)
 	}
 
-	// Enable 2FA after successful verification
+	// Move temporary secret to permanent secret and enable 2FA
+	twoFA.Secret = twoFA.TempSecret
+	twoFA.TempSecret = ""
 	twoFA.Is2faEnabled = true
 	twoFA.UpdatedAt = time.Now()
 	

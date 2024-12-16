@@ -78,6 +78,7 @@ type TwoFA struct {
 	ID           uint      `gorm:"primaryKey;autoIncrement"`
 	UserID       uint      `gorm:"not null;unique"`
 	Secret       string    `gorm:"type:text"`
+	TempSecret   string    `gorm:"type:text"`
 	Is2faEnabled bool      `gorm:"not null;default:false"`
 	CreatedAt    time.Time `gorm:"default:CURRENT_TIMESTAMP"`
 	UpdatedAt    time.Time `gorm:"default:CURRENT_TIMESTAMP"`

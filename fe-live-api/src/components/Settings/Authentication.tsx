@@ -46,53 +46,88 @@ const Authentication = () => {
   }, []);
 
   const handle2FAToggle = async (checked: boolean) => {
+    setError("");
+    setSuccess("");
+
     if (!checked) {
-      setShowDisableDialog(true);
+      if (is2FAEnabled) {
+        setShowDisableDialog(true);
+      } else {
+        setIsEnabling2FA(false);
+        setQrCode("");
+        setSecret("");
+        setCode("");
+      }
       return;
     }
 
-    setIsEnabling2FA(true);
-    const { data, error } = await change2FAStatus(true);
-    if (error) {
-      setError("Failed to enable 2FA");
-      setIsEnabling2FA(false);
-      return;
-    }
-    if (data) {
-      setQrCode(data.qr_code);
-      setSecret(data.secret);
+    if (!qrCode || !secret) {
+      setIsEnabling2FA(true);
+      const { data, error } = await change2FAStatus(true);
+      if (error) {
+        setError("Failed to enable 2FA");
+        setIsEnabling2FA(false);
+        return;
+      }
+      if (data) {
+        setQrCode(data.qr_code || "");
+        setSecret(data.secret || "");
+      }
+    } else {
+      setIsEnabling2FA(true);
     }
   };
 
   const handleConfirmDisable = async () => {
-    const { error } = await change2FAStatus(false);
+    setShowDisableDialog(false);
+    
+    const { data, error } = await change2FAStatus(false);
     if (error) {
-      setError("Failed to disable 2FA");
-      return;
+        setError("Failed to disable 2FA");
+        return;
     }
+
+    // Clear all 2FA related states
     setIs2FAEnabled(false);
     setQrCode("");
     setSecret("");
-    setShowDisableDialog(false);
+    setCode("");
     setIsEnabling2FA(false);
-    setSuccess("2FA has been disabled");
+    setSuccess("2FA has been disabled successfully");
+
+    // Refresh 2FA status
+    const { data: refreshData } = await get2FAInfo();
+    if (refreshData) {
+        setIs2FAEnabled(refreshData.is2fa_enabled);
+    }
   };
 
   const handleVerify = async () => {
     if (code.length !== 6) {
-      setError("Please enter a valid 6-digit code");
-      return;
+        setError("Please enter a valid 6-digit code");
+        return;
     }
 
-    const { data, error } = await verify2FA(code);
-    if (error) {
-      setError("Invalid verification code");
-      return;
-    }
-    if (data?.is_verified) {
-      setIs2FAEnabled(true);
-      setIsEnabling2FA(false);
-      setSuccess("2FA has been enabled successfully");
+    try {
+        const { data, error } = await verify2FA(code);
+        if (error) {
+            setError("Invalid verification code");
+            return;
+        }
+        if (data?.is_verified) {
+            setIs2FAEnabled(true);
+            setIsEnabling2FA(false);
+            setCode("");
+            setSuccess("Authentication was successful");
+            
+            // Refresh 2FA status
+            const { data: refreshData } = await get2FAInfo();
+            if (refreshData) {
+                setIs2FAEnabled(refreshData.is2fa_enabled);
+            }
+        }
+    } catch (err) {
+        setError("Failed to verify code. Please try again.");
     }
   };
 
@@ -121,9 +156,12 @@ const Authentication = () => {
         </h2>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">
-            {is2FAEnabled ? "Enabled" : "Disabled"}
+            {(is2FAEnabled || isEnabling2FA) ? "Disabled" : "Enabled"}
           </span>
-          <Switch checked={is2FAEnabled || isEnabling2FA} onCheckedChange={handle2FAToggle} />
+          <Switch 
+            checked={is2FAEnabled || isEnabling2FA} 
+            onCheckedChange={handle2FAToggle} 
+          />
         </div>
       </div>
 

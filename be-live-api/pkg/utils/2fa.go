@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"gitlab/live/be-live-api/conf"
-	"log"
-
 	"github.com/pquerna/otp/totp"
 	"github.com/skip2/go-qrcode"
 )
@@ -22,8 +20,9 @@ func GetQrCode(username string, secretKey string) (string, string, error) {
 		key, err := totp.Generate(totp.GenerateOpts{
 			Issuer:      issuer,
 			AccountName: username,
+			Digits:      6,
+			Period:      30,
 		})
-		log.Println(err, key)
 		if err != nil {
 			return "", "", errors.New("error generating key")
 		}
@@ -40,6 +39,6 @@ func GetQrCode(username string, secretKey string) (string, string, error) {
 	return secretKey, base64.StdEncoding.EncodeToString(qrCodeBytes), nil
 }
 
-func CheckTotp(code string, secretKey string) bool {
-	return totp.Validate(code, secretKey)
+func CheckTotp(code string, secret string) bool {
+	return totp.Validate(code, secret)
 }

@@ -24,16 +24,8 @@ func (ot *TwoFAService) GetTwoFAInfo(userid uint) (*model.TwoFA, error) {
 	twoFA, err := ot.repo.TwoFA.GetTwoFAInfo(userid)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// Create default 2FA settings if not found
-			twoFA = &model.TwoFA{
-				UserID:       userid,
-				Secret:       "",
-				Is2faEnabled: false,
-			}
-			if err := ot.repo.TwoFA.CreateTwoFA(twoFA); err != nil {
-				return nil, err
-			}
-			return twoFA, nil
+			// Instead of creating, just return nil
+			return nil, nil
 		}
 		return nil, err
 	}
@@ -53,4 +45,8 @@ func (ot *TwoFAService) UpdateTwoFA(twoFA *model.TwoFA) error {
 		twoFA.Secret = ""
 	}
 	return ot.repo.TwoFA.UpdateTwoFA(twoFA)
+}
+
+func (ot *TwoFAService) DeleteTwoFA(userID uint) error {
+	return ot.repo.TwoFA.DeleteTwoFA(userID)
 }
