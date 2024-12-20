@@ -1,0 +1,7 @@
+.air.toml
+tmp/
+.idea/
+project/db-data/
+zz
+hls
+config.yaml
