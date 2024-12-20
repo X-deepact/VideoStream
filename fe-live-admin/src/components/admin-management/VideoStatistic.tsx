@@ -126,6 +126,18 @@ const VideoStatistics = () => {
     );
   };
 
+  const formatDuration = (milliseconds: number) => {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const formatSize = (bytes: number) => {
+    return (bytes / (1024 * 1024)).toFixed(2); // Convert bytes to megabytes
+  };
+
   return (
     <div className="px-8">
       <div className="py-4">
@@ -194,8 +206,8 @@ const VideoStatistics = () => {
                 <td className="px-4 py-3 text-center">{stat.viewers}</td>
                 <td className="px-4 py-3 text-center">{stat.likes}</td>
                 <td className="px-4 py-3 text-center">{stat.comments}</td>
-                <td className="px-4 py-3 text-center">{stat.description}</td>
-                <td className="px-4 py-3 text-center">{stat.video_size}</td>
+                <td className="px-4 py-3 text-center">{formatDuration(stat.description)}</td>
+                <td className="px-4 py-3 text-center">{formatSize(stat.video_size)} MB</td>
                 <td className="px-4 py-3 text-center">
                   {new Date(stat.created_at).toLocaleString('zh-CN', {
                     year: 'numeric',
