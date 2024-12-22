@@ -1,8 +1,9 @@
 import * as React from "react"
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
-import { Check, ChevronRight, Circle } from "lucide-react"
+import {Check, ChevronRight, Circle, MoreHorizontal} from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import {Button} from "@/components/ui/button.tsx";
 
 const DropdownMenu = DropdownMenuPrimitive.Root
 
@@ -180,6 +181,38 @@ const DropdownMenuShortcut = ({
 }
 DropdownMenuShortcut.displayName = "DropdownMenuShortcut"
 
+export type ActionMenuProps<T> = {
+  row: T;
+  actions: {
+    label: string;
+    onClick: (row: T) => void;
+  }[];
+};
+
+const DropdownActionMenu = <T,>({ row, actions }: ActionMenuProps<T>) => {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Open menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        {actions.map((action, index) => (
+          <React.Fragment key={index}>
+            {index > 0 && <DropdownMenuSeparator />}
+            <DropdownMenuItem onClick={() => action.onClick(row)}>
+              {action.label}
+            </DropdownMenuItem>
+          </React.Fragment>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
 export {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -196,4 +229,5 @@ export {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
+  DropdownActionMenu
 }
