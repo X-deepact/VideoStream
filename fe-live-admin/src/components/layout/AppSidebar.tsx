@@ -47,6 +47,7 @@ const AppSidebar: React.FC = () => {
                 className="group/label text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors duration-200"
               >
                 <CollapsibleTrigger>
+                  {item.icon && <item.icon className="mr-2" />}
                   {item.title}{' '}
                   <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
                 </CollapsibleTrigger>
@@ -57,7 +58,7 @@ const AppSidebar: React.FC = () => {
                     {item.items.map((subItem) => {
                       const isActive = location.pathname === subItem.url;
                       return (
-                        <SidebarMenuItem key={subItem.title} className="flex items-center">
+                        <SidebarMenuItem key={subItem.title} className='flex items-center'>
                           <SidebarMenuButton
                             asChild
                             className={`ml-2 mr-2 flex items-center transition-colors duration-200 ${
