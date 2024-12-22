@@ -10,15 +10,8 @@ export function formatFileSize(size: number): string {
     throw new Error("Size must be a non-negative number.");
   }
 
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let index = 0;
-
-  while (size >= 1024 && index < units.length - 1) {
-    size /= 1024;
-    index++;
-  }
-
-  return `${size.toFixed(2)} ${units[index]}`;
+  const sizeInMB = size / (1024 * 1024);
+  return `${sizeInMB.toFixed(2)} MB`;
 }
 
 export function formatDuration(duration: number): string {
@@ -29,12 +22,7 @@ export function formatDuration(duration: number): string {
   const hours = Math.floor(duration / 3600);
   duration %= 3600;
   const minutes = Math.floor(duration / 60);
-  duration %= 60;
+  const seconds = duration % 60;
 
-  const parts: string[] = [];
-  if (hours > 0) parts.push(`${hours} hour(s)`);
-  if (minutes > 0) parts.push(`${minutes} minute(s)`);
-  if (duration > 0 || parts.length === 0) parts.push(`${duration} second(s)`);
-
-  return parts.join(" ");
+  return `${String(hours).padStart(2, '0')}.${String(minutes).padStart(2, '0')}.${String(seconds).padStart(2, '0')}`;
 }
