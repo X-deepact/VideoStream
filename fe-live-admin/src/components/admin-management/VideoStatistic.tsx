@@ -6,136 +6,84 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+} from "@/components/ui/breadcrumb.tsx";
 import { Slash } from "lucide-react";
-import { getVideoStatistics } from "@/services/videoStatistic.service"; // Import the service function
+import { DataTable } from "../ui/datatable";
+import { getVideoStatistics } from "@/services/videoStatistic.service";
+import { columns } from "@/components/admin-management/VideoStatisticColumns.tsx";
+import { formatDuration, formatFileSize } from "@/lib/utils";
 
-type TimePeriod = "yesterday" | "7days" | "30days";
+import { Input } from "../ui/input";
 
-interface VideoStats {
-  title: string;
-  viewers: number;
-  likes: number;
-  description: string;
-  comments: number;
-  video_size: number;
-  created_at: string;
-}
 
-const VideoStatistics = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("yesterday");
-  const [videoStats, setVideoStats] = useState<VideoStats[]>([]);
+const VideoStatistic = () => {
+  const [streamData, setStreamData] = useState([]);
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [pageSize, setPageSize] = useState(2);
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
-  const itemsPerPage = 5;
+  const [totalPages, setTotalPages] = useState(1);
+  const [sortBy, setSortBy] = useState("started_at");
+  const [sort, setSort] = useState("DESC");
 
   useEffect(() => {
-    const fetchAllVideoStats = async () => {
-      try {
-        const response = await getVideoStatistics(1, Number.MAX_SAFE_INTEGER, selectedPeriod, searchQuery);
-        console.log("API Response:", response.data);
-        if (response.data && Array.isArray(response.data.data.page)) {
-          setVideoStats(response.data.data.page);
-        } else {
-          console.error("Unexpected response format:", response.data);
-          setVideoStats([]);
-        }
-      } catch (error) {
-        console.error("Error fetching video statistics:", error);
-        setVideoStats([]);
-      }
-    };
+    fetchStreamData();
+  }, [currentPage, pageSize, sortBy, sort]);
 
-    fetchAllVideoStats();
-  }, [selectedPeriod, searchQuery]);
-
-  const handlePeriodChange = (period: TimePeriod) => {
-    setSelectedPeriod(period);
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}.${month}.${day}`;
   };
 
-  const filteredVideoStats = videoStats.filter((stat) =>
-    stat.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const fetchStreamData = async () => {
+    try {
+      const response = await getVideoStatistics(
+        currentPage,
+        pageSize,
+        sortBy,
+        sort
+      );
+      
+      console.log("API Response:", response.data); // Log the response data
 
-  const totalPages = Math.ceil(filteredVideoStats.length / itemsPerPage);
-  console.log("Total Pages:", filteredVideoStats);
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredVideoStats.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
+      const streams = response.data.page;
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const getPageNumbers = () => {
-    const pageNumbers = [];
-    const showEllipsisAfter = 3;
-
-    for (let i = 1; i <= totalPages; i++) {
-      if (
-        i === 1 ||
-        i === totalPages ||
-        (i >= currentPage - 1 && i <= currentPage + 1) ||
-        i <= showEllipsisAfter
-      ) {
-        pageNumbers.push(i);
+      if (!streams) {
+        console.error("Streams data is undefined");
+        return;
       }
+
+      const transformedStreamData = streams.map((stream: any) => ({
+        title: stream.title,
+        viewers: stream.live_stream_analytic.viewers,
+        likes: stream.live_stream_analytic.likes,
+        duration: formatDuration(stream.live_stream_analytic.duration || 0),
+        comments: stream.live_stream_analytic.comments,
+        video_size: formatFileSize(stream.live_stream_analytic.video_size),
+        created_at: formatDate(stream.started_at),
+      }));
+
+      setStreamData(transformedStreamData);
+
+      // Ensure this matches the actual structure
+      const totalItems = response.data.total_items;
+      console.log("totalItemsLength", totalItems)
+      if (totalItems !== undefined) {
+        setTotalPages(Math.ceil(totalItems / pageSize));
+      } else {
+        console.error("Total items data is undefined");
+      }
+    } catch (error) {
+      console.error("Error fetching stream data:", error);
     }
-
-    return [...new Set(pageNumbers)].sort((a, b) => a - b);
   };
 
-  const renderPagination = () => {
-    return (
-      <div className="py-4 border-t flex justify-center">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="px-2 py-1 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Previous
-          </button>
-
-          {getPageNumbers().map((pageNumber) => (
-            <button
-              key={pageNumber}
-              onClick={() => handlePageChange(pageNumber)}
-              className={`px-3 py-1 text-sm rounded-sm ${
-                currentPage === pageNumber
-                  ? "bg-gray-500 text-white"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {pageNumber}
-            </button>
-          ))}
-
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="px-2 py-1 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Next
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const formatDuration = (milliseconds: number) => {
-    const totalSeconds = Math.floor(milliseconds / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const formatSize = (bytes: number) => {
-    return (bytes / (1024 * 1024)).toFixed(2); // Convert bytes to megabytes
+  const handleSortChange = (columnId: string) => {
+    const isAsc = sortBy === columnId && sort === "ASC";
+    setSort(isAsc ? "DESC" : "ASC");
+    setSortBy(columnId);
   };
 
   return (
@@ -150,91 +98,35 @@ const VideoStatistics = () => {
               <Slash />
             </BreadcrumbSeparator>
             <BreadcrumbItem>
-              <BreadcrumbPage>Video Statistics Page</BreadcrumbPage>
+              <BreadcrumbPage>Video Statistics</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
       </div>
 
-      <div className="rounded-md border mt-4">
-        <div className="p-4 border-b flex justify-start">
-          <input
-            type="text"
-            placeholder="Search videos..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-64 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+      <div className="flex justify-end items-center py-4">
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Search..."
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="max-w-sm"
           />
         </div>
-
-        <table className="w-full">
-          <thead>
-            <tr>
-              <th className="border-b bg-white px-4 py-3 text-center font-semibold">
-                No.
-              </th>
-              <th className="border-b bg-white px-4 py-3 text-center font-semibold">
-                Video Title
-              </th>
-              <th className="border-b bg-white px-4 py-3 text-center font-semibold">
-                Views
-              </th>
-              <th className="border-b bg-white px-4 py-3 text-center font-semibold">
-                Likes
-              </th>
-              <th className="border-b bg-white px-4 py-3 text-center font-semibold">
-                Total Comments
-              </th>
-              <th className="border-b bg-white px-4 py-3 text-center font-semibold">
-                Duration
-              </th>
-              <th className="border-b bg-white px-4 py-3 text-center font-semibold">
-                File Size
-              </th>
-              <th className="border-b bg-white px-4 py-3 text-center font-semibold">
-                Date
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentItems.map((stat, index) => (
-              <tr key={index} className="border-b last:border-b-0">
-                <td className="px-4 py-3 text-center">
-                  {(currentPage - 1) * itemsPerPage + index + 1}
-                </td>
-                <td className="px-4 py-3 text-center">{stat.title}</td>
-                <td className="px-4 py-3 text-center">{stat.viewers}</td>
-                <td className="px-4 py-3 text-center">{stat.likes}</td>
-                <td className="px-4 py-3 text-center">{stat.comments}</td>
-                <td className="px-4 py-3 text-center">{formatDuration(stat.description)}</td>
-                <td className="px-4 py-3 text-center">{formatSize(stat.video_size)} MB</td>
-                <td className="px-4 py-3 text-center">
-                  {new Date(stat.created_at).toLocaleString('zh-CN', {
-                    year: 'numeric',
-                    month: '2-digit', 
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: false,
-                    timeZone: 'Asia/Shanghai'
-                  }).replace(/[\/]/g, '.')}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {filteredVideoStats.length === 0 ? (
-          <div className="py-8 text-center text-gray-500">
-            No videos found matching your search.
-          </div>
-        ) : (
-          renderPagination()
-        )}
       </div>
+
+      <DataTable
+        columns={columns}
+        data={streamData}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        setPageSize={setPageSize}
+        onSortChange={handleSortChange}
+      />
     </div>
   );
 };
 
-export default VideoStatistics;
+export default VideoStatistic;
