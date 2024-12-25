@@ -19,7 +19,7 @@ import { Input } from "../ui/input";
 const VideoStatistic = () => {
   const [streamData, setStreamData] = useState([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [pageSize, setPageSize] = useState(2);
+  const [pageSize, setPageSize] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [sortBy, setSortBy] = useState("started_at");
@@ -80,10 +80,23 @@ const VideoStatistic = () => {
     }
   };
 
+  const sortKeyMapping: { [key: string]: string } = {
+    title: "title",
+    viewers: "views",  
+    likes: "likes",
+    comments: "comments",
+    duration: "duration",
+    video_size: "video_size",
+    created_at: "started_at"
+  };
+
   const handleSortChange = (columnId: string) => {
-    const isAsc = sortBy === columnId && sort === "ASC";
-    setSort(isAsc ? "DESC" : "ASC");
-    setSortBy(columnId);
+    if (columnId in sortKeyMapping) {
+      const backendSortKey = sortKeyMapping[columnId];
+      const isAsc = sortBy === backendSortKey && sort === "DESC";
+      setSort(isAsc ? "ASC" : "DESC");
+      setSortBy(backendSortKey);
+    }
   };
 
   return (

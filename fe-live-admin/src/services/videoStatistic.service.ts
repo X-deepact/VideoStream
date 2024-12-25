@@ -13,8 +13,8 @@ export const getVideoStatistics = async (
   try {
     const url = `${API_URL}/streams`;
     const params: any = {
-      Page: page,
-      Limit: pageSize,
+      page: page,
+      limit: pageSize,
       status: ["started", "ended"],
       sort_by,
       sort,

@@ -1,4 +1,6 @@
 import { ColumnDef } from "@tanstack/react-table";
+import { Button } from "../ui/button";
+import { ArrowUpDown } from "lucide-react";
 
 export type VideoStatistic = {
   title: string;
@@ -13,30 +15,121 @@ export type VideoStatistic = {
 export const columns: ColumnDef<VideoStatistic>[] = [
   {
     accessorKey: "title",
-    header: () => <div className="text-center">Title</div>,
+    header: ({ column, table }: any) => {
+      return (
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            className="bg-transparent text-black"
+            onClick={() => table.options.meta?.onSortChange(column.id)}
+          >
+            Title
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
   },
   {
     accessorKey: "viewers",
-    header: () => <div className="text-center">Viewers</div>,
+    header: ({ column, table }: any) => {
+      return (
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            className="bg-transparent text-black"
+            onClick={() => table.options.meta?.onSortChange(column.id)}
+          >
+            Viewers
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
   },
   {
     accessorKey: "likes",
-    header: () => <div className="text-center">Likes</div>,
+    header: ({ column, table }: any) => {
+      return (
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            className="bg-transparent text-black"
+            onClick={() => table.options.meta?.onSortChange(column.id)}
+          >
+            Likes
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
   },
   {
-      accessorKey: "comments",
-      header: () => <div className="text-center">Comments</div>,
+    accessorKey: "comments",
+    header: ({ column, table }: any) => {
+      return (
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            className="bg-transparent text-black"
+            onClick={() => table.options.meta?.onSortChange(column.id)}
+          >
+            Comments
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
     },
-    {
-      accessorKey: "duration",
-      header: () => <div className="text-center">Duration</div>,
+  },
+  {
+    accessorKey: "duration",
+    header: ({ column, table }: any) => {
+      return (
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            className="bg-transparent text-black"
+            onClick={() => table.options.meta?.onSortChange(column.id)}
+          >
+            Duration
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
     },
+  },
   {
     accessorKey: "video_size",
-    header: () => <div className="text-center">Video Size</div>,
+    header: ({ column, table }: any) => {
+      return (
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            className="bg-transparent text-black"
+            onClick={() => table.options.meta?.onSortChange(column.id)}
+          >
+            Video Size
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
   },
   {
     accessorKey: "created_at",
-    header: () => <div className="text-center">Created At</div>,
+    header: ({ column, table }: any) => {
+      return (
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            className="bg-transparent text-black"
+            onClick={() => table.options.meta?.onSortChange(column.id)}
+          >
+            Created At
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
   }
 ];

@@ -80,106 +80,119 @@ const getChartConfig = (selectedPeriod: TimePeriod) => {
 
 const useViewsData = (selectedPeriod: TimePeriod) => {
   const [viewsData, setViewsData] = useState<Array<{ time: string, viewers: number, likes: number }>>([]);
-
+  
   useEffect(() => {
     async function fetchViewsData() {
       try {
-        const limit = selectedPeriod === "yesterday" ? 24 : 
-                     selectedPeriod === "7days" ? 7 : 30;
-        
-        const response = await getStatisticsSortedByViews(1, limit);
-        
-        if (!response?.data?.data?.page) {
-          console.error("Invalid API response:", response);
-          return;
-        }
+        const now = new Date();
+        let from: number;
+        let to: number;
 
-        // Initialize time slots based on selected period
-        const timeSlots = new Map();
         if (selectedPeriod === "yesterday") {
-          // Get yesterday's start and end timestamps
-          const now = new Date();
-          const yesterdayEnd = new Date(now.setHours(0, 0, 0, 0));
-          const yesterdayStart = new Date(yesterdayEnd);
-          yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          yesterday.setHours(0, 0, 0, 0); 
+          from = yesterday.getTime();
 
-          // Initialize hourly slots for yesterday
-          for (let i = 0; i < 24; i++) {
-            timeSlots.set(`${i}-${i + 1}`, { viewers: 0, likes: 0 });
-          }
+          const yesterdayEnd = new Date(yesterday);
+          yesterdayEnd.setHours(23, 59, 59, 999);
+          to = yesterdayEnd.getTime();
 
-          // Filter and process only yesterday's data
-          response.data.data.page
-            .filter((item: any) => {
-              const itemDate = new Date(item.created_at);
-              return itemDate >= yesterdayStart && itemDate < yesterdayEnd;
-            })
-            .forEach((item: any) => {
-              const itemDate = new Date(item.created_at);
-              const hour = itemDate.getHours();
-              const timeKey = `${hour}-${hour + 1}`;
-
-              if (timeSlots.has(timeKey)) {
-                const current = timeSlots.get(timeKey);
-                timeSlots.set(timeKey, {
-                  viewers: current.viewers + (item.viewers || 0),
-                  likes: current.likes + (item.likes || 0)  
-                });
-              }
-            });
+          console.log('Date range:', {
+            from: new Date(from).toISOString(),
+            to: new Date(to).toISOString(),
+          });
+        } else if (selectedPeriod === "7days") {
+          from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).getTime();
+          to = now.getTime();
         } else {
-          // Handle 7days and 30days periods
-          const today = new Date();
-          
-          // Only shift the date for 30-day view
-          if (selectedPeriod === "30days") {
-            today.setDate(today.getDate() + 10);
+          from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).getTime();
+          to = now.getTime();
+        }
+        const response = await getStatisticsSortedByViews(1, 20, 'started', from, to);
+        
+        console.log('API Response:', response.data);
+        console.log('Streams:', response.data?.data?.page);
+
+        const streams = response.data?.data?.page || [];
+        const timeSlots = new Map<string, { viewers: number, likes: number }>();
+
+        if (selectedPeriod === "yesterday") {
+          for (let hour = 0; hour < 24; hour++) {
+            const hourStr = hour.toString().padStart(2, '0');
+            const key = `${hourStr}:00`;
+            timeSlots.set(key, { viewers: 0, likes: 0 });
           }
-          
-          const daysArray = Array.from({ length: limit }, (_, i) => {
-            const date = new Date(today);
-            date.setDate(date.getDate() - i);
-            return `Day ${limit - i}`; // This will create "Day 7" or "Day 30" to "Day 1"
-          });
 
-          // Initialize time slots with reversed day numbers
-          daysArray.forEach(day => {
-            timeSlots.set(day, { viewers: 0, likes: 0 });
-          });
-
-          response.data.data.page.forEach((item: any) => {
-            const itemDate = new Date(item.created_at);
-            const daysDiff = limit - Math.ceil((today.getTime() - itemDate.getTime()) / (1000 * 60 * 60 * 24));
-            const timeKey = `Day ${daysDiff}`;
-            
-            if (timeSlots.has(timeKey)) {
-              const current = timeSlots.get(timeKey);
-              timeSlots.set(timeKey, {
-                viewers: current.viewers + (item.viewers || 0),
-                likes: current.likes + (item.likes || 0)
+          streams.forEach((stream: any) => {
+            const streamDate = new Date(stream.created_at);
+            if (streamDate >= new Date(from) && streamDate <= new Date(to)) {
+              const hour = streamDate.getHours().toString().padStart(2, '0');
+              const key = `${hour}:00`;
+              
+              const existing = timeSlots.get(key) || { viewers: 0, likes: 0 };
+              timeSlots.set(key, {
+                viewers: Math.max(existing.viewers, stream.viewers || 0),
+                likes: Math.max(existing.likes, stream.likes || 0)
               });
             }
           });
+        } else {
+          const days = selectedPeriod === "7days" ? 7 : 30;
+          for (let i = days - 1; i >= 0; i--) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - i);
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const key = `${month}/${day}`;
+            timeSlots.set(key, { viewers: 0, likes: 0 });
+          }
         }
 
-        // Convert map to array and sort
+        streams.forEach((stream: any) => {
+          const date = new Date(stream.created_at);
+          let key: string;
+
+          if (selectedPeriod === "yesterday") {
+            const hour = date.getHours().toString().padStart(2, '0');
+            key = `${hour}:00`;
+          } else {
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            key = `${month}/${day}`;
+          }
+
+          if (timeSlots.has(key)) {
+            timeSlots.set(key, {
+              viewers: stream.viewers || 0,
+              likes: stream.likes || 0
+            });
+          }
+        });
+
         const sortedData = Array.from(timeSlots.entries())
+          .sort((a, b) => {
+            if (selectedPeriod === "yesterday") {
+              return parseInt(a[0]) - parseInt(b[0]);
+            } else {
+              const [aMonth, aDay] = a[0].split('/').map(Number);
+              const [bMonth, bDay] = b[0].split('/').map(Number);
+              if (aMonth === bMonth) {
+                return aDay - bDay;
+              }
+              return aMonth - bMonth;
+            }
+          })
           .map(([time, data]) => ({
             time,
             viewers: data.viewers,
             likes: data.likes
-          }))
-          .sort((a, b) => {
-            if (selectedPeriod === "yesterday") {
-              return parseInt(a.time.split('-')[0]) - parseInt(b.time.split('-')[0]);
-            }
-            // Sort by day number in ascending order
-            return parseInt(a.time.split(' ')[1]) - parseInt(b.time.split(' ')[1]);
-          });
+          }));
 
+        console.log('Final processed data:', sortedData);
         setViewsData(sortedData);
       } catch (error) {
-        console.error('Error fetching views data:', error);
+        console.error('Error in fetchViewsData:', error);
         setViewsData([]);
       }
     }
@@ -385,17 +398,15 @@ const DashboardInfo: React.FC = () => {
               <Area
                 type="monotone"
                 dataKey="viewers"
-                stackId="1"
-                stroke="hsl(171, 100%, 41%)"
-                fill="hsl(171, 100%, 41%)"
+                stroke="hsl(200, 100%, 41%)"
+                fill="hsl(200, 100%, 41%)"
                 fillOpacity={0.5}
               />
               <Area
                 type="monotone"
                 dataKey="likes"
-                stackId="1"
-                stroke="hsl(200, 100%, 41%)"
-                fill="hsl(200, 100%, 41%)"
+                stroke="hsl(171, 100%, 41%)"
+                fill="hsl(171, 100%, 41%)"
                 fillOpacity={0.5}
               />
             </AreaChart>
