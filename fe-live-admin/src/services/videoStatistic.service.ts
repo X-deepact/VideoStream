@@ -8,6 +8,7 @@ export const getVideoStatistics = async (
   pageSize: number = 20,
   sort_by: string = "started_at",
   sort: string = "DESC",
+  keyword?: string,
   id?: string
 ) => {
   try {
@@ -19,6 +20,10 @@ export const getVideoStatistics = async (
       sort_by,
       sort,
     };
+
+    if (keyword) {
+      params.keyword = keyword;
+    }
 
     if (id) {
       params.id = id;

@@ -113,7 +113,7 @@ export function DataTable<TData, TValue>({
             onValueChange={(value) => setPageSize(parseInt(value))}
           >
             <SelectTrigger>
-              <SelectValue defaultValue={10} />
+              <SelectValue defaultValue={5} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="5">5</SelectItem>

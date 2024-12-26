@@ -22,7 +22,7 @@ interface ComponentProps {
 export const DateTimePicker = (props: ComponentProps) => {
 	const {
 		placeholder,
-		width = "w-32",
+		width = "w-full",
 		onDateChange
 	} = props;
 	const [date, setDate] = React.useState<Date>();
@@ -108,7 +108,7 @@ export const DateTimePicker = (props: ComponentProps) => {
 						</ScrollArea>
 						<ScrollArea className="w-64 sm:w-auto">
 							<div className="flex sm:flex-col p-2">
-								{Array.from({ length: 12 }, (_, i) => i * 5).map((minute) => (
+								{Array.from({ length: 60 }, (_, i) => i).map((minute) => (
 									<Button
 										key={minute}
 										size="icon"

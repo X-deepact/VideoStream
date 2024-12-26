@@ -24,14 +24,14 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} /> */}
           <Route path="/" element={<PrivateRoute loginUrl={"/login"} />}>
-            <Route path="/dashboard" element={<Layout />}>
-              <Route index element={<Dashboard />}></Route>
-              <Route path="profile" element={<Profile />} />
-              <Route path="account-list" element={<AccountList />} />
-	            <Route path="live-list" element={<LivestreamSessions />} />
-              <Route path="video-library" element={<VideoLibrary />} />
-	            <Route path="video-statistics" element={<VideoStatistics />} />
-            </Route>
+	          <Route path="/dashboard" element={<Layout />}>
+		          <Route index element={<Dashboard />}></Route>
+		          <Route path="profile" element={<Profile />} />
+		          <Route path="account-list" element={<AccountList />} />
+		          <Route path="live-list" element={<LivestreamSessions />} />
+		          <Route path="video-library" element={<VideoLibrary />} />
+		          <Route path="video-statistics" element={<VideoStatistics />} />
+	          </Route>
           </Route>
         </Routes>
       </Router>

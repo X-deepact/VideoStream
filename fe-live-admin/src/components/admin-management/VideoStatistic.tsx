@@ -11,7 +11,7 @@ import { Slash } from "lucide-react";
 import { DataTable } from "../ui/datatable";
 import { getVideoStatistics } from "@/services/videoStatistic.service";
 import { columns } from "@/components/admin-management/VideoStatisticColumns.tsx";
-import { formatDuration, formatFileSize } from "@/lib/utils";
+import { formatDuration, formatFileSize, formatDate } from "@/lib/utils";
 
 import { Input } from "../ui/input";
 
@@ -24,18 +24,15 @@ const VideoStatistic = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [sortBy, setSortBy] = useState("started_at");
   const [sort, setSort] = useState("DESC");
+  const [searchKeyword, setSearchKeyword] = useState("");
 
   useEffect(() => {
-    fetchStreamData();
-  }, [currentPage, pageSize, sortBy, sort]);
+    const delayDebounceFn = setTimeout(() => {
+      fetchStreamData();
+    }, 500);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}.${month}.${day}`;
-  };
+    return () => clearTimeout(delayDebounceFn);
+  }, [currentPage, pageSize, sortBy, sort, searchKeyword]);
 
   const fetchStreamData = async () => {
     try {
@@ -43,7 +40,8 @@ const VideoStatistic = () => {
         currentPage,
         pageSize,
         sortBy,
-        sort
+        sort,
+        searchKeyword
       );
       
       console.log("API Response:", response.data); // Log the response data
@@ -120,9 +118,9 @@ const VideoStatistic = () => {
       <div className="flex justify-end items-center py-4">
         <div className="flex items-center gap-2">
           <Input
-            placeholder="Search..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
+            placeholder="Search by title..."
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
             className="max-w-sm"
           />
         </div>

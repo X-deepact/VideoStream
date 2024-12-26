@@ -5,16 +5,26 @@
  * @param includeTime - The boolean flag for including time or not, default value is false.
  * @returns A formatted date string in "DD/MM/YYYY, H:MM AM/PM" if time included and "DD/MM/YYYY if not" .
  */
-export function formatDate(date: Date | string | number, includeTime = false): string {
-	const parsedDate = typeof date === "string" || typeof date === "number" ? new Date(date) : date;
+export function formatDate(
+  date: Date | string | number,
+  includeTime = false
+): string {
+  const parsedDate =
+    typeof date === "string" || typeof date === "number"
+      ? new Date(date)
+      : date;
 
-	if (isNaN(parsedDate.getTime())) {
-		throw new Error("Invalid date input");
-	}
+  if (isNaN(parsedDate.getTime())) {
+    throw new Error("Invalid date input");
+  }
+  const day = String(parsedDate.getDate()).padStart(2, "0");
+  const month = String(parsedDate.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+  const year = parsedDate.getFullYear();
+  if (includeTime) {
+    const min = String(parsedDate.getMinutes()).padStart(2, "0");
+    const time = String(parsedDate.getHours()).padStart(2, "0");
+    return `${day}/${month}/${year} ${time}:${min}`;
+  }
 
-	const day = String(parsedDate.getDate()).padStart(2, "0");
-	const month = String(parsedDate.getMonth() + 1).padStart(2, "0"); // Months are 0-based
-	const year = parsedDate.getFullYear();
-
-	return `${day}/${month}/${year}`;
+  return `${day}/${month}/${year}`;
 }

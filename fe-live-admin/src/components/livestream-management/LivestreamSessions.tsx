@@ -5,7 +5,7 @@ import {
 	BreadcrumbList, BreadcrumbPage,
 	BreadcrumbSeparator
 } from "@/components/ui/breadcrumb.tsx";
-import { Search, Slash, SlidersHorizontal, Rss } from "lucide-react";
+import { Slash, SlidersHorizontal, Rss } from "lucide-react";
 import { Input } from "@/components/ui/input.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -28,47 +28,163 @@ import LivestreamCreateNew
 	from "@/components/livestream-management/LivestreamCreateNew.tsx";
 import { getLivestreamSessionList } from "@/services/livestream-session.service.ts";
 import { toast } from "@/hooks/use-toast.ts";
-import { LivestreamSession } from "@/lib/interface.tsx";
+import { AccountProps, Catalogue, LivestreamSession } from "@/lib/interface.tsx";
+import { getCategories } from "@/services/category.service.ts";
+import { getAccountList } from "@/services/user.service.ts";
 
 const LivestreamSessions = () => {
 	const [openFilterDialog, setOpenFilterDialog] = useState(false);
 	const [openCreateNewDialog, setOpenCreateNewDialog] = useState(false);
-	const [type, setType] = useState("");
+
+	//Filters
+	const [streamType, setStreamType] = useState("");
 	const [status, setStatus] = useState("");
 	const [startDate, setStartDate] = useState<Date | undefined>(undefined);
 	const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+	const [categories, setCategories] = useState<{
+		label: string,
+		value: string
+	}[]>([]);
+	const [users, setUsers] = useState<{
+		label: string,
+		value: string
+	}[]>([]);
+
+	//Livestream Data
 	const [isLoading, setIsLoading] = useState(false);
 	const [data, setData] = useState<LivestreamSession[]>([]);
+
+	//Pagination
 	const [currentPage, setCurrentPage] = useState(1);
 	const [totalPages, setTotalPages] = useState(1);
 	const [totalItems, setTotalItems] = useState(0);
 	const [itemLength, setItemLength] = useState(0);
 
-	useEffect(() => {
-		fetchLivestream(currentPage);
-	}, [currentPage]);
+	//Search
+	const [title, setTitle] = useState("");
 
-	const fetchLivestream = async (
-		page,
-	) => {
+	useEffect(() => {
+		fetchLivestream({page: currentPage, streamType, status});
+	}, [currentPage, streamType, status]);
+
+	useEffect(() => {
+		fetchCategories();
+		fetchUsers();
+	}, []);
+
+	const fetchLivestream = async ({
+	  page = 1,
+	  streamType = "",
+	  status = "",
+	  title = "",
+	}: {
+		page?: number;
+		streamType?: string;
+		status?: string;
+		title?: string;
+		startDate?: Date | undefined;
+		endDate?: Date | undefined;
+	}) => {
 		if (isLoading) {
 			return;
 		}
 		setIsLoading(true);
 		try {
-			const response = await getLivestreamSessionList(page);
+			const options = [];
+			if (streamType) options.push(`catalog=${streamType}`);
+			if (status) options.push(`status=${status}`);
+			if (title) options.push(`keyword=${title}`);
+			const response = await getLivestreamSessionList(page, options);
 			const { data } = response.data;
 
-			setData(data.page);
-			setItemLength(data.page.length);
-			setTotalPages(Math.ceil(data.total_items / data.page_size));
-			setTotalItems(data.total_items);
+			setData(data.page ?? []);
+			setItemLength(data.page?.length ?? 0);
+			setTotalPages(data.total_items ? Math.ceil(data.total_items / data.page_size) : 0);
+			setTotalItems(data.total_items ?? 0);
 		} catch (e) {
-			alert({
-				message: e.message
+			toast({
+				description: e.message,
+				variant: "destructive"
 			})
 		} finally {
 			setIsLoading(false);
+		}
+	}
+
+	const fetchCategories = async () => {
+		try {
+			const response = await getCategories();
+			const { data } = response.data;
+			const transformData = data.map((category: Catalogue) => {
+				return {
+					label: category.name,
+					value: category.name
+				}
+			});
+
+			setCategories(transformData);
+		} catch (e) {
+			toast({
+				description: e.message,
+				variant: "destructive"
+			})
+		}
+	}
+
+	const fetchUsers = async () => {
+		try {
+			const response = await getAccountList();
+			const { data } = response.data;
+			const transformData = data.page.map((user: AccountProps) => {
+				return {
+					label: user.username,
+					value: user.username
+				}
+			})
+
+			setUsers(transformData);
+		} catch (e) {
+			toast({
+				description: e.message,
+				variant: "destructive"
+			})
+		}
+	}
+
+	const handleFilterStatus = (status: string) => {
+		setStatus(status);
+		setCurrentPage(1);
+		setOpenFilterDialog(false);
+	}
+
+	const handleFilterCategory = (type: string) => {
+		setStreamType(type);
+		setCurrentPage(1);
+		setOpenFilterDialog(false);
+	}
+
+	const handleFilterStartTime = (startTime: Date) => {
+		setStartDate(startTime);
+		setCurrentPage(1);
+		setOpenFilterDialog(false);
+	}
+
+	const handleFilterEndTime = (endTime: Date) => {
+		setEndDate(endTime);
+		setCurrentPage(1);
+		setOpenFilterDialog(false);
+	}
+
+	const handleSearchStream = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter") {
+			e.preventDefault();
+			setCurrentPage(1); // Reset to first page every time you do a new search
+			await fetchLivestream({
+				page: 1,
+				streamType,
+				status,
+				title,
+			});
 		}
 	}
 
@@ -113,7 +229,7 @@ const LivestreamSessions = () => {
 								</DialogDescription>
 							</DialogHeader>
 							<div>
-								<LivestreamCreateNew />
+								<LivestreamCreateNew categories={categories} users={users} />
 							</div>
 							<DialogFooter className="justify-end">
 								<DialogClose asChild>
@@ -131,12 +247,13 @@ const LivestreamSessions = () => {
 					<Input
 						className="w-[40rem]"
 						placeholder="Search Livestream"
+						value={title}
+						onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value) }
+						onKeyDown={handleSearchStream}
 					/>
-					<Button>
-						<Search />
-						Search
-					</Button>
 				</div>
+
+				{/*Filter Stream Dialog*/}
 				<div>
 					<Dialog open={openFilterDialog} onOpenChange={setOpenFilterDialog}>
 						<DialogTrigger asChild>
@@ -152,31 +269,36 @@ const LivestreamSessions = () => {
 							<div className="grid gap-4 py-4">
 								<div className="grid grid-cols-3 items-center gap-4">
 									<Label htmlFor="status" className="text-left">Status</Label>
-									<Select id="status" value={status} onValueChange={setStatus}>
+									<Select id="status" value={status} onValueChange={(value) => handleFilterStatus(value)}>
 										<SelectTrigger className="col-span-2">
 											<SelectValue placeholder="Livestream Type" />
 										</SelectTrigger>
 										<SelectContent>
 											<SelectGroup>
 												<SelectLabel>Status</SelectLabel>
-												<SelectItem value="streaming">Streaming</SelectItem>
-												<SelectItem value="schedule">Scheduled</SelectItem>
+												<SelectItem value="started">Started</SelectItem>
+												<SelectItem value="ended">Ended</SelectItem>
+												<SelectItem value="pending">Pending</SelectItem>
 											</SelectGroup>
 										</SelectContent>
 									</Select>
 								</div>
 								<div className="grid grid-cols-3 items-center gap-4">
-									<Label htmlFor="status" className="text-left">Status</Label>
-									<Select id="category" value={type} onValueChange={setType}>
+									<Label htmlFor="category" className="text-left">Category</Label>
+									<Select id="category" value={streamType} onValueChange={(value) => handleFilterCategory(value) }>
 										<SelectTrigger className="col-span-2">
 											<SelectValue placeholder="Select Status" />
 										</SelectTrigger>
 										<SelectContent>
 											<SelectGroup>
 												<SelectLabel>Category</SelectLabel>
-												<SelectItem value="movie">Movie</SelectItem>
-												<SelectItem value="game">Game</SelectItem>
-												<SelectItem value="talkshow">Talk Show</SelectItem>
+												{categories.map((category) => {
+													return (
+														<SelectItem key={category.label} value={category.value}>
+															{category.label}
+														</SelectItem>
+													)
+												})}
 											</SelectGroup>
 										</SelectContent>
 									</Select>
@@ -184,21 +306,24 @@ const LivestreamSessions = () => {
 								<div className="grid grid-cols-3 items-center gap-4">
 									<Label htmlFor="startTime" className="text-left">Start Time</Label>
 									<DateTimePicker
+										width="w-[15.4rem]"
 										id="startTime"
 										value={startDate}
 										onDateChange={setStartDate}
 										className="col-span-2"
+										placeholder="Start Time"
 									/>
 								</div>
 
 								<div className="grid grid-cols-3 items-center gap-4">
 									<Label htmlFor="endTime" className="text-left">End Time</Label>
 									<DateTimePicker
-										width="w-full"
+										width="w-[15.4rem]"
 										id="endTime"
 										value={endDate}
 										onDateChange={setEndDate}
 										className="col-span-2"
+										placeholder="End Time"
 									/>
 								</div>
 							</div>

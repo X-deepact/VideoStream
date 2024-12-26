@@ -222,7 +222,7 @@ const DashboardInfo: React.FC = () => {
   return (
     <div className="px-8 flex flex-col xl:flex-row gap-2">
       {/* Overview Statistic */}
-      <Card className="mt-4 w-full xl:w-1/3 h-full">
+      <Card className="mt-4 w-full xl:w-1/3 ">
         <CardHeader>
           <CardTitle className="text-xl text-left">
             Overview Statistic
@@ -290,7 +290,7 @@ const DashboardInfo: React.FC = () => {
       </Card>
 
       {/* Video Statistic */}
-      <Card className="mt-4 w-full xl:w-2/3 h-full">
+      <Card className="mt-4 w-full xl:w-2/3 ">
         <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 relative">
           <div className="flex flex-1 flex-col justify-center gap-1 px-6">
             <CardHeader>

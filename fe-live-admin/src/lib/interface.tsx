@@ -55,3 +55,13 @@ export interface LivestreamSession {
 	stream_type: LIVESTREAM_TYPE;
 	live_stream_analytic: LivestreamStatistics;
 }
+
+export interface Catalogue {
+	id: number,
+	name: string,
+	created_by_id: number,
+	created_at: Date,
+	updated_at: Date,
+	created_by_user: AccountProps,
+	updated_by_user: AccountProps
+}

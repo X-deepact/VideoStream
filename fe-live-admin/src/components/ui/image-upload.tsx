@@ -15,7 +15,6 @@ interface ComponentProps {
 }
 
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
-const ALLOWED_VIDEO_TYPES = ['mp4', 'video/mp4'];
 
 const ImageUpload = (props: ComponentProps) => {
 	const {
@@ -26,41 +25,31 @@ const ImageUpload = (props: ComponentProps) => {
 		preview: initialPreview,
 		onFileChange,
 		isDisabled = false,
-		isUploadVideo = false,
 	} = props;
 
 	const [imagePreview, setImagePreview] = useState<string | null>(initialPreview || null);
-	const [videoPreview, setVideoPreview] = useState<string | null>();
 	const fileInputRef = useRef<HTMLElement | null>(null);
 	const handleFileChange =  (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0] || null;
 
 		if (!file) {
 			// Reset previews if no file is selected
-			setVideoPreview(null);
 			setImagePreview(null);
 			onFileChange && onFileChange(null);
 			return;
 		}
 
-		console.log(file.type);
-
-		const allowedTypes = isUploadVideo ? ALLOWED_VIDEO_TYPES : ALLOWED_IMAGE_TYPES;
-		const errorMessage = isUploadVideo
-			? "Please upload a video in a supported format (e.g., MP4)."
-			: "Please upload an image in a supported format (e.g., PNG, JPG, JPEG).";
-
-		if (!allowedTypes.includes(file.type)) {
+		const errorMessage = "Please upload an image in a supported format (e.g., PNG, JPG, JPEG).";
+		if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
 			toast({
 				description: errorMessage
 			});
-			setVideoPreview(null);
 			onFileChange && onFileChange(null);
 			return;
 		}
 
 		const reader =  new FileReader();
-		reader.onloadend = () => setVideoPreview(reader.result as string);
+		reader.onloadend = () => setImagePreview(reader.result as string);
 		reader.readAsDataURL(file);
 		onFileChange && onFileChange(file);
 	}
@@ -76,8 +65,8 @@ const ImageUpload = (props: ComponentProps) => {
 	const handleClear = () => {
 		setImagePreview(null);
 		onFileChange && onFileChange(null);
-		if (fileInputRef.current) {
-			fileInputRef.current = null;
+		if (fileInputRef.current && "value" in fileInputRef.current) {
+			fileInputRef.current.value = "";
 		}
 	}
 
@@ -131,10 +120,6 @@ const ImageUpload = (props: ComponentProps) => {
 							}
 						</div>
 					)
-				}
-
-				{
-
 				}
 				<input
 					type="file"

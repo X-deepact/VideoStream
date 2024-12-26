@@ -38,7 +38,8 @@ const LivestreamList = ({livestream}) => {
 			})
 			.catch((error) => {
 				toast({
-					description: "Failed to copy URL. Please try again!"
+					description: "Failed to copy URL. Please try again!",
+					variant: "destructive"
 				})
 			})
 		}
