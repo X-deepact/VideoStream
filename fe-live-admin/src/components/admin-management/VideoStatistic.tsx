@@ -44,7 +44,7 @@ const VideoStatistic = () => {
         searchKeyword
       );
       
-      console.log("API Response:", response.data); // Log the response data
+      console.log("API Response:", response.data);
 
       const streams = response.data.page;
 
@@ -55,11 +55,11 @@ const VideoStatistic = () => {
 
       const transformedStreamData = streams.map((stream: any) => ({
         title: stream.title,
-        viewers: stream.live_stream_analytic.viewers,
-        likes: stream.live_stream_analytic.likes,
-        duration: formatDuration(stream.live_stream_analytic.duration || 0),
-        comments: stream.live_stream_analytic.comments,
-        video_size: formatFileSize(stream.live_stream_analytic.video_size),
+        viewers: stream.live_stream_analytic?.viewers ?? 0,
+        likes: stream.live_stream_analytic?.likes ?? 0,
+        duration: formatDuration(stream.live_stream_analytic?.duration ?? 0),
+        comments: stream.live_stream_analytic?.comments ?? 0,
+        video_size: formatFileSize(stream.live_stream_analytic?.video_size ?? 0),
         created_at: formatDate(stream.started_at),
       }));
 
@@ -73,6 +73,8 @@ const VideoStatistic = () => {
       } else {
         console.error("Total items data is undefined");
       }
+
+      console.log("Single stream example:", streams[0]);
     } catch (error) {
       console.error("Error fetching stream data:", error);
     }

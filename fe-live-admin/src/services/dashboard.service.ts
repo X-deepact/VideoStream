@@ -1,7 +1,7 @@
 import axios from "axios";
 import authHeader from "@/services/auth-header.ts";
 
-const API_URL = "http://localhost:8080/api/streams/statistics";
+const API_URL = "http://localhost:8686/api/streams/statistics";
 
 	export const getOverviewStatistics = () => {
 		return axios.get(`${API_URL}/total`, {headers: authHeader()});
@@ -21,7 +21,7 @@ const API_URL = "http://localhost:8080/api/streams/statistics";
 
 	export const getStatisticsSortedByViews = (
 		page: number = 1,
-		limit: number = 10,
+		limit: number = 20,
 		status?: string,
 		from?: number,
 		to?: number
@@ -38,30 +38,13 @@ const API_URL = "http://localhost:8080/api/streams/statistics";
 		}
 
 		if (from) {
-			const fromSeconds = Math.floor(from / 1000);
-			params.append('from_started_time', fromSeconds.toString());
+			params.append('from_started_time', from.toString());
 		}
 		if (to) {
-			const toSeconds = Math.floor(to / 1000);
-			params.append('end_started_time', toSeconds.toString());
+			params.append('end_started_time', to.toString());
 		}
 
 		const url = `${API_URL}?${params.toString()}`;
-		console.log('Request URL:', url);
-		console.log('Request Parameters:', Object.fromEntries(params.entries()));
 
-		return axios.get(url, { 
-			headers: {
-				...authHeader(),
-				'Accept': 'application/json'
-			}
-		}).catch(error => {
-			console.error('API Error Details:', {
-				status: error.response?.status,
-				data: error.response?.data,
-				message: error.response?.data?.message,
-				params: Object.fromEntries(params.entries())
-			});
-			throw error;
-		});
+		return axios.get(url, { headers: authHeader() });
 	}

@@ -79,44 +79,37 @@ const getChartConfig = (selectedPeriod: TimePeriod) => {
 };
 
 const useViewsData = (selectedPeriod: TimePeriod) => {
-  const [viewsData, setViewsData] = useState<Array<{ time: string, viewers: number, likes: number }>>([]);
+  const [viewsData, setViewsData] = useState<Array<{ time: string, viewers: number, likes: number, createdAt?: string }>>([]);
+  const [hasYesterdayData, setHasYesterdayData] = useState(false);
   
   useEffect(() => {
     async function fetchViewsData() {
       try {
         const now = new Date();
         let from: number;
-        let to: number;
+        let to: number = now.getTime();
 
         if (selectedPeriod === "yesterday") {
           const yesterday = new Date();
           yesterday.setDate(yesterday.getDate() - 1);
-          yesterday.setHours(0, 0, 0, 0); 
+          yesterday.setHours(0, 0, 0, 0);
           from = yesterday.getTime();
-
+          
           const yesterdayEnd = new Date(yesterday);
           yesterdayEnd.setHours(23, 59, 59, 999);
           to = yesterdayEnd.getTime();
 
-          console.log('Date range:', {
-            from: new Date(from).toISOString(),
-            to: new Date(to).toISOString(),
-          });
-        } else if (selectedPeriod === "7days") {
-          from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).getTime();
-          to = now.getTime();
+          console.log('Yesterday range:', new Date(from), 'to', new Date(to));
         } else {
-          from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).getTime();
-          to = now.getTime();
+          const daysToSubtract = selectedPeriod === "7days" ? 7 : 30;
+          from = new Date(now.getTime() - (daysToSubtract - 1) * 24 * 60 * 60 * 1000).getTime();
+          from = new Date(from).setHours(0, 0, 0, 0);
         }
+
         const response = await getStatisticsSortedByViews(1, 20, 'started', from, to);
-        
-        console.log('API Response:', response.data);
-        console.log('Streams:', response.data?.data?.page);
-
         const streams = response.data?.data?.page || [];
-        const timeSlots = new Map<string, { viewers: number, likes: number }>();
 
+        const timeSlots = new Map<string, { viewers: number, likes: number }>();
         if (selectedPeriod === "yesterday") {
           for (let hour = 0; hour < 24; hour++) {
             const hourStr = hour.toString().padStart(2, '0');
@@ -124,18 +117,23 @@ const useViewsData = (selectedPeriod: TimePeriod) => {
             timeSlots.set(key, { viewers: 0, likes: 0 });
           }
 
-          streams.forEach((stream: any) => {
+          const oneDayOldStreams = streams.filter((stream: any) => {
             const streamDate = new Date(stream.created_at);
-            if (streamDate >= new Date(from) && streamDate <= new Date(to)) {
-              const hour = streamDate.getHours().toString().padStart(2, '0');
-              const key = `${hour}:00`;
-              
-              const existing = timeSlots.get(key) || { viewers: 0, likes: 0 };
-              timeSlots.set(key, {
-                viewers: Math.max(existing.viewers, stream.viewers || 0),
-                likes: Math.max(existing.likes, stream.likes || 0)
-              });
-            }
+            const daysDiff = Math.floor(
+              (now.getTime() - streamDate.getTime()) / (24 * 60 * 60 * 1000)
+            );
+            return daysDiff === 1;
+          });
+
+          oneDayOldStreams.forEach((stream: any) => {
+            const streamDate = new Date(stream.created_at);
+            const hour = streamDate.getHours().toString().padStart(2, '0');
+            const key = `${hour}:00`;
+            
+            timeSlots.set(key, {
+              viewers: stream.viewers || 0,
+              likes: stream.likes || 0
+            });
           });
         } else {
           const days = selectedPeriod === "7days" ? 7 : 30;
@@ -147,28 +145,22 @@ const useViewsData = (selectedPeriod: TimePeriod) => {
             const key = `${month}/${day}`;
             timeSlots.set(key, { viewers: 0, likes: 0 });
           }
+
+          streams.forEach((stream: any) => {
+            const streamDate = new Date(stream.created_at);
+            const month = (streamDate.getMonth() + 1).toString().padStart(2, '0');
+            const day = streamDate.getDate().toString().padStart(2, '0');
+            const key = `${month}/${day}`;
+
+            if (timeSlots.has(key)) {
+              const current = timeSlots.get(key)!;
+              timeSlots.set(key, {
+                viewers: (current.viewers || 0) + (stream.viewers || 0),
+                likes: (current.likes || 0) + (stream.likes || 0)
+              });
+            }
+          });
         }
-
-        streams.forEach((stream: any) => {
-          const date = new Date(stream.created_at);
-          let key: string;
-
-          if (selectedPeriod === "yesterday") {
-            const hour = date.getHours().toString().padStart(2, '0');
-            key = `${hour}:00`;
-          } else {
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-            key = `${month}/${day}`;
-          }
-
-          if (timeSlots.has(key)) {
-            timeSlots.set(key, {
-              viewers: stream.viewers || 0,
-              likes: stream.likes || 0
-            });
-          }
-        });
 
         const sortedData = Array.from(timeSlots.entries())
           .sort((a, b) => {
@@ -189,24 +181,37 @@ const useViewsData = (selectedPeriod: TimePeriod) => {
             likes: data.likes
           }));
 
-        console.log('Final processed data:', sortedData);
+        const hasDataFromYesterday = streams.some((stream: any) => {
+          const streamDate = new Date(stream.created_at);
+          const daysDiff = Math.floor(
+            (now.getTime() - streamDate.getTime()) / (24 * 60 * 60 * 1000)
+          );
+          return daysDiff === 1;
+        });
+
+        setHasYesterdayData(hasDataFromYesterday);
         setViewsData(sortedData);
       } catch (error) {
         console.error('Error in fetchViewsData:', error);
         setViewsData([]);
+        setHasYesterdayData(false);
       }
     }
 
     fetchViewsData();
   }, [selectedPeriod]);
 
-  return viewsData;
+  return { viewsData, hasYesterdayData };
 };
 
 const DashboardInfo: React.FC = () => {
   const { chartData, totalLivestreams } = useLiveStreamChartData();
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("yesterday");
-  const viewsChartData = useViewsData(selectedPeriod);
+  const { viewsData, hasYesterdayData } = useViewsData(selectedPeriod);
+
+  const shouldShowChart = 
+    selectedPeriod !== "yesterday" || 
+    (hasYesterdayData && viewsData.some(data => data.viewers > 0 || data.likes > 0));
 
   const chartConfig = {
     views: {
@@ -222,7 +227,7 @@ const DashboardInfo: React.FC = () => {
   return (
     <div className="px-8 flex flex-col xl:flex-row gap-2">
       {/* Overview Statistic */}
-      <Card className="mt-4 w-full xl:w-1/3 ">
+      <Card className="mt-4 w-full xl:w-1/3">
         <CardHeader>
           <CardTitle className="text-xl text-left">
             Overview Statistic
@@ -290,7 +295,7 @@ const DashboardInfo: React.FC = () => {
       </Card>
 
       {/* Video Statistic */}
-      <Card className="mt-4 w-full xl:w-2/3 ">
+      <Card className="mt-4 w-full xl:w-2/3">
         <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 relative">
           <div className="flex flex-1 flex-col justify-center gap-1 px-6">
             <CardHeader>
@@ -347,70 +352,76 @@ const DashboardInfo: React.FC = () => {
             </div>
           </div>
 
-          <ChartContainer
-            config={chartConfig}
-            className={`aspect-auto w-full ${
-              selectedPeriod === "30days" ? "h-[250px]" : "h-[250px]"
-            }`}
-          >
-            <AreaChart
-              data={viewsChartData}
-              margin={getChartConfig(selectedPeriod).margin}
+          {shouldShowChart ? (
+            <ChartContainer
+              config={chartConfig}
+              className={`aspect-auto w-full ${
+                selectedPeriod === "30days" ? "h-[250px]" : "h-[250px]"
+              }`}
             >
-              <CartesianGrid
-                vertical={false}
-                horizontal={true}
-                strokeDasharray="3 3"
-              />
-              <XAxis
-                dataKey="time"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={getChartConfig(selectedPeriod).xAxis.dy}
-                angle={getChartConfig(selectedPeriod).xAxis.angle}
-                height={getChartConfig(selectedPeriod).xAxis.height}
-                interval={selectedPeriod === "yesterday" ? 2 : 1}
-              />
-              <YAxis
-                axisLine={true}
-                tickLine={true}
-                tickCount={7}
-                domain={[0, "auto"]}
-              />
-              <Tooltip
-                content={({ active, payload, label }) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <div className="bg-white p-2 border rounded shadow">
-                        <p>{label}</p>
-                        <p className="text-[hsl(200,100%,41%)]">
-                          Total Views: {payload[0].value}
-                        </p>
-                        <p className="text-[hsl(171,100%,41%)]">
-                          Like: {payload[1].value}
-                        </p>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="viewers"
-                stroke="hsl(200, 100%, 41%)"
-                fill="hsl(200, 100%, 41%)"
-                fillOpacity={0.5}
-              />
-              <Area
-                type="monotone"
-                dataKey="likes"
-                stroke="hsl(171, 100%, 41%)"
-                fill="hsl(171, 100%, 41%)"
-                fillOpacity={0.5}
-              />
-            </AreaChart>
-          </ChartContainer>
+              <AreaChart
+                data={viewsData}
+                margin={getChartConfig(selectedPeriod).margin}
+              >
+                <CartesianGrid
+                  vertical={false}
+                  horizontal={true}
+                  strokeDasharray="3 3"
+                />
+                <XAxis
+                  dataKey="time"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={getChartConfig(selectedPeriod).xAxis.dy}
+                  angle={getChartConfig(selectedPeriod).xAxis.angle}
+                  height={getChartConfig(selectedPeriod).xAxis.height}
+                  interval={selectedPeriod === "yesterday" ? 2 : 1}
+                />
+                <YAxis
+                  axisLine={true}
+                  tickLine={true}
+                  tickCount={7}
+                  domain={[0, "auto"]}
+                />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-white p-2 border rounded shadow">
+                          <p>{label}</p>
+                          <p className="text-[hsl(200,100%,41%)]">
+                            Total Views: {payload[0].value}
+                          </p>
+                          <p className="text-[hsl(171,100%,41%)]">
+                            Like: {payload[1].value}
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="viewers"
+                  stroke="hsl(200, 100%, 41%)"
+                  fill="hsl(200, 100%, 41%)"
+                  fillOpacity={0.5}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="likes"
+                  stroke="hsl(171, 100%, 41%)"
+                  fill="hsl(171, 100%, 41%)"
+                  fillOpacity={0.5}
+                />
+              </AreaChart>
+            </ChartContainer>
+          ) : (
+            <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+              No data available for yesterday
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
