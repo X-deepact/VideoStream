@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"fmt"
+	"gitlab/live/be-live-api/dto"
+	"gitlab/live/be-live-api/model"
 	"gitlab/live/be-live-api/service"
 	"gitlab/live/be-live-api/utils"
 	"net/http"
@@ -31,7 +34,7 @@ func (h *categoryHandler) register() {
 	group.Use(h.JWTMiddleware())
 	group.Use(h.RoleGuardMiddleware())
 	group.GET("", h.getAll)
-
+	group.POST("", h.create)
 }
 
 func (h *categoryHandler) getAll(c echo.Context) error {
@@ -41,5 +44,33 @@ func (h *categoryHandler) getAll(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 	return utils.BuildSuccessResponseWithData(c, http.StatusOK, data)
+
+}
+
+func (h *categoryHandler) create(c echo.Context) error {
+
+	var err error
+	var req dto.CategoryRequestDTO
+
+	if err = utils.BindAndValidate(c, &req); err != nil {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+	}
+	currentUser := c.Get("user").(*utils.Claims)
+
+	req.CreatedByID = currentUser.ID
+
+	if err = h.srv.Category.CreateCategory(&req); err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	adminLog := h.srv.Admin.MakeAdminLogModel(req.CreatedByID, model.CreateCategory, fmt.Sprintf(" %s create_category request", currentUser.Email))
+
+	err = h.srv.Admin.CreateLog(adminLog)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
+	}
+
+	return utils.BuildSuccessResponseWithData(c, http.StatusCreated, nil)
 
 }

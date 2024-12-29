@@ -6,6 +6,7 @@ import (
 	"gitlab/live/be-live-api/cmd/admin/handler"
 	"gitlab/live/be-live-api/conf"
 	"gitlab/live/be-live-api/datasource"
+	cmiddleware "gitlab/live/be-live-api/middleware"
 	"gitlab/live/be-live-api/model"
 	"gitlab/live/be-live-api/repository"
 	"gitlab/live/be-live-api/service"
@@ -67,6 +68,9 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
+	// it would be messed up if config change to other paths
+	e.Use(cmiddleware.ExcludePathMiddleware("/api/file/recordings/", "/api/file/scheduled_videos/"))
+
 	// Use CORS middleware, for local run
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     []string{"http://localhost:5173"},                                                                // Allow all origins (use specific origins for production)
@@ -78,14 +82,19 @@ func main() {
 	v := validator.New()
 	// Register custom validator with Echo
 	e.Validator = &CustomValidator{validator: v}
+	log.Println(conf.GetFileStorageConfig().RootFolder)
 
 	root := e.Group("/")
-
 	handler := handler.NewHandler(root, srv)
+
+	fileH := e.Group("/api/file")
+	fileH.Use(handler.JWTMiddleware())
+	fileH.Static("/", conf.GetFileStorageConfig().RootFolder)
+
 	handler.Register()
 
 	go func() {
-		if err := e.Start(":8080"); err != nil && err != http.ErrServerClosed {
+		if err := e.Start(fmt.Sprintf(":%d", conf.GetApplicationConfig().Port)); err != nil && err != http.ErrServerClosed {
 			e.Logger.Fatal("shutting down the server")
 		}
 	}()

@@ -12,6 +12,7 @@ import { DataTable } from "../ui/datatable";
 import { getLiveStatistics } from "../../services/liveStatistic.service";
 import { Input } from "../ui/input";
 import { columns } from "./LiveStatisticColumns";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 const LiveStatistic = () => {
   const [streamData, setStreamData] = useState([]);
@@ -90,7 +91,6 @@ const LiveStatistic = () => {
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-
       <div className="flex justify-end items-center py-4">
         <div className="flex items-center gap-2">
           <Input

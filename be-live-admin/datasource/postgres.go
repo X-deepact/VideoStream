@@ -35,6 +35,8 @@ func LoadDB() (*gorm.DB, error) {
 
 	if err := db.AutoMigrate(
 		&model.Category{},
+		&model.View{},
+		&model.ScheduleStream{},
 	); err != nil {
 		return nil, err
 	}
@@ -54,6 +56,11 @@ func LoadDB() (*gorm.DB, error) {
 		&model.TwoFA{},
 		&model.StreamCategory{},
 	); err != nil {
+		return nil, err
+	}
+
+	// for existed db
+	if err := db.Exec("ALTER TABLE streams ALTER COLUMN stream_token DROP NOT NULL").Error; err != nil {
 		return nil, err
 	}
 

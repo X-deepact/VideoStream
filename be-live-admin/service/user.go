@@ -16,17 +16,26 @@ type UserService struct {
 	redis *redis.Client
 }
 
-func (s *UserService) toUserResponseDTO(user *model.User) dto.UserResponseDTO {
+func newUserService(repo *repository.Repository, redis *redis.Client) *UserService {
+	return &UserService{
+		repo:  repo,
+		redis: redis,
+	}
+
+}
+
+func (s *UserService) toUserResponseDTO(user *model.User, apiURL string) dto.UserResponseDTO {
 
 	var userResp = new(dto.UserResponseDTO)
 	userResp.ID = user.ID
 	userResp.Username = user.Username
 	userResp.DisplayName = user.DisplayName
 	userResp.Email = user.Email
-
+	if user.AvatarFileName.Valid {
+		userResp.AvatarFileName = utils.MakeAvatarURL(apiURL, user.AvatarFileName.String)
+	}
 	if user.CreatedBy != nil {
 		userResp.CreatedByID = user.CreatedByID
-
 		userResp.CreatedBy = new(dto.UserResponseDTO)
 		userResp.CreatedBy.ID = user.CreatedBy.ID
 		userResp.CreatedBy.Username = user.CreatedBy.Username
@@ -49,7 +58,6 @@ func (s *UserService) toUserResponseDTO(user *model.User) dto.UserResponseDTO {
 	}
 
 	userResp.DeletedByID = user.DeletedByID
-	userResp.DeletedAt = user.DeletedAt
 	userResp.CreatedAt = user.CreatedAt
 	userResp.UpdatedAt = user.UpdatedAt
 
@@ -61,24 +69,19 @@ func (s *UserService) toUserResponseDTO(user *model.User) dto.UserResponseDTO {
 	userResp.Role.CreatedAt = user.Role.CreatedAt
 	userResp.Role.UpdatedAt = user.UpdatedAt
 
-	if len(user.AdminLogs) > 0 {
-		var adminLogs []dto.AdminLogDTO
-		for _, v := range user.AdminLogs {
-			adminLogs = append(adminLogs, dto.AdminLogDTO{ID: v.ID, UserID: v.UserID, Action: v.Action, PerformedAt: v.PerformedAt})
-		}
-		userResp.AdminLogs = append(userResp.AdminLogs, adminLogs...)
-	}
-
 	return *userResp
 }
 
-func (s *UserService) GetUserList(filter *dto.UserQuery, page, limit int) (*utils.PaginationModel[dto.UserResponseDTO], error) {
+func (s *UserService) GetUserList(filter *dto.UserQuery, page, limit uint, apiURL string) (*utils.PaginationModel[dto.UserResponseDTO], error) {
 	pagination, err := s.repo.User.Page(filter, page, limit)
 	if err != nil {
 		return nil, err
 	}
 	var newPage = new(utils.PaginationModel[dto.UserResponseDTO])
-	newPage.Page = utils.Map(pagination.Page, func(e model.User) dto.UserResponseDTO { return s.toUserResponseDTO(&e) })
+	newPage.Page = utils.Map(pagination.Page,
+		func(e model.User) dto.UserResponseDTO {
+			return s.toUserResponseDTO(&e, apiURL)
+		})
 	newPage.BasePaginationModel = pagination.BasePaginationModel
 	return newPage, err
 
@@ -133,12 +136,28 @@ func (s *UserService) UpdateUser(updatedUser *dto.UpdateUserRequest, id uint) (*
 
 }
 
-func newUserService(repo *repository.Repository, redis *redis.Client) *UserService {
-	return &UserService{
-		repo:  repo,
-		redis: redis,
+func (s *UserService) CreateUser(request *dto.CreateUserRequest) error {
+	var newUser = new(model.User)
+	newUser.Username = request.UserName
+	newUser.PasswordHash, _ = utils.HashPassword(request.Password)
+	newUser.DisplayName = request.DisplayName
+	newUser.Email = request.Email
+	newUser.CreatedByID = request.CreatedByID
+	newUser.UpdatedByID = request.CreatedByID
+
+	role, err := s.repo.Role.FindByType(request.RoleType)
+	if err != nil {
+		return err
+	}
+	newUser.Role = *role
+	if request.AvatarFileName != "" {
+		newUser.AvatarFileName = sql.NullString{String: request.AvatarFileName, Valid: true}
 	}
 
+	if err := s.Create(newUser); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *UserService) Create(user *model.User) error {
@@ -166,4 +185,8 @@ func (s *UserService) ClearOTP(userID uint) error {
 
 func (s *UserService) UpdatePassword(userID uint, hashedPassword string) error {
 	return s.repo.User.UpdatePassword(userID, hashedPassword)
+}
+
+func (s *UserService) CheckUserTypeByID(id int) (*model.User, error) {
+	return s.repo.User.CheckUserTypeByID(id)
 }

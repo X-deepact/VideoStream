@@ -5,6 +5,7 @@ import (
 	"gitlab/live/be-live-api/model"
 	"gitlab/live/be-live-api/repository"
 	"gitlab/live/be-live-api/utils"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -23,7 +24,7 @@ func newCategoryService(repo *repository.Repository, redis *redis.Client) *Categ
 }
 
 func (s *CategoryService) toCategoryDto(category *model.Category) *dto.CategoryRespDto {
-	return &dto.CategoryRespDto{
+	var result = &dto.CategoryRespDto{
 		ID:          category.ID,
 		Name:        category.Name,
 		CreatedAt:   category.CreatedAt,
@@ -31,6 +32,35 @@ func (s *CategoryService) toCategoryDto(category *model.Category) *dto.CategoryR
 		CreatedByID: category.CreatedByID,
 		UpdatedByID: category.UpdatedByID,
 	}
+	result.CreatedByUser = new(dto.UserResponseDTO)
+
+	createBy, err := s.repo.User.FindByID(int(category.CreatedByID))
+	if err != nil {
+		return nil
+	}
+
+	result.CreatedByUser.ID = createBy.ID
+	result.CreatedByUser.Username = createBy.Username
+	result.CreatedByUser.DisplayName = createBy.DisplayName
+	result.CreatedByUser.Email = createBy.Email
+	result.CreatedByUser.CreatedAt = createBy.CreatedAt
+	result.CreatedByUser.UpdatedAt = createBy.UpdatedAt
+
+	if category.UpdatedByID != 0 {
+		updateBy, err := s.repo.User.FindByID(int(category.UpdatedByID))
+		if err != nil {
+			return nil
+		}
+		result.UpdatedByUser = new(dto.UserResponseDTO)
+		result.UpdatedByUser.ID = updateBy.ID
+		result.UpdatedByUser.Username = updateBy.Username
+		result.UpdatedByUser.DisplayName = updateBy.DisplayName
+		result.UpdatedByUser.Email = updateBy.Email
+		result.UpdatedByUser.CreatedAt = updateBy.CreatedAt
+		result.UpdatedByUser.UpdatedAt = updateBy.UpdatedAt
+	}
+
+	return result
 }
 
 func (s *CategoryService) GetAll() ([]dto.CategoryRespDto, error) {
@@ -39,4 +69,19 @@ func (s *CategoryService) GetAll() ([]dto.CategoryRespDto, error) {
 		return nil, err
 	}
 	return utils.Map(categories, func(e model.Category) dto.CategoryRespDto { return *s.toCategoryDto(&e) }), err
+}
+
+func (s *CategoryService) CreateCategory(request *dto.CategoryRequestDTO) error {
+	var category model.Category
+
+	category.CreatedAt = time.Now()
+	category.UpdatedAt = time.Now()
+	category.CreatedByID = request.CreatedByID
+	category.UpdatedByID = request.CreatedByID
+	category.Name = request.Name
+
+	if err := s.repo.Category.Create(&category); err != nil {
+		return err
+	}
+	return nil
 }

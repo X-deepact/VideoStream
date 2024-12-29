@@ -12,16 +12,18 @@ redis:
   pass: password
 
 web:
-  port: 8787
+  port: 8686
 
 file_storage:
   root_folder: ./tmp
   thumbnail_folder: ./tmp/thumbnail/
   avatar_folder: ./tmp/avatar/
   live_folder: ./tmp/recordings/live/
+  scheduled_videos_folder: ./tmp/scheduled_videos/
+  video_folder: ./tmp/videos/
 
 api_file:
-  url: http://localhost:8787
+  url: http://localhost:8686
 
 stream_server:
   http_url: http://localhost:8090

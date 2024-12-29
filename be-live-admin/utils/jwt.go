@@ -12,9 +12,11 @@ import (
 // Create a struct that will be encoded to a JWT.
 // We add jwt.RegisteredClaims as an embedded type, to provide fields like expiry time
 type Claims struct {
-	Email       string `json:"email"`
-	CreatedByID uint   `json:"created_by_id"` // it is the user id of current logged in user
-	RoleType    string `json:"role_type"`
+	ID          uint           `json:"id"`
+	Username    string         `json:"username"`
+	Email       string         `json:"email"`
+	CreatedByID uint           `json:"created_by_id"` // it is the user id of current logged in user
+	RoleType    model.RoleType `json:"role_type"`
 	jwt.RegisteredClaims
 }
 
@@ -22,14 +24,15 @@ type Claims struct {
 var jwtSecret = []byte("your-very-secure-secret-key")
 
 // generate admin access token
-func GenerateAccessToken(email string, roleType model.RoleType, createdByID uint) (string, error) {
+func GenerateAccessToken(id uint, username string, email string, roleType model.RoleType) (string, time.Time, error) {
 	// Declare the expiration time of the token
 	// here, we have kept it as 5 minutes
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
-		Email:       email,
-		RoleType:    string(roleType),
-		CreatedByID: createdByID,
+		ID:       id,
+		Username: username,
+		Email:    email,
+		RoleType: roleType,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
@@ -42,10 +45,10 @@ func GenerateAccessToken(email string, roleType model.RoleType, createdByID uint
 
 	if err != nil {
 		log.Printf("Failed to sign the token: %v\n", err)
-		return "", err
+		return "", time.Now(), err
 	}
 
-	return ss, nil
+	return ss, expirationTime, nil
 }
 
 func ValidateAccessToken(tokenString string) (*Claims, error) {

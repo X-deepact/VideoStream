@@ -29,7 +29,7 @@ type PaginationModel[T any] struct {
 
 const (
 	DEFAULT_PAGE  = 1
-	DEFAULT_LIMIT = 50
+	DEFAULT_LIMIT = 20
 )
 
 func Create[T any](pagination *PaginationModel[T], page, limit int) (*PaginationModel[T], error) {

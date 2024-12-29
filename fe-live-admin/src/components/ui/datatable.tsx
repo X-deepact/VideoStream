@@ -33,6 +33,7 @@ interface DataTableProps<TData, TValue> {
   pageSize: number;
   setPageSize: (pageSize: number) => void;
   onSortChange: (columnId: string) => void;
+  onRowClick?: (row: any) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -44,6 +45,7 @@ export function DataTable<TData, TValue>({
   pageSize,
   setPageSize,
   onSortChange,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -82,9 +84,10 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className={row.index % 2 === 0 ? "bg-white" : "bg-gray-100"}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} onClick={() => onRowClick?.(row.original)}>
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

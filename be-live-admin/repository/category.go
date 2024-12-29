@@ -16,7 +16,7 @@ func newCategoryRepository(db *gorm.DB) *CategoryRepository {
 	}
 }
 
-// Create a new role
+// Create a new category
 func (r *CategoryRepository) Create(category *model.Category) error {
 	if err := r.db.Create(category).Error; err != nil {
 		return err
@@ -24,10 +24,9 @@ func (r *CategoryRepository) Create(category *model.Category) error {
 	return nil
 }
 
-// Find a role by ID
 func (r *CategoryRepository) FindAll() ([]model.Category, error) {
 	var categories []model.Category
-	if err := r.db.Find(&categories).Error; err != nil {
+	if err := r.db.Model(model.Category{}).Find(&categories).Error; err != nil {
 		return nil, err
 	}
 	return categories, nil

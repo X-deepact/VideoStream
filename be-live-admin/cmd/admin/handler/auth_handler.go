@@ -55,22 +55,25 @@ func (h *authHandler) login(c echo.Context) error {
 	}
 
 	roleType := model.RoleType(user.Role.Type)
-	token, err := utils.GenerateAccessToken(user.Email, roleType, user.ID) // createdByID is current user id login
+	token, expiredTime, err := utils.GenerateAccessToken(user.ID, user.Username, user.Email, roleType) // createdByID is current user id login
 	if err != nil {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
-	adminLog := service.CreateAdminLog(user.ID, model.LoginAction, fmt.Sprintf("User %s logged in", user.Email))
+	adminLog := h.srv.Admin.MakeAdminLogModel(user.ID, model.LoginAction, fmt.Sprintf(" %s logged in", user.Email))
+
 	err = h.srv.Admin.CreateLog(adminLog)
+
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
 	}
 
 	response := map[string]interface{}{
-		"username": user.Username,
-		"email":    user.Email,
-		"role":     user.Role.Type,
-		"token":    token,
+		"username":     user.Username,
+		"email":        user.Email,
+		"role":         user.Role.Type,
+		"expired_time": expiredTime,
+		"token":        token,
 	}
 	return utils.BuildSuccessResponse(c, http.StatusOK, "Login successful", response)
 }
@@ -106,6 +109,13 @@ func (h *authHandler) forgetPassword(c echo.Context) error {
 
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 
+	}
+	adminLog := h.srv.Admin.MakeAdminLogModel(user.ID, model.ForgetPassword, fmt.Sprintf(" %s forget_password request", user.Email))
+
+	err = h.srv.Admin.CreateLog(adminLog)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
 	}
 	return utils.BuildSuccessResponse(c, http.StatusOK, "OTP generated successfully", map[string]string{"otp": otp})
 
@@ -149,6 +159,14 @@ func (h *authHandler) resetPassword(c echo.Context) error {
 	}
 	if err := h.srv.User.ClearOTP(user.ID); err != nil {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	adminLog := h.srv.Admin.MakeAdminLogModel(user.ID, model.ResetPassword, fmt.Sprintf(" %s reset_password request", user.Email))
+
+	err = h.srv.Admin.CreateLog(adminLog)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
 	}
 
 	return utils.BuildSuccessResponse(c, http.StatusOK, "Password reset successfully", nil)

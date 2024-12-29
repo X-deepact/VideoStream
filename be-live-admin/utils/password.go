@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/rand"
 	"fmt"
+
 	"golang.org/x/crypto/bcrypt"
 )
 

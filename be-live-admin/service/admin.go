@@ -17,6 +17,7 @@ type AdminService struct {
 
 func (s *AdminService) toCreateAdminDto(user *model.User) *dto.CreateAdminResp {
 	return &dto.CreateAdminResp{
+		ID:             user.ID,
 		UserName:       user.Username,
 		Email:          user.Email,
 		DisplayName:    user.DisplayName,
@@ -26,14 +27,16 @@ func (s *AdminService) toCreateAdminDto(user *model.User) *dto.CreateAdminResp {
 	}
 }
 
-func (s *AdminService) toAdminResponseDTO(user *model.User) dto.UserResponseDTO {
+func (s *AdminService) toAdminResponseDTO(user *model.User, apiURL string) dto.UserResponseDTO {
 
 	var userResp = new(dto.UserResponseDTO)
 	userResp.ID = user.ID
 	userResp.Username = user.Username
 	userResp.DisplayName = user.DisplayName
 	userResp.Email = user.Email
-
+	if user.AvatarFileName.Valid {
+		userResp.AvatarFileName = utils.MakeAvatarURL(apiURL, user.AvatarFileName.String)
+	}
 	if user.CreatedBy != nil {
 		userResp.CreatedByID = user.CreatedByID
 
@@ -59,7 +62,6 @@ func (s *AdminService) toAdminResponseDTO(user *model.User) dto.UserResponseDTO 
 	}
 
 	userResp.DeletedByID = user.DeletedByID
-	userResp.DeletedAt = user.DeletedAt
 	userResp.CreatedAt = user.CreatedAt
 	userResp.UpdatedAt = user.UpdatedAt
 
@@ -70,14 +72,6 @@ func (s *AdminService) toAdminResponseDTO(user *model.User) dto.UserResponseDTO 
 	userResp.Role.Description = user.Role.Description
 	userResp.Role.CreatedAt = user.Role.CreatedAt
 	userResp.Role.UpdatedAt = user.UpdatedAt
-
-	if len(user.AdminLogs) > 0 {
-		var adminLogs []dto.AdminLogDTO
-		for _, v := range user.AdminLogs {
-			adminLogs = append(adminLogs, dto.AdminLogDTO{ID: v.ID, UserID: v.UserID, Action: v.Action, PerformedAt: v.PerformedAt})
-		}
-		userResp.AdminLogs = append(userResp.AdminLogs, adminLogs...)
-	}
 
 	return *userResp
 }
@@ -95,15 +89,15 @@ func (s *AdminService) CreateAdmin(request *dto.CreateAdminRequest) (*dto.Create
 		newUser.AvatarFileName = sql.NullString{String: request.AvatarFileName, Valid: true}
 	}
 
-	createdUser, err := s.repo.Admin.CreateAdmin(newUser)
+	err := s.repo.Admin.CreateAdmin(newUser)
 	if err != nil {
 		return nil, err
 	}
-	createdUser.Role.Type = request.RoleType
-	return s.toCreateAdminDto(createdUser), err
+
+	return s.toCreateAdminDto(newUser), err
 }
 
-func (s *AdminService) ById(id uint) (*dto.UserResponseDTO, error) {
+func (s *AdminService) ById(id uint, apiURL string) (*dto.UserResponseDTO, error) {
 	user, err := s.repo.Admin.ById(id)
 	if err != nil {
 		return nil, err
@@ -111,7 +105,41 @@ func (s *AdminService) ById(id uint) (*dto.UserResponseDTO, error) {
 	if user == nil {
 		return nil, nil
 	}
-	result := s.toAdminResponseDTO(user)
+	result := s.toAdminResponseDTO(user, apiURL)
+	return &result, err
+}
+
+func (s *AdminService) MakeAdminLogModel(userID uint, action model.AdminAction, details string) *model.AdminLog {
+	return &model.AdminLog{
+		UserID:  userID,
+		Action:  string(action),
+		Details: details,
+	}
+}
+
+func (s *AdminService) GetAdminLogs(req *dto.AdminLogQuery) (*utils.PaginationModel[dto.AdminLogRespDTO], error) {
+	pagination, err := s.repo.Admin.GetAdminLogs(req)
+	if err != nil {
+		return nil, err
+	}
+	var result utils.PaginationModel[dto.AdminLogRespDTO]
+	result.BasePaginationModel = pagination.BasePaginationModel
+	for _, v := range pagination.Page {
+		var data dto.AdminLogRespDTO
+		data.ID = v.ID
+		data.Action = v.Action
+		data.Details = v.Details
+		data.PerformedAt = v.PerformedAt
+		data.User.ID = v.UserID
+		data.User.Username = v.User.Username
+		data.User.DisplayName = v.User.DisplayName
+		data.User.Email = v.User.Email
+		data.User.CreatedAt = v.User.CreatedAt
+		data.User.UpdatedAt = v.User.UpdatedAt
+
+		result.Page = append(result.Page, data)
+	}
+
 	return &result, err
 }
 

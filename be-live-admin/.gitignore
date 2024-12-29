@@ -1,7 +1,8 @@
 .air.toml
 tmp/
 .idea/
-project/db-data/
+live_stream_db/db-data/
 zz
 hls
 config.yaml
+tmp

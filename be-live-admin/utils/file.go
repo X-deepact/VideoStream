@@ -84,6 +84,29 @@ func IsFlvFile(fileHeader *multipart.FileHeader) (bool, error) {
 	return mimeType == "video/x-flv", nil
 }
 
+func IsVideoFile(fileHeader *multipart.FileHeader) (bool, error) {
+	// Open the uploaded file
+	file, err := fileHeader.Open()
+	if err != nil {
+		return false, err
+	}
+	defer file.Close()
+
+	// Read the first 512 bytes of the file
+	buffer := make([]byte, 512)
+	_, err = file.Read(buffer)
+	if err != nil {
+		return false, err
+	}
+
+	// Detect MIME type
+	mimeType := http.DetectContentType(buffer)
+	fmt.Println("format: ", mimeType)
+
+	// return mimeType == "video/mp4" || mimeType == "video/x-flv" || mimeType == "video/webm" || mimeType == "video/x-matroska", nil
+	return mimeType == "video/mp4" || mimeType == "video/x-flv", nil
+}
+
 func GetFileExtension(fileHeader *multipart.FileHeader) string {
 	return filepath.Ext(fileHeader.Filename)
 }
@@ -142,4 +165,14 @@ func SaveImage(c echo.Context, file *multipart.FileHeader, folderPath string) (i
 
 	name = fmt.Sprintf("%s%s", name, GetFileExtension(file))
 	return http.StatusOK, name, nil
+}
+
+func RemoveFiles(files []string) error {
+	for _, file := range files {
+		if err := os.Remove(file); err != nil {
+			log.Println(err)
+			return err
+		}
+	}
+	return nil
 }

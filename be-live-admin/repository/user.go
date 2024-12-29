@@ -15,46 +15,36 @@ type UserRepository struct {
 	db *gorm.DB
 }
 
-func (s *UserRepository) Page(filter *dto.UserQuery, page, limit int) (*utils.PaginationModel[model.User], error) {
+func (s *UserRepository) Page(filter *dto.UserQuery, page, limit uint) (*utils.PaginationModel[model.User], error) {
 	var query = s.db.Model(model.User{})
+	query = query.Joins("LEFT JOIN roles ON roles.id = users.role_id")
+	query = query.Joins("LEFT JOIN users cr ON cr.id = users.created_by_id")
+	query = query.Joins("LEFT JOIN users ur ON ur.id = users.updated_by_id")
+
+	if filter != nil && filter.Keyword != "" {
+		query = query.Where("roles.type ILIKE ?", "%"+filter.Keyword+"%")
+		query = query.Or("users.username ILIKE ?", "%"+filter.Keyword+"%")
+		query = query.Or("users.display_name ILIKE ?", "%"+filter.Keyword+"%")
+		query = query.Or("users.email ILIKE ?", "%"+filter.Keyword+"%")
+		query = query.Or("cr.username ILIKE ?", "%"+filter.Keyword+"%")
+		query = query.Or("ur.username ILIKE ?", "%"+filter.Keyword+"%")
+	}
+
 	if filter != nil && filter.Role != "" {
-		query = query.Joins("LEFT JOIN roles ON roles.id = users.role_id").
-			Where("roles.type = ? AND roles.type != ?", filter.Role, model.SUPPERADMINROLE)
+		query = query.Where("roles.type = ?", filter.Role)
 	}
 
-	if filter != nil && filter.UserName != "" {
-		query = query.Where("users.username LIKE ?", "%"+filter.UserName+"%")
-	}
-
-	if filter != nil && filter.DisplayName != "" {
-		query = query.Where("users.display_name LIKE ?", "%"+filter.DisplayName+"%")
-	}
-
-	if filter != nil && filter.Email != "" {
-		query = query.Where("users.email LIKE ?", "%"+filter.Email+"%")
-	}
-
-	if filter != nil && filter.CreatedBy != "" {
-		query = query.Joins("LEFT JOIN users cr ON cr.id = users.created_by_id").
-			Where("cr.username LIKE ? OR cr.display_name LIKE ?", "%"+filter.CreatedBy+"%", "%"+filter.CreatedBy+"%")
-	}
-
-	if filter != nil && filter.UpdatedBy != "" {
-		query = query.Joins("LEFT JOIN users ur ON ur.id = users.updated_by_id").
-			Where("ur.username = ? OR ur.display_name = ?", "%"+filter.UpdatedBy+"%", "%"+filter.UpdatedBy+"%")
-	}
 	if filter != nil && filter.SortBy != "" && filter.Sort != "" {
 		query = query.Order(fmt.Sprintf("users.%s %s", filter.SortBy, filter.Sort))
-	} else {
-		query = query.Order(fmt.Sprintf("users.%s %s", "created_at", "DESC"))
 	}
 
-	query = query.Where("users.username != ?", "superAdmin").Preload("Role").Preload("AdminLogs").Preload("CreatedBy").Preload("UpdatedBy")
-	pagination, err := utils.CreatePage[model.User](query, page, limit)
+	query = query.Where("users.username != ?", "superAdmin")
+	query = query.Preload("Role").Preload("CreatedBy").Preload("UpdatedBy")
+	pagination, err := utils.CreatePage[model.User](query, int(page), int(limit))
 	if err != nil {
 		return nil, err
 	}
-	return utils.Create(pagination, page, limit)
+	return utils.Create(pagination, int(page), int(limit))
 }
 
 func (r *UserRepository) Update(updatedUser *model.User) error {
@@ -106,6 +96,17 @@ func (r *UserRepository) FindByEmail(email string) (*model.User, error) {
 	return &user, nil
 }
 
+func (r *UserRepository) FindByID(id int) (*model.User, error) {
+	var user model.User
+	if err := r.db.Where("id = ?", id).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil // User not found
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (r *UserRepository) FindByUsername(username string) (*model.User, error) {
 	var user model.User
 	if err := r.db.Preload("Role").Where("username = ?", username).First(&user).Error; err != nil {
@@ -141,4 +142,15 @@ func (r *UserRepository) ClearOTP(userID uint) error {
 func (r *UserRepository) UpdatePassword(userID uint, hashedPassword string) error {
 	return r.db.Model(&model.User{}).Where("id = ?", userID).
 		Update("password_hash", hashedPassword).Error
+}
+
+func (r *UserRepository) CheckUserTypeByID(id int) (*model.User, error) {
+	var user model.User
+	if err := r.db.Preload("Role").Where("id = ?", id).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil // User not found
+		}
+		return nil, err
+	}
+	return &user, nil
 }
