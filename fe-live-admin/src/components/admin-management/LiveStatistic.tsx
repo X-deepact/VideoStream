@@ -12,9 +12,10 @@ import { DataTable } from "../ui/datatable";
 import { getLiveStatistics } from "../../services/liveStatistic.service";
 import { Input } from "../ui/input";
 import { columns } from "./LiveStatisticColumns";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { useToast } from "@/hooks/use-toast";
 
 const LiveStatistic = () => {
+  const { toast } = useToast();
   const [streamData, setStreamData] = useState([]);
   const [pageSize, setPageSize] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
@@ -41,7 +42,10 @@ const LiveStatistic = () => {
         searchKeyword
       );
 
-      console.log("API Response:", response);
+      toast({
+        title: "Data fetched successfully",
+        description: `Retrieved ${response.data?.page?.length || 0} streams`,
+      });
 
       const streams = response.data?.page || [];
       
@@ -52,7 +56,11 @@ const LiveStatistic = () => {
         setTotalPages(Math.ceil(totalItems / pageSize));
       }
     } catch (error) {
-      console.error("Error fetching stream data:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch stream data. Please try again later.",
+      });
       setStreamData([]);
     }
   };

@@ -14,18 +14,26 @@ export function formatFileSize(size: number): string {
   return `${sizeInMB.toFixed(2)} MB`;
 }
 
-export function formatDuration(duration: number): string {
-  if (duration < 0) {
-    throw new Error("Duration must be a non-negative number.");
+export function formatDuration(duration: number | string): string {
+  console.log("Duration input:", duration, typeof duration);
+
+  if (typeof duration === 'string') {
+    return duration;
   }
 
-  const nanosToSeconds = duration / 1e9;
-  const hours = Math.floor(nanosToSeconds / 3600);
-  const remainingSeconds = nanosToSeconds % 3600;
+  if (!duration || duration <= 0) {
+    return "00:00:00";
+  }
+
+  // Convert microseconds to seconds
+  const totalSeconds = duration / 1_000_000;  
+
+  const hours = Math.floor(totalSeconds / 3600);
+  const remainingSeconds = totalSeconds % 3600;
   const minutes = Math.floor(remainingSeconds / 60);
   const seconds = Math.floor(remainingSeconds % 60);
 
-  return `${String(hours).padStart(2, '0')}.${String(minutes).padStart(2, '0')}.${String(seconds).padStart(2, '0')}`;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 export function formatDate(dateString: string): string {

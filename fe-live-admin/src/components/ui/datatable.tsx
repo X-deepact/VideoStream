@@ -150,7 +150,7 @@ export function DataTable<TData, TValue>({
               );
               setCurrentPage(page);
             }}
-            className="text-center border rounded"
+            className="text-center border rounded bg-white"
           />
           <span className="ml-2">of {totalPages}</span>
           <Button

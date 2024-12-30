@@ -12,11 +12,13 @@ import { DataTable } from "../ui/datatable";
 import { getVideoStatistics } from "@/services/videoStatistic.service";
 import { columns } from "@/components/admin-management/VideoStatisticColumns.tsx";
 import { formatDuration, formatFileSize, formatDate } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 import { Input } from "../ui/input";
 
 
 const VideoStatistic = () => {
+  const { toast } = useToast();
   const [streamData, setStreamData] = useState([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [pageSize, setPageSize] = useState(5);
@@ -44,39 +46,47 @@ const VideoStatistic = () => {
         searchKeyword
       );
       
-      console.log("API Response:", response.data);
-
       const streams = response.data.page;
 
       if (!streams) {
-        console.error("Streams data is undefined");
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Streams data is undefined",
+        });
         return;
       }
 
-      const transformedStreamData = streams.map((stream: any) => ({
-        title: stream.title,
-        viewers: stream.live_stream_analytic?.viewers ?? 0,
-        likes: stream.live_stream_analytic?.likes ?? 0,
-        duration: formatDuration(stream.live_stream_analytic?.duration ?? 0),
-        comments: stream.live_stream_analytic?.comments ?? 0,
-        video_size: formatFileSize(stream.live_stream_analytic?.video_size ?? 0),
-        created_at: formatDate(stream.started_at),
-      }));
+      const transformedStreamData = streams.map((stream: any) => {
+        return {
+          title: stream.title,
+          viewers: stream.live_stream_analytic?.viewers ?? 0,
+          likes: stream.live_stream_analytic?.likes ?? 0,
+          duration: formatDuration(stream.live_stream_analytic?.duration ?? 0),
+          comments: stream.live_stream_analytic?.comments ?? 0,
+          video_size: formatFileSize(stream.live_stream_analytic?.video_size ?? 0),
+          created_at: formatDate(stream.started_at),
+        };
+      });
 
       setStreamData(transformedStreamData);
 
-      // Ensure this matches the actual structure
       const totalItems = response.data.total_items;
-      console.log("totalItemsLength", totalItems)
       if (totalItems !== undefined) {
         setTotalPages(Math.ceil(totalItems / pageSize));
       } else {
-        console.error("Total items data is undefined");
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Total items data is undefined",
+        });
       }
-
-      console.log("Single stream example:", streams[0]);
     } catch (error) {
-      console.error("Error fetching stream data:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch stream data",
+      });
     }
   };
 
@@ -97,6 +107,15 @@ const VideoStatistic = () => {
       setSort(isAsc ? "ASC" : "DESC");
       setSortBy(backendSortKey);
     }
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    const currentFirstItem = (currentPage - 1) * pageSize + 1;
+    
+    const newPage = Math.ceil(currentFirstItem / newPageSize);
+    
+    setPageSize(newPageSize);
+    setCurrentPage(newPage);
   };
 
   return (
@@ -135,7 +154,7 @@ const VideoStatistic = () => {
         setCurrentPage={setCurrentPage}
         totalPages={totalPages}
         pageSize={pageSize}
-        setPageSize={setPageSize}
+        setPageSize={handlePageSizeChange}
         onSortChange={handleSortChange}
       />
     </div>

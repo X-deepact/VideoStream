@@ -25,7 +25,6 @@ export const getLiveStatistics = async (
       params,
     });
 
-    console.log("response",response.data);
     return response.data;
   } catch (error: any) {
     throw new Error(`Failed to fetch live statistics: ${error.message}`);

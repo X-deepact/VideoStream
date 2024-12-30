@@ -6,9 +6,9 @@ export type VideoStatistic = {
   title: string;
   viewers: number;
   likes: number;
-  duration: number;
+  duration: string;
   comments: number;
-  video_size: number;
+  video_size: string;
   created_at: string;
 };
 
