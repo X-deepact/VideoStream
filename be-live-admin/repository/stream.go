@@ -46,14 +46,12 @@ func (s *StreamRepository) PaginateStreamStatisticsData(cond *dto.StatisticsQuer
 			query = query.Where("stream_analytics.updated_at BETWEEN ? AND ?", from, end)
 		}
 
-		if cond.Status != "" {
-			query = query.Where("st.status = ?", cond.Status)
-		}
-
 		if cond.Keyword != "" {
 			query = query.Where("st.title ILIKE ?", "%"+cond.Keyword+"%")
 		}
 	}
+
+	query = query.Where("st.status = ?", model.ENDED)
 
 	pagination, err := utils.CreatePage[model.StreamAnalytics](query, int(cond.Page), int(cond.Limit))
 	if err != nil {
@@ -71,9 +69,7 @@ func (s *StreamRepository) PaginateLiveStatData(cond *dto.LiveStatQuery) (*utils
 			query = query.Where("st.title ILIKE ?", "%"+cond.Keyword+"%")
 			query = query.Or("st.description ILIKE ?", "%"+cond.Keyword+"%")
 		}
-		if cond.Status != "" {
-			query = query.Where("st.status = ?", cond.Status)
-		}
+
 		if cond.SortBy != "" && cond.Sort != "" {
 			if !strings.Contains(cond.SortBy, "title") && !strings.Contains(cond.SortBy, "description") {
 				if strings.Contains(cond.SortBy, "total_viewers") {
@@ -87,6 +83,7 @@ func (s *StreamRepository) PaginateLiveStatData(cond *dto.LiveStatQuery) (*utils
 
 		}
 	}
+	query = query.Where("st.status = ?", model.STARTED)
 	query = query.Preload("Stream")
 	pagination, err := utils.CreatePage[model.StreamAnalytics](query, int(cond.Page), int(cond.Limit))
 	if err != nil {

@@ -34,6 +34,11 @@ const (
 	USERROLE        RoleType = "user"
 )
 
+const (
+	SUPER_ADMIN_EMAIL    = "superAdmin@gmail.com"
+	SUPER_ADMIN_USERNAME = "superAdmin"
+)
+
 type Role struct {
 	ID          uint      `gorm:"primaryKey;autoIncrement" json:"id,omitempty"`
 	Type        RoleType  `gorm:"type:varchar(50);not null;unique" json:"type,omitempty"`

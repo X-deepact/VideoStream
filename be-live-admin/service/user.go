@@ -2,6 +2,7 @@ package service
 
 import (
 	"database/sql"
+	"errors"
 	"gitlab/live/be-live-api/dto"
 	"gitlab/live/be-live-api/model"
 	"gitlab/live/be-live-api/repository"
@@ -110,6 +111,10 @@ func (s *UserService) UpdateUser(updatedUser *dto.UpdateUserRequest, id uint) (*
 	user, err := s.repo.Admin.ById(id)
 	if err != nil {
 		return nil, err
+	}
+
+	if user.Role.Type == model.ADMINROLE {
+		return nil, errors.New("invalid user")
 	}
 
 	role, err := s.repo.Role.FindByType(updatedUser.RoleType)
