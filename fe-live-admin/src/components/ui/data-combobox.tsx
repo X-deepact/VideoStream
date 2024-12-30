@@ -15,24 +15,26 @@ import {
 import { cn } from "@/lib/utils.ts";
 
 interface ComponentProps {
-	isDisabled?: boolean;
+	disabled?: boolean;
 	isRequired?: boolean;
 	placeholder?: string;
 	emptyMsg?: string;
 	label?: string;
 	data?: {label: string; value: string}[];
 	onDataChange?: (value: string) => void;
+	popOverClass?: string
 }
 
 
 const DataCombobox = (props: ComponentProps) => {
 	const {
-		isDisabled = false,
+		disabled = false,
 		isRequired = false,
 		placeholder = "Select Item",
 		label = "Combobox Generic Component",
 		data = [],
 		emptyMsg = "No Item found",
+		popOverClass,
 		onDataChange
 	} = props;
 
@@ -42,7 +44,7 @@ const DataCombobox = (props: ComponentProps) => {
 
 	const handleDataChange = (value: string) => {
 		setSelectedValue(value);
-		onDataChange && onDataChange(value);
+		onDataChange?.(value);
 	}
 
 	function ComboboxLabel({label, isRequired}) {
@@ -64,7 +66,7 @@ const DataCombobox = (props: ComponentProps) => {
 			<Popover open={openPopover} onOpenChange={setOpenPopover}>
 				<PopoverTrigger asChild>
 					<Button
-						disabled={isDisabled}
+						disabled={disabled}
 						variant="outline"
 						role="combobox"
 						aria-expanded={openPopover}
@@ -78,7 +80,7 @@ const DataCombobox = (props: ComponentProps) => {
 						<ChevronsUpDown className="opacity-50" />
 					</Button>
 				</PopoverTrigger>
-				<PopoverContentLayout className="w-[250px] p-0">
+				<PopoverContentLayout className={popOverClass}>
 					<Command>
 						<CommandInput placeholder={placeholder} />
 						<CommandList>

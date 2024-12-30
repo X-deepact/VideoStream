@@ -16,6 +16,7 @@ import {
 import { Label } from "@/components/ui/label.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { toast } from "@/hooks/use-toast.ts";
+import ImageWithAuth from "@/components/ui/imagewithauth.tsx";
 
 const LivestreamList = ({livestream}) => {
 	const {
@@ -26,6 +27,7 @@ const LivestreamList = ({livestream}) => {
 		ended_at,
 		status,
 		broadcast_url,
+		thumbnail_file_name
 	} = livestream;
 
 	const handleCopyURL = () => {
@@ -47,17 +49,14 @@ const LivestreamList = ({livestream}) => {
 	return (
 		<div className="w-full mt-5">
 			<Separator />
-			<div className="grid grid-cols-5 mt-4">
-				<div>
-					<AspectRatio ratio={16 / 9}>
-						<img
-							src="https://gratisography.com/wp-content/uploads/2024/10/gratisography-cool-cat-800x525.jpg"
-							alt="Image"
-							className="h-full rounded-md object-cover"
-						/>
-					</AspectRatio>
+			<div className="grid grid-cols-3 xl:grid-cols-6 mt-4">
+				<div className="w-[80%] relative pt-[56.25%]">
+					<ImageWithAuth
+						className="absolute top-0 left-0 w-full h-full object-cover"
+						url={thumbnail_file_name}
+					/>
 				</div>
-				<div className="col-span-3 flex flex-col text-left">
+				<div className="col-span-1 xl:col-span-4 flex flex-col text-left">
 					<div className="font-semibold text-2xl">{title}</div>
 					<div className="text-gray-500 text-sm">
 						{started_at && `Started at ${formatDate(started_at, true)} -`} {ended_at && `Ended at ${formatDate(ended_at, true)}`}

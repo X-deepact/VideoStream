@@ -6,9 +6,17 @@ import { useToast } from "@/hooks/use-toast";
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
-const ImageWithAuth = (param: any) => {
+interface ComponentProps {
+  className?: string;
+  url: string;
+}
+
+const ImageWithAuth = (props: ComponentProps) => {
   const { toast } = useToast();
-  const { url } = param;
+  const {
+    url,
+    className
+  } = props;
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const fetchImage = async () => {
     try {
@@ -31,7 +39,18 @@ const ImageWithAuth = (param: any) => {
   }, []);
 
   return (
-    <div>{imageSrc ? <img src={imageSrc} /> : <img src={loadingImg} />}</div>
+    <div>
+      {imageSrc ? (
+        <img
+          className={`${className}`}
+          src={imageSrc}
+        />
+      ) : (
+        <img
+          src={loadingImg}
+        />
+      )}
+    </div>
   );
 };
 

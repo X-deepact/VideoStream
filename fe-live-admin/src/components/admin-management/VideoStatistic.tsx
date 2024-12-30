@@ -52,22 +52,19 @@ const VideoStatistic = () => {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Streams data is undefined",
+          description: "Streams data is undefined"
         });
         return;
       }
-
-      const transformedStreamData = streams.map((stream: any) => {
-        return {
-          title: stream.title,
-          viewers: stream.live_stream_analytic?.viewers ?? 0,
-          likes: stream.live_stream_analytic?.likes ?? 0,
-          duration: formatDuration(stream.live_stream_analytic?.duration ?? 0),
-          comments: stream.live_stream_analytic?.comments ?? 0,
-          video_size: formatFileSize(stream.live_stream_analytic?.video_size ?? 0),
-          created_at: formatDate(stream.started_at),
-        };
-      });
+      const transformedStreamData = streams.map((stream: any) => ({
+        title: stream.title,
+        viewers: stream.live_stream_analytic?.viewers ?? 0,
+        likes: stream.live_stream_analytic?.likes ?? 0,
+        duration: formatDuration(stream.live_stream_analytic?.duration ?? 0),
+        comments: stream.live_stream_analytic?.comments ?? 0,
+        video_size: formatFileSize(stream.live_stream_analytic?.video_size ?? 0),
+        created_at: formatDate(stream.started_at),
+      }));
 
       setStreamData(transformedStreamData);
 
@@ -78,14 +75,14 @@ const VideoStatistic = () => {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Total items data is undefined",
+          description: "Total items data is undefined"
         });
       }
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to fetch stream data",
+        description: "Failed to fetch stream data"
       });
     }
   };

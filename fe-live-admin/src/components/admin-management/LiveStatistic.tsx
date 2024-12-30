@@ -42,11 +42,6 @@ const LiveStatistic = () => {
         searchKeyword
       );
 
-      toast({
-        title: "Data fetched successfully",
-        description: `Retrieved ${response.data?.page?.length || 0} streams`,
-      });
-
       const streams = response.data?.page || [];
       
       setStreamData(streams);
@@ -80,6 +75,15 @@ const LiveStatistic = () => {
       setSort(isAsc ? "ASC" : "DESC");
       setSortBy(backendSortKey);
     }
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    const currentFirstItem = (currentPage - 1) * pageSize + 1;
+    
+    const newPage = Math.ceil(currentFirstItem / newPageSize);
+    
+    setPageSize(newPageSize);
+    setCurrentPage(newPage);
   };
 
   return (
@@ -117,7 +121,7 @@ const LiveStatistic = () => {
         setCurrentPage={setCurrentPage}
         totalPages={totalPages}
         pageSize={pageSize}
-        setPageSize={setPageSize}
+        setPageSize={handlePageSizeChange}
         onSortChange={handleSortChange}
       />
     </div>
