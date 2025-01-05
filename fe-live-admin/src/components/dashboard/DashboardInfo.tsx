@@ -23,8 +23,9 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
+import { useToast } from "@/hooks/use-toast";
 
-const useLiveStreamChartData = () => {
+const useLiveStreamChartData = (toast: any) => {
   const [chartData, setChartData] = useState([
     { status: "offline", quantities: 0, fill: "#808080" },
     { status: "online", quantities: 0, fill: "#56F000" },
@@ -51,12 +52,16 @@ const useLiveStreamChartData = () => {
           },
         ]);
       } catch (e) {
-        console.log(e);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to fetch overview statistics"
+        });
       }
     }
 
     fetchOverviewData();
-  }, []);
+  }, [toast]);
   return { chartData, totalLivestreams };
 };
 
@@ -78,7 +83,7 @@ const getChartConfig = (selectedPeriod: TimePeriod) => {
   };
 };
 
-const useViewsData = (selectedPeriod: TimePeriod) => {
+const useViewsData = (selectedPeriod: TimePeriod, toast: any) => {
   const [viewsData, setViewsData] = useState<Array<{ time: string, viewers: number, likes: number, createdAt?: string }>>([]);
   const [hasYesterdayData, setHasYesterdayData] = useState(false);
   
@@ -99,7 +104,6 @@ const useViewsData = (selectedPeriod: TimePeriod) => {
           yesterdayEnd.setHours(23, 59, 59, 999);
           to = yesterdayEnd.getTime();
 
-          console.log('Yesterday range:', new Date(from), 'to', new Date(to));
         } else {
           const daysToSubtract = selectedPeriod === "7days" ? 7 : 30;
           from = new Date(now.getTime() - (daysToSubtract - 1) * 24 * 60 * 60 * 1000).getTime();
@@ -192,26 +196,29 @@ const useViewsData = (selectedPeriod: TimePeriod) => {
         setHasYesterdayData(hasDataFromYesterday);
         setViewsData(sortedData);
       } catch (error) {
-        console.error('Error in fetchViewsData:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to fetch views data"
+        });
         setViewsData([]);
         setHasYesterdayData(false);
       }
     }
 
     fetchViewsData();
-  }, [selectedPeriod]);
+  }, [selectedPeriod, toast]);
 
   return { viewsData, hasYesterdayData };
 };
 
 const DashboardInfo: React.FC = () => {
-  const { chartData, totalLivestreams } = useLiveStreamChartData();
+  const { toast } = useToast();
+  const { chartData, totalLivestreams } = useLiveStreamChartData(toast);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("yesterday");
-  const { viewsData, hasYesterdayData } = useViewsData(selectedPeriod);
+  const { viewsData, hasYesterdayData } = useViewsData(selectedPeriod, toast);
 
-  const shouldShowChart = 
-    selectedPeriod !== "yesterday" || 
-    (hasYesterdayData && viewsData.some(data => data.viewers > 0 || data.likes > 0));
+  const shouldShowChart = viewsData.some(data => data.viewers > 0 || data.likes > 0);
 
   const chartConfig = {
     views: {
@@ -419,7 +426,11 @@ const DashboardInfo: React.FC = () => {
             </ChartContainer>
           ) : (
             <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-              No data available for yesterday
+              No data available for {
+                selectedPeriod === "yesterday" ? "yesterday" : 
+                selectedPeriod === "7days" ? "7days" : 
+                "30days"
+              }
             </div>
           )}
         </CardContent>

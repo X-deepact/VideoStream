@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"gitlab/live/be-live-api/model"
-	"gitlab/live/be-live-api/service"
-	"gitlab/live/be-live-api/utils"
+	"gitlab/live/be-live-admin/model"
+	"gitlab/live/be-live-admin/service"
+	"gitlab/live/be-live-admin/utils"
 	"net/http"
 	"slices"
 	"strings"

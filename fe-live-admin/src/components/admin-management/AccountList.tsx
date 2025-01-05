@@ -7,19 +7,23 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb.tsx";
-import { Plus, Slash } from "lucide-react";
-import { DataTable } from "../ui/datatable";
-import { createAccount, getAccountList } from "@/services/user.service";
-import { Account, columns } from "@/components/admin-management/Columns.tsx";
-import { Button } from "@/components/ui/button";
+import { Plus, Slash, History, Edit, Trash2, ArrowUpDown } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../ui/dialog";
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
+import { Button } from "../ui/button";
+import { useToast } from "@/hooks/use-toast";
+import {
+  createAccount,
+  deleteAccount,
+  getAccountList,
+  updateAccount,
+} from "@/services/user.service";
+import { formatDate } from "@/lib/date-formated";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import {
@@ -29,13 +33,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
 
 const AccountList = () => {
-  const [userList, setUserList] = useState<Account[]>([]);
-  const [globalFilter, setGlobalFilter] = useState("");
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [deleteaccountid, setDeleteAccountID] = useState("");
+  const [accountData, setAccountData] = useState([]);
   const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [sort_by, setSort_by] = useState("username");
+  const [sort, setSort] = useState("ASC");
+  const [keyword, setKeyword] = useState("");
   const [formData, setFormData] = useState({
+    id: "",
     username: "",
     display_name: "",
     email: "",
@@ -43,45 +65,28 @@ const AccountList = () => {
     password: "",
     confirmPassword: "",
   });
-  const [open, setOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [sortBy, setSortBy] = useState("username");
-  const [sort, setSort] = useState("ASC");
+
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchData(currentPage, pageSize, sortBy, sort);
-  }, [currentPage, pageSize, sortBy, sort]); // Fetch data on initial load
+    fetchData();
+  }, [pageSize, currentPage, sort, sort_by, keyword]);
 
-  const fetchData = async (
-    page: number = 1,
-    pageSize: number = 10,
-    sort_by: string = "username",
-    sort: string = "ASC"
-  ) => {
+  const fetchData = async () => {
     try {
-      const response = await getAccountList(page, pageSize, sort_by, sort);
-      const { data } = response.data;
-
-      const transformedData = data.page.map((user: any) => ({
-        id: user.id.toString(),
-        username: user.username,
-        display_name: user.display_name,
-        email: user.email,
-        role: user.role.type,
-        created_at: user.created_at,
-        updated_at: user.updated_at,
-        creator: user.created_by ? user.created_by.username : "Unknown",
-        admin_logs: user.admin_logs,
-      }));
-
-      setUserList(transformedData);
-      setCurrentPage(data.current_page);
-      setTotalPages(Math.ceil(data.total_items / data.page_size));
-    } catch (error) {
+      const response = await getAccountList(
+        currentPage,
+        pageSize,
+        sort_by,
+        sort,
+        keyword
+      );
+      setAccountData(response.data.data.page);
+      setCurrentPage(response.data.data.current_page);
+      setTotalPages(response.data.data.length);
+    } catch (err) {
       toast({
-        description: "Failed to fetch account list.",
+        description: "Failed to fetch account list data.",
         variant: "destructive",
       });
     }
@@ -92,12 +97,6 @@ const AccountList = () => {
       ...formData,
       [e.target.id]: e.target.value,
     });
-  };
-
-  const handleSortChange = (columnId: string) => {
-    const isAsc = sortBy === columnId && sort === "ASC";
-    setSort(isAsc ? "DESC" : "ASC");
-    setSortBy(columnId);
   };
 
   const handleAddAccount = async () => {
@@ -111,6 +110,7 @@ const AccountList = () => {
       }
       await createAccount(formData);
       setFormData({
+        id: "",
         username: "",
         display_name: "",
         email: "",
@@ -118,8 +118,12 @@ const AccountList = () => {
         password: "",
         confirmPassword: "",
       });
-      setOpen(false);
+      setIsCreateOpen(false);
       fetchData();
+      toast({
+        description: "Created account successfully!",
+        variant: "default",
+      });
     } catch (error) {
       toast({
         description: "Failed to create account. Please try again.",
@@ -127,7 +131,37 @@ const AccountList = () => {
       });
     }
   };
-
+  const handelEditAccount = async () => {
+    try {
+      if (formData.password !== formData.confirmPassword) {
+        toast({
+          description: "Passwords do not match!",
+          variant: "destructive",
+        });
+        return;
+      }
+      await updateAccount(formData.id, formData);
+      setFormData({
+        id: "",
+        username: "",
+        display_name: "",
+        email: "",
+        role: "",
+        password: "",
+        confirmPassword: "",
+      });
+      setIsEditOpen(false);
+      fetchData();
+      toast({
+        description: "Updated account successfully!",
+      });
+    } catch (error) {
+      toast({
+        description: "Failed to update account. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
   return (
     <div className="px-8">
       <div className="py-4">
@@ -145,130 +179,476 @@ const AccountList = () => {
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-
-      {/* Create Dialog */}
-      <div className="flex justify-between items-center py-4">
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline">
-              <Plus />
-              Add Account
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add Account</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-3 items-center gap-4">
-                <Label htmlFor="username" className="text-right">
-                  Username
-                </Label>
-                <Input
-                  id="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className="col-span-2"
-                />
-              </div>
-              <div className="grid grid-cols-3 items-center gap-4">
-                <Label htmlFor="display_name" className="text-right">
-                  Display Name
-                </Label>
-                <Input
-                  id="display_name"
-                  value={formData.display_name}
-                  onChange={handleInputChange}
-                  className="col-span-2"
-                />
-              </div>
-              <div className="grid grid-cols-3 items-center gap-4">
-                <Label htmlFor="email" className="text-right">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="col-span-2"
-                />
-              </div>
-              <div className="grid grid-cols-3 items-center gap-4">
-                <Label htmlFor="role" className="text-right">
-                  Role
-                </Label>
-                <Select
-                  value={formData.role}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, role: value })
-                  }
-                >
-                  <SelectTrigger className="col-span-2">
-                    <SelectValue placeholder="Select a role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="streamer">Streamer</SelectItem>
-                    <SelectItem value="user">User</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-3 items-center gap-4">
-                <Label htmlFor="password" className="text-right">
-                  Password
-                </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="col-span-2"
-                />
-              </div>
-              <div className="grid grid-cols-3 items-center gap-4">
-                <Label
-                  htmlFor="confirmpassword"
-                  className="text-right w-max col-span-1"
-                >
-                  Confirm Password
-                </Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  className="col-span-2"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={handleAddAccount} type="submit">
-                Create
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        <div className="flex items-center gap-2">
+      <div className="flex py-4 w-full justify-between">
+        <div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setIsCreateOpen(true);
+            }}
+          >
+            <Plus />
+            Add Account
+          </Button>
+        </div>
+        <div className="flex gap-2">
           <Input
             placeholder="Search..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="max-w-sm"
+            value={keyword}
+            onChange={(e) => {
+              setKeyword(e.target.value);
+            }}
           />
         </div>
       </div>
-
-      <DataTable
-        columns={columns}
-        data={userList}
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        totalPages={totalPages}
-        pageSize={pageSize}
-        setPageSize={setPageSize}
-        onSortChange={handleSortChange}
-      />
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setSort_by("username");
+                    sort == "ASC" ? setSort("DESC") : setSort("ASC");
+                  }}
+                >
+                  User Name
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setSort_by("display_name");
+                    sort == "ASC" ? setSort("DESC") : setSort("ASC");
+                  }}
+                >
+                  Display Name
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setSort_by("email");
+                    sort == "ASC" ? setSort("DESC") : setSort("ASC");
+                  }}
+                >
+                  Email
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              </TableCell>
+              <TableCell>
+                <Label>Role</Label>
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setSort_by("created_at");
+                    sort == "ASC" ? setSort("DESC") : setSort("ASC");
+                  }}
+                >
+                  Created At
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              </TableCell>
+              <TableCell>
+                <Label>Creator</Label>
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setSort_by("updated_at");
+                    sort == "ASC" ? setSort("DESC") : setSort("ASC");
+                  }}
+                >
+                  Updated At
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              </TableCell>
+              <TableCell>
+                <Label>Actions</Label>
+              </TableCell>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {accountData && accountData.length > 0 ? (
+              accountData.map((account: any) => (
+                <TableRow key={account.id}>
+                  <TableCell>{account.username}</TableCell>
+                  <TableCell>{account.display_name}</TableCell>
+                  <TableCell>{account.email}</TableCell>
+                  <TableCell>{account.role.type}</TableCell>
+                  <TableCell>{formatDate(account.created_at, true)}</TableCell>
+                  <TableCell>{account.created_by?.username || ""}</TableCell>
+                  <TableCell>{formatDate(account.updated_at, true)}</TableCell>
+                  <TableCell>
+                    <div className="flex justify-center gap-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline">
+                            <History />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Account History</DialogTitle>
+                            <DialogDescription></DialogDescription>
+                          </DialogHeader>
+                          <div>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableCell>Date</TableCell>
+                                  <TableCell>Action</TableCell>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {account.admin_logs &&
+                                account.admin_logs.length > 0 ? (
+                                  account.admin_logs.map((log: any) => (
+                                    <TableRow>
+                                      <TableCell>
+                                        {formatDate(log.performed_at, true)}
+                                      </TableCell>
+                                      <TableCell>{log.action}</TableCell>
+                                    </TableRow>
+                                  ))
+                                ) : (
+                                  <TableRow>
+                                    <TableCell
+                                      colSpan={7}
+                                      className="text-center"
+                                    >
+                                      No account history.
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setIsEditOpen(true);
+                          setFormData(account);
+                        }}
+                      >
+                        <Edit />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          setIsDeleteOpen(true);
+                          setDeleteAccountID(account.id);
+                        }}
+                      >
+                        <Trash2 />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center">
+                  No account list available.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="grid my-4 gap-4 grid-cols-2">
+        <div className="max-w-[80px]">
+          <Select
+            value={pageSize.toString()}
+            onValueChange={(value) => setPageSize(parseInt(value))}
+          >
+            <SelectTrigger>
+              <SelectValue defaultValue="5" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="5">5</SelectItem>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-row justify-end items-center space-x-2">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            &laquo;
+          </Button>
+          <Label>Page</Label>
+          <Input
+            type="number"
+            min="1"
+            max={totalPages}
+            value={currentPage}
+            onChange={(e) => setCurrentPage(Number(e.target.value))}
+            className="max-w-[80px]"
+          />
+          <Label>of {totalPages}</Label>
+          <Button
+            variant="outline"
+            className="px-4 py-2"
+            onClick={() => setCurrentPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            &raquo;
+          </Button>
+        </div>
+      </div>
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Account</DialogTitle>
+          </DialogHeader>
+          <span>Do you want to delete this account?</span>
+          <DialogFooter className="sm:justify-end">
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Close
+              </Button>
+            </DialogClose>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (deleteaccountid == "none") {
+                  toast({
+                    description: "Failed to delete account. Please try again.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                try {
+                  await deleteAccount(deleteaccountid);
+                  fetchData();
+                  toast({
+                    description: "Account deleted successfully!",
+                    variant: "default",
+                  });
+                  setIsDeleteOpen(false);
+                  setDeleteAccountID("");
+                } catch (error) {
+                  toast({
+                    description: "Failed to delete account. Please try again.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Account</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="username" className="text-right">
+                Username
+              </Label>
+              <Input
+                id="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                className="col-span-2"
+              />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="display_name" className="text-right">
+                Display Name
+              </Label>
+              <Input
+                id="display_name"
+                value={formData.display_name}
+                onChange={handleInputChange}
+                className="col-span-2"
+              />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="email" className="text-right">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="col-span-2"
+              />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="role" className="text-right">
+                Role
+              </Label>
+              <Select
+                value={formData.role}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, role: value })
+                }
+              >
+                <SelectTrigger className="col-span-2">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="streamer">Streamer</SelectItem>
+                  <SelectItem value="user">User</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="password" className="text-right">
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className="col-span-2"
+              />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="confirmpassword" className="text-right">
+                Confirm Password
+              </Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                className="col-span-2"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Close
+              </Button>
+            </DialogClose>
+            <Button onClick={handleAddAccount} type="submit">
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Account</DialogTitle>
+            <DialogDescription></DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="username" className="text-right">
+                Username
+              </Label>
+              <Input
+                id="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                className="col-span-2"
+              />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="display_name" className="text-right">
+                Display Name
+              </Label>
+              <Input
+                id="display_name"
+                value={formData.display_name}
+                onChange={handleInputChange}
+                className="col-span-2"
+              />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="email" className="text-right">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="col-span-2"
+              />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="role" className="text-right">
+                Role
+              </Label>
+              <Select
+                value={formData.role}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, role: value })
+                }
+              >
+                <SelectTrigger className="col-span-2">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="streamer">Streamer</SelectItem>
+                  <SelectItem value="user">User</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="password" className="text-right">
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className="col-span-2"
+              />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="confirmpassword" className="text-right">
+                Confirm Password
+              </Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                className="col-span-2"
+              />
+            </div>
+          </div>
+          <DialogFooter className="sm:justify-start">
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Close
+              </Button>
+            </DialogClose>
+            <Button variant="outline" onClick={handelEditAccount}>
+              Update
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"gitlab/live/be-live-api/cmd/admin/handler"
-	"gitlab/live/be-live-api/conf"
-	"gitlab/live/be-live-api/datasource"
-	cmiddleware "gitlab/live/be-live-api/middleware"
-	"gitlab/live/be-live-api/model"
-	"gitlab/live/be-live-api/repository"
-	"gitlab/live/be-live-api/service"
+	"gitlab/live/be-live-admin/cmd/admin/handler"
+	"gitlab/live/be-live-admin/conf"
+	"gitlab/live/be-live-admin/datasource"
+	cmiddleware "gitlab/live/be-live-admin/middleware"
+	"gitlab/live/be-live-admin/model"
+	"gitlab/live/be-live-admin/repository"
+	"gitlab/live/be-live-admin/service"
 	"log"
 	"net/http"
 	"os"
@@ -50,7 +50,7 @@ func main() {
 	streamServerConfig := conf.GetStreamServerConfig()
 	streamServer := service.NewStreamServerService(streamServerConfig.HTTPURL, streamServerConfig.RTMPURL)
 	//roleService := service.NewRoleService(repo, ds.RClient)
-	srv := service.NewService(repo, ds.RClient, streamServer)
+	srv := service.NewService(repo, ds.RedisStore, streamServer)
 	conf.SeedRoles(srv.Role)
 	conf.SeedSuperAdminUser(srv.User, srv.Role)
 
@@ -73,8 +73,8 @@ func main() {
 
 	// Use CORS middleware, for local run
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"http://localhost:5173"},                                                                // Allow all origins (use specific origins for production)
-		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions}, // Allowed HTTP methods
+		AllowOrigins:     conf.GetApplicationConfig().AllowedOrigins,                                                       // Allow all origins (use specific origins for production)
+		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions}, // Allowed HTTP methods
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Access-Token"},                  // Allowed headers
 		AllowCredentials: true,                                                                                             // Allow credentials like cookies
 	}))
@@ -88,6 +88,12 @@ func main() {
 	handler := handler.NewHandler(root, srv)
 
 	fileH := e.Group("/api/file")
+	fileH.GET("/avatar/:filename", func(c echo.Context) error {
+		avatarPath := conf.GetFileStorageConfig().AvatarFolder + c.Param("filename")
+
+		return c.File(avatarPath)
+	})
+
 	fileH.Use(handler.JWTMiddleware())
 	fileH.Static("/", conf.GetFileStorageConfig().RootFolder)
 

@@ -2,8 +2,10 @@ package utils
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"math/rand"
-	"reflect"
+	"os"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -74,29 +76,21 @@ func BindAndValidate(c echo.Context, dto interface{}) error {
 	return nil
 }
 
-func BindFormData(c echo.Context, req interface{}) error {
-	v := reflect.ValueOf(req).Elem() // Get the struct pointer
-	t := v.Type()
-
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		fieldName := t.Field(i).Tag.Get("json")
-
-		// Get the form value for each field
-		value := c.FormValue(fieldName)
-		if value != "" {
-			// Set the field value if it's not empty
-			field.SetString(value)
-		}
-	}
-
-	return BindAndValidate(c, req)
-}
-
 func Map[T any, R any](input []T, transform func(T) R) []R {
 	result := make([]R, len(input))
 	for i, v := range input {
 		result[i] = transform(v)
 	}
 	return result
+}
+
+func CreateTxtFile(folderPath string, fileName string) *os.File {
+	filename := fmt.Sprintf("%s%s_%s.txt", folderPath, fileName, MakeUniqueIDWithTime())
+	file, err := os.Create(filename)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	return file
 }

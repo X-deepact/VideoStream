@@ -1,4 +1,4 @@
-module gitlab/live/be-live-api
+module gitlab/live/be-live-admin
 
 go 1.22.2
 

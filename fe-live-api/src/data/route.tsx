@@ -1,0 +1,140 @@
+import { USER_ROLE } from '@/data/types/role';
+import {
+  Frame,
+  History,
+  Import,
+  Radio,
+  Rss,
+  Settings2,
+  ThumbsUp,
+} from 'lucide-react';
+
+export const APP_PREFIX_PATH = '/app';
+
+export const AUTH_PREFIX_PATH = '/auth';
+export const LOGIN_PATH = AUTH_PREFIX_PATH + '/login';
+export const REGISTRATION_PATH = AUTH_PREFIX_PATH + '/register';
+export const LOGOUT_PATH = AUTH_PREFIX_PATH + '/logout';
+export const FORGOT_PASSWORD_PATH = AUTH_PREFIX_PATH + '/forgot-password';
+
+export const FEED_PATH = APP_PREFIX_PATH + '/feed';
+export const SUBSCRIPTIONS_PATH = APP_PREFIX_PATH + '/subscriptions';
+export const HISTORY_PATH = APP_PREFIX_PATH + '/history';
+export const LIKED_VIDEOS_PATH = APP_PREFIX_PATH + '/liked';
+export const SAVED_VIDEOS_PATH = APP_PREFIX_PATH + '/saved';
+export const LIVE_STREAM_PATH = APP_PREFIX_PATH + '/live';
+export const LIVE_STREAM_WEBCAM_PATH = LIVE_STREAM_PATH + '/webcam';
+export const LIVE_STREAM_SOFTWARE_PATH = LIVE_STREAM_PATH + '/software';
+
+export const STREAMER_PROFILE_PATH = APP_PREFIX_PATH + '/s';
+
+export const WATCH_VIDEO_PATH = APP_PREFIX_PATH + '/watch/:id';
+export const WATCH_LIVE_PATH = APP_PREFIX_PATH + '/watch/live/:id';
+
+export const SETTINGS_PATH = APP_PREFIX_PATH + '/settings';
+
+// Testings
+export const TEST_LIVE_STREAM_PATH = APP_PREFIX_PATH + '/test-live-stream';
+export const PUBLIC_PATH = '/p';
+export const PRIVACY_DOCS_PATH = PUBLIC_PATH + '/privacy';
+export const TERMS_OF_SERVICES_DOCS_PATH = PUBLIC_PATH + '/terms-of-services';
+
+export const LEFT_MAIN_MENU: Record<USER_ROLE, string[]> = {
+  [USER_ROLE.STREAMER]: [
+    FEED_PATH,
+    WATCH_VIDEO_PATH,
+    WATCH_LIVE_PATH,
+    SUBSCRIPTIONS_PATH,
+
+    LIVE_STREAM_PATH,
+    LIVE_STREAM_WEBCAM_PATH,
+    LIVE_STREAM_SOFTWARE_PATH,
+
+    HISTORY_PATH,
+    LIKED_VIDEOS_PATH,
+    SAVED_VIDEOS_PATH,
+
+    SETTINGS_PATH,
+
+    STREAMER_PROFILE_PATH,
+  ],
+  [USER_ROLE.USER]: [
+    FEED_PATH,
+    WATCH_VIDEO_PATH,
+    WATCH_LIVE_PATH,
+    SUBSCRIPTIONS_PATH,
+    HISTORY_PATH,
+    LIKED_VIDEOS_PATH,
+    SAVED_VIDEOS_PATH,
+
+    SETTINGS_PATH,
+
+    STREAMER_PROFILE_PATH,
+  ],
+  [USER_ROLE.ADMIN]: [
+    FEED_PATH,
+    WATCH_VIDEO_PATH,
+    WATCH_LIVE_PATH,
+    SUBSCRIPTIONS_PATH,
+    HISTORY_PATH,
+    LIKED_VIDEOS_PATH,
+    SAVED_VIDEOS_PATH,
+
+    STREAMER_PROFILE_PATH,
+  ],
+  [USER_ROLE.SUPERADMIN]: [
+    FEED_PATH,
+    WATCH_VIDEO_PATH,
+    WATCH_LIVE_PATH,
+    SUBSCRIPTIONS_PATH,
+    HISTORY_PATH,
+    LIKED_VIDEOS_PATH,
+    SAVED_VIDEOS_PATH,
+
+    STREAMER_PROFILE_PATH,
+  ],
+};
+
+export type RouteInfo = {
+  path: string;
+  title: string;
+  Icon: JSX.Element;
+};
+
+export const ROUTE_PATH_INFO = {
+  [FEED_PATH]: {
+    path: FEED_PATH,
+    title: 'Feed',
+    Icon: <Frame />,
+  },
+  [SUBSCRIPTIONS_PATH]: {
+    path: SUBSCRIPTIONS_PATH,
+    title: 'Subscriptions',
+    Icon: <Rss />,
+  },
+  [HISTORY_PATH]: {
+    path: HISTORY_PATH,
+    title: 'History',
+    Icon: <History />,
+  },
+  [LIKED_VIDEOS_PATH]: {
+    path: LIKED_VIDEOS_PATH,
+    title: 'Liked Videos',
+    Icon: <ThumbsUp />,
+  },
+  [SAVED_VIDEOS_PATH]: {
+    path: SAVED_VIDEOS_PATH,
+    title: 'Saved Videos',
+    Icon: <Import />,
+  },
+  [LIVE_STREAM_PATH]: {
+    path: LIVE_STREAM_PATH,
+    title: 'Live Stream',
+    Icon: <Radio />,
+  },
+  [SETTINGS_PATH]: {
+    path: SETTINGS_PATH,
+    title: 'Settings',
+    Icon: <Settings2 />,
+  },
+};

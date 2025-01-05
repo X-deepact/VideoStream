@@ -3,11 +3,13 @@ package handler
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"gitlab/live/be-live-api/conf"
 	"gitlab/live/be-live-api/dto"
 	"gitlab/live/be-live-api/model"
 	"gitlab/live/be-live-api/pkg/utils"
 	"gitlab/live/be-live-api/service"
+	"log"
 	"net/http"
 	"time"
 
@@ -69,7 +71,7 @@ func (h *userHandler) GetInformation(c echo.Context) error {
 
 func (h *userHandler) UpdateUser(c echo.Context) error {
 	var req dto.UpdateUserRequest
-	if err := utils.BindFormData(c, &req); err != nil {
+	if err := utils.BindAndValidate(c, &req); err != nil {
 		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("invalid request body"), nil)
 	}
 
@@ -173,78 +175,94 @@ func (h *userHandler) GetTwoFAInfo(c echo.Context) error {
 func (h *userHandler) ChangeTwoFAStatus(c echo.Context) error {
 	var req dto.ChangeTwoFAStatusRequest
 	if err := utils.BindAndValidate(c, &req); err != nil {
-		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("invalid request body"), nil)
 	}
 
 	claims := c.Get("user").(*utils.Claims)
 
 	pTwoFa, err := h.srv.TwoFA.GetTwoFAInfo(claims.ID)
 	if err != nil {
-		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+		}
 	}
 
-	if *req.IsEnabled {
-		// Create new record if it doesn't exist
-		if pTwoFa == nil {
-			pTwoFa = &model.TwoFA{
-				UserID:       claims.ID,
-				Secret:       "",
-				TempSecret:   "",
-				Is2faEnabled: false,
-			}
-			if err := h.srv.TwoFA.CreateTwoFA(pTwoFa); err != nil {
-				return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
-			}
+	// check is first time
+	if pTwoFa == nil {
+		if !*req.IsEnabled {
+			return utils.BuildErrorResponse(c, http.StatusInternalServerError, errors.New("you need to enable 2fa first"), nil)
 		}
 
-		// Generate new secret only if no temporary secret exists
-		if pTwoFa.TempSecret == "" {
-			secret, qrCode, err := utils.GetQrCode(claims.Username, "")
-			if err != nil {
-				return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
-			}
-
-			pTwoFa.TempSecret = secret
-			pTwoFa.UpdatedAt = time.Now()
-
-			if err := h.srv.TwoFA.UpdateTwoFA(pTwoFa); err != nil {
-				return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
-			}
-
-			return utils.BuildSuccessResponse(c, http.StatusOK, dto.TwoFADto{
-				Secret:       secret,
-				QrCode:       qrCode,
-				Is2faEnabled: false,
-			})
+		secret, qrCode, err := utils.GetQrCode(claims.Username, "")
+		if err != nil {
+			log.Println(err, claims.Username)
+			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 		}
 
-		// Return existing temporary secret
-		secret, qrCode, err := utils.GetQrCode(claims.Username, pTwoFa.TempSecret)
+		twoFa := &model.TwoFA{
+			UserID:       claims.ID,
+			Secret:       secret,
+			Is2faEnabled: false,
+		}
+
+		err = h.srv.TwoFA.CreateTwoFA(twoFa)
 		if err != nil {
 			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 		}
 
 		return utils.BuildSuccessResponse(c, http.StatusOK, dto.TwoFADto{
-			Secret:       pTwoFa.TempSecret,
+			Secret:       secret,
+			Is2faEnabled: false,
 			QrCode:       qrCode,
-			Is2faEnabled: false,
 		})
+
 	} else {
-		// If no record exists, nothing to delete
-		if pTwoFa == nil {
-			return utils.BuildSuccessResponse(c, http.StatusOK, dto.TwoFADto{
-				Is2faEnabled: false,
-			})
+
+		// if user not verified yet
+		if !pTwoFa.Is2faEnabled && pTwoFa.Secret != "" {
+			return utils.BuildErrorResponse(c, http.StatusInternalServerError, errors.New("you need to verify with otp first"), nil)
+		} else { // after user verify
+			// user want to enable and already enabled in db
+			if *req.IsEnabled && pTwoFa.Is2faEnabled {
+				return utils.BuildErrorResponse(c, http.StatusBadRequest, fmt.Errorf("2fa is already enabled"), nil)
+			} else if !*req.IsEnabled && !pTwoFa.Is2faEnabled { // user want to disable and already disabled in db
+				return utils.BuildErrorResponse(c, http.StatusBadRequest, fmt.Errorf("2fa is already disabled"), nil)
+			} else if !*req.IsEnabled && pTwoFa.Is2faEnabled { // if user want to disable and already enabled in db
+
+				pTwoFa.Secret = ""
+				pTwoFa.Is2faEnabled = false
+				pTwoFa.UpdatedAt = time.Now()
+				err = h.srv.TwoFA.UpdateTwoFA(pTwoFa)
+				if err != nil {
+					return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+				}
+
+				return utils.BuildSuccessResponse(c, http.StatusOK, dto.TwoFADto{
+					Is2faEnabled: false,
+				})
+
+			} else { // if user want to enable and already disabled in db
+				secret, qrCode, err := utils.GetQrCode(claims.Username, pTwoFa.Secret)
+				if err != nil {
+					return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+				}
+
+				pTwoFa.Secret = secret
+				pTwoFa.Is2faEnabled = false // user have to verify with otp
+				pTwoFa.UpdatedAt = time.Now()
+				err = h.srv.TwoFA.UpdateTwoFA(pTwoFa)
+				if err != nil {
+					return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+				}
+
+				return utils.BuildSuccessResponse(c, http.StatusOK, dto.TwoFADto{
+					Secret:       secret,
+					Is2faEnabled: false,
+					QrCode:       qrCode,
+				})
+			}
 		}
 
-		// Force delete the 2FA record
-		if err := h.srv.TwoFA.DeleteTwoFA(claims.ID); err != nil {
-			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
-		}
-
-		return utils.BuildSuccessResponse(c, http.StatusOK, dto.TwoFADto{
-			Is2faEnabled: false,
-		})
 	}
 }
 
@@ -253,7 +271,7 @@ func (h *userHandler) VerifyTwoFA(c echo.Context) error {
 	if err := utils.BindAndValidate(c, &req); err != nil {
 		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
 	}
-
+	// otp := c.QueryParam("otp")
 	claims := c.Get("user").(*utils.Claims)
 
 	twoFA, err := h.srv.TwoFA.GetTwoFAInfo(claims.ID)
@@ -261,27 +279,20 @@ func (h *userHandler) VerifyTwoFA(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, errors.New("can't get the secret key"), nil)
 	}
 
-	if twoFA == nil || twoFA.Secret == "" {
-		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("2FA is not initialized"), nil)
-	}
+	isVerified := utils.CheckTotp(req.OTP, twoFA.Secret)
 
-	// Verify using the temporary secret
-	isVerified := utils.CheckTotp(req.OTP, twoFA.TempSecret)
 	if !isVerified {
-		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("invalid verification code"), nil)
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, errors.New("otp is not correct"), nil)
 	}
 
-	// Move temporary secret to permanent secret and enable 2FA
-	twoFA.Secret = twoFA.TempSecret
-	twoFA.TempSecret = ""
 	twoFA.Is2faEnabled = true
 	twoFA.UpdatedAt = time.Now()
-	
-	if err := h.srv.TwoFA.UpdateTwoFA(twoFA); err != nil {
+	err = h.srv.TwoFA.UpdateTwoFA(twoFA)
+	if err != nil {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
 	return utils.BuildSuccessResponse(c, http.StatusOK, dto.ChangeTwoFAStatusResponse{
-		IsVerified: true,
+		IsVerified: isVerified,
 	})
 }

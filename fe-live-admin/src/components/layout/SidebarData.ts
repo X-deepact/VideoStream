@@ -1,60 +1,44 @@
-import { User, Video, Play, ChartNoAxesCombined } from "lucide-react";
+import { User, Video, Play, ChartNoAxesCombined, AudioWaveform } from "lucide-react";
+import { ITEM_INFO } from "@/router";
 export const data = {
     navMain: [
         {
             title: "Account Management",
             icon: User,
             url: "#",
-            items: [
-                {
-                    title: "# Account List",
-                    url: "/dashboard/account-list",
-                    icon: User,
-                },
-            ],
+	          isActive: true,
+            items: [ITEM_INFO.APP_ACCOUNT_LIST_PATH],
         },
         {
             title: "Live Management",
             icon: Video,
             url: "#",
-            items: [
-                {
-                    title: "# Live List",
-                    url: "/dashboard/live-list",
-                },
-            ]
+	          isActive: true,
+            items: [ITEM_INFO.APP_LIVE_LIST_PATH]
         },
         {
             title: "Video Management",
             icon: Play,
             url: "#",
-            items: [
-                {
-                    title: "# Video Library",
-                    url: "/dashboard/video-library",
-                },
-            ]
+	          isActive: true,
+            items: [ITEM_INFO.APP_VIDEO_LIBRARY_PATH]
         },
         {
             title: "Statistics Management",
             icon: ChartNoAxesCombined,
             url: "#",
+	          isActive: true,
             items: [
-                {
-                    title: "# Live Statistics",
-                    url: "/dashboard/live-statistics",
-                },
-                {
-                    title: "# Video Statistics",
-                    url: "/dashboard/video-statistics",
-                    icon: ChartNoAxesCombined,
-                },
-                {
-                    title: "# User Statistics",
-                    url: "/dashboard/user-statistics",
-                    icon: ChartNoAxesCombined,
-                },
+							ITEM_INFO.APP_LIVE_STATISTIC_PATH,
+	            ITEM_INFO.APP_VIDEO_STATISTIC_PATH,
+	            ITEM_INFO.APP_USER_STATISTICS_PATH
             ]
         },
     ]
+}
+
+export const siteData = {
+	name: 'Cloud TV ⚡️',
+	description: 'Streaming Hub',
+	logo: AudioWaveform,
 }

@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"gitlab/live/be-live-api/model"
+	"gitlab/live/be-live-admin/model"
 	"time"
 )
 
@@ -26,12 +26,13 @@ type CreateAdminResp struct {
 }
 
 type AdminLogQuery struct {
-	SortBy  string `query:"sort_by" validate:"omitempty,oneof=performed_at"`
-	Sort    string `query:"sort" validate:"omitempty,oneof=DESC ASC"`
-	Keyword string `query:"keyword" validate:"omitempty,max=255"`
-	UserIDs []uint `query:"user_ids" validate:"omitempty"`
-	Page    uint   `query:"page" validate:"omitempty,min=1"`
-	Limit   uint   `query:"limit" validate:"omitempty,min=1,max=20"`
+	SortBy   string `query:"sort_by" validate:"omitempty,oneof=performed_at"`
+	Sort     string `query:"sort" validate:"omitempty,oneof=DESC ASC"`
+	FilterBy string `query:"filter_by" validate:"omitempty,oneof=action details id username email"`
+	Keyword  string `query:"keyword" validate:"omitempty,max=255"`
+	UserIDs  []uint `query:"user_ids" validate:"omitempty"`
+	Page     uint   `query:"page" validate:"omitempty,min=1"`
+	Limit    uint   `query:"limit" validate:"omitempty,min=1,max=20"`
 }
 
 type AdminLogRespDTO struct {

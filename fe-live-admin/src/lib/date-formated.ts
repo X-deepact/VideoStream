@@ -60,3 +60,13 @@ export function formatDateToCustomFormat(dateInput) {
 
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds} ${timezoneOffset}`;
 }
+
+export function validateTimestampWithinThreeDays(input: Date): boolean {
+  const currentTimestamp = Date.now(); // Current timestamp in milliseconds
+  const lowerBound = currentTimestamp;
+  const upperBound = currentTimestamp + 3 * 24 * 60 * 60 * 1000; // Add 3 days in milliseconds
+
+  const inputDate = input.getTime();
+
+  return inputDate > lowerBound && inputDate < upperBound;
+}

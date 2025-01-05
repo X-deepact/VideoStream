@@ -25,7 +25,7 @@ func GetfileSize(path string) (int64, error) {
 }
 
 // pattern := "/home/user/recordings/live/0f5be8fc-134d-4ed5-843d-a1aa62501264_*.flv"
-func GetFilePath(pattern string) (string, error) {
+func getFilePath(pattern string) (string, error) {
 
 	matches, err := filepath.Glob(pattern)
 	if err != nil {
@@ -35,7 +35,7 @@ func GetFilePath(pattern string) (string, error) {
 
 	if len(matches) == 0 {
 		fmt.Println("No files found matching the pattern.")
-		return "", err
+		return "", fmt.Errorf("no files found matching the pattern")
 	}
 
 	log.Println(len(matches))
@@ -176,3 +176,16 @@ func RemoveFiles(files []string) error {
 	}
 	return nil
 }
+
+func RemoveFilesWithNoErrReturn(files []string) {
+	for _, file := range files {
+		if err := os.Remove(file); err != nil {
+			log.Println(err)
+		}
+	}
+}
+
+const (
+	MAX_VIDEO_SIZE = 2 * 1024 * 1024 * 1024 // 2GB
+	MAX_IMAGE_SIZE = 1 * 1024 * 1024
+)

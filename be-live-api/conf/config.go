@@ -37,7 +37,8 @@ type RedisConfig struct {
 }
 
 type ApplicationConfig struct {
-	Port int `yaml:"port"`
+	Port           int      `yaml:"port"`
+	AllowedOrigins []string `yaml:"allowed_origins"`
 }
 
 type StreamServerConfig struct {
@@ -58,10 +59,13 @@ type MailConfig struct {
 }
 
 type FileStorageConfig struct {
-	RootFolder      string `yaml:"root_folder"`
-	ThumbnailFolder string `yaml:"thumbnail_folder"`
-	AvatarFolder    string `yaml:"avatar_folder"`
-	LiveFolder      string `yaml:"live_folder"`
+	RootFolder            string `yaml:"root_folder"`
+	ThumbnailFolder       string `yaml:"thumbnail_folder"`
+	AvatarFolder          string `yaml:"avatar_folder"`
+	LiveFolder            string `yaml:"live_folder"`
+	ScheduledVideosFolder string `yaml:"scheduled_videos_folder"`
+	VideoFolder           string `yaml:"video_folder"`
+	LogFolder             string `yaml:"log_folder"`
 }
 
 type TwoFAAuthConfig struct {
@@ -97,6 +101,10 @@ func init() {
 
 func GetDatabaseConfig() *DBConfig {
 	return &cfg.DB
+}
+
+func GetRedisConfig() *RedisConfig {
+	return &cfg.Redis
 }
 
 func GetStreamServerConfig() *StreamServerConfig {

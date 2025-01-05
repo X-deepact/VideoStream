@@ -1,26 +1,32 @@
 package service
 
 import (
-	"gitlab/live/be-live-api/dto"
-	"gitlab/live/be-live-api/model"
-	"gitlab/live/be-live-api/repository"
-	"gitlab/live/be-live-api/utils"
+	"context"
+	"errors"
+	"fmt"
+	"gitlab/live/be-live-admin/cache"
+	"gitlab/live/be-live-admin/dto"
+	"gitlab/live/be-live-admin/model"
+	"gitlab/live/be-live-admin/repository"
+	"gitlab/live/be-live-admin/utils"
 	"log"
 	"math/rand"
+	"time"
 
 	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
 type StreamService struct {
 	repo         *repository.Repository
-	redis        *redis.Client
+	redisStore   cache.RedisStore
 	streamServer *streamServerService
 }
 
-func newStreamService(repo *repository.Repository, redis *redis.Client, streamServer *streamServerService) *StreamService {
+func newStreamService(repo *repository.Repository, redis cache.RedisStore, streamServer *streamServerService) *StreamService {
 	return &StreamService{
 		repo:         repo,
-		redis:        redis,
+		redisStore:   redis,
 		streamServer: streamServer,
 	}
 
@@ -49,12 +55,12 @@ func (s *StreamService) sortByDuration(a []dto.LiveStreamRespDTO, sort string) [
 
 	// Pile elements smaller than the pivot on the left
 	for i := range a {
-		if a[i].Duration < a[right].Duration && sort == "ASC" {
+		if a[i].Duration < a[right].Duration && sort == dto.SORT_ASC {
 			a[i], a[left] = a[left], a[i]
 			left++
 		}
 
-		if a[i].Duration > a[right].Duration && sort == "DESC" {
+		if a[i].Duration > a[right].Duration && sort == dto.SORT_DESC {
 			a[i], a[left] = a[left], a[i]
 			left++
 		}
@@ -85,12 +91,12 @@ func (s *StreamService) sortByCurrentViewers(a []dto.LiveStatRespDTO, sort strin
 
 	// Pile elements smaller than the pivot on the left
 	for i := range a {
-		if a[i].CurrentViewers < a[right].CurrentViewers && sort == "ASC" {
+		if a[i].CurrentViewers < a[right].CurrentViewers && sort == dto.SORT_ASC {
 			a[i], a[left] = a[left], a[i]
 			left++
 		}
 
-		if a[i].CurrentViewers > a[right].CurrentViewers && sort == "DESC" {
+		if a[i].CurrentViewers > a[right].CurrentViewers && sort == dto.SORT_DESC {
 			a[i], a[left] = a[left], a[i]
 			left++
 		}
@@ -128,7 +134,7 @@ func (s *StreamService) GetStreamAnalyticsData(req *dto.StatisticsQuery) (*utils
 		live_stream_dto.Duration = int64(v.Duration)
 		result.Page = append(result.Page, *live_stream_dto)
 	}
-	if req != nil && req.SortBy == "duration" && req.Sort != "" {
+	if req != nil && req.SortBy == dto.SORT_BY_DURATION && req.Sort != "" {
 		result.Page = s.sortByDuration(result.Page, req.Sort)
 	}
 	return result, nil
@@ -154,7 +160,6 @@ func (s *StreamService) toLiveStreamBroadCastDto(v *model.Stream, apiUrl, rtmpUR
 	}
 	liveStreamDto.ID = int(v.ID)
 
-	//user if exist
 	liveStreamDto.User = new(dto.UserResponseDTO)
 	liveStreamDto.User.Username = v.User.Username
 	liveStreamDto.User.DisplayName = v.User.DisplayName
@@ -163,14 +168,13 @@ func (s *StreamService) toLiveStreamBroadCastDto(v *model.Stream, apiUrl, rtmpUR
 	liveStreamDto.User.CreatedAt = v.User.CreatedAt
 	liveStreamDto.User.UpdatedAt = v.User.UpdatedAt
 
-	//user if exist
 	streamAnalytic, err := s.repo.Stream.GetStreamAnalyticByStream(int(v.ID))
 	if err != nil {
 		log.Println(err.Error())
 
 		return nil
 	}
-
+	//streamAnalytic if exist
 	if streamAnalytic != nil {
 		liveStreamDto.LiveStreamAnalytic = new(dto.LiveStreamRespDTO)
 		liveStreamDto.LiveStreamAnalytic.Duration = int64(streamAnalytic.Duration)
@@ -179,6 +183,27 @@ func (s *StreamService) toLiveStreamBroadCastDto(v *model.Stream, apiUrl, rtmpUR
 		liveStreamDto.LiveStreamAnalytic.Viewers = streamAnalytic.Views
 		liveStreamDto.LiveStreamAnalytic.Comments = streamAnalytic.Comments
 		liveStreamDto.LiveStreamAnalytic.StreamID = v.ID
+	}
+
+	// scheduleStream if exist
+	scheduleStream, err := s.repo.Stream.GetScheduleStreamByStreamID(int(v.ID))
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Println(err.Error())
+		return nil
+	}
+	if scheduleStream != nil {
+		liveStreamDto.ScheduleStream = new(dto.ScheduleStreamDTO)
+		liveStreamDto.ScheduleStream.VideoName = utils.MakeScheduleVideoURL(apiUrl, scheduleStream.VideoName)
+		liveStreamDto.ScheduleStream.ScheduledAt = scheduleStream.ScheduledAt
+	}
+
+	// categories if exist
+	categories, err := s.repo.Stream.GetCategoriesByStreamID(v.ID)
+	if err != nil {
+		return nil
+	}
+	if len(categories) > 0 {
+		liveStreamDto.Categories = categories
 	}
 	return liveStreamDto
 }
@@ -197,7 +222,7 @@ func (s *StreamService) GetLiveStreamBroadCastWithPagination(page, limit uint, r
 		result.Page = append(result.Page, *liveStreamDto)
 	}
 
-	if req != nil && req.SortBy == "duration" && req.Sort != "" {
+	if req != nil && req.SortBy == dto.SORT_BY_DURATION && req.Sort != "" {
 
 		var containAnalytics, notContainAnalytics []dto.LiveStreamBroadCastDTO
 		for _, v := range result.Page {
@@ -268,11 +293,77 @@ func (s *StreamService) CreateStreamByAdmin(req *dto.StreamRequest) (*model.Stre
 	return stream, nil
 }
 
+func (s *StreamService) UpdateScheduledStreamByAdmin(id int, req *dto.UpdateScheduledStreamRequest) (*model.Stream, error) {
+	var scheduleStream *model.ScheduleStream
+
+	liveStream, err := s.repo.Stream.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	liveStream.Title = req.Title
+	liveStream.Description = req.Description
+
+	scheduleStream, err = s.repo.Stream.GetScheduleStreamByStreamID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if scheduleStream.ScheduledAt.UTC().Before(time.Now().UTC()) {
+		return nil, fmt.Errorf("scheduled time has already passed and cannot be updated")
+	}
+
+	schduledAt, err := utils.ConvertDatetimeToTimestamp(req.ScheduledAt, utils.DATETIME_LAYOUT)
+	if err != nil {
+		return nil, err
+	}
+	scheduleStream.ScheduledAt = *schduledAt
+
+	if err := s.repo.Stream.UpdateStream(liveStream, scheduleStream, req.CategoryIDs); err != nil {
+		return nil, err
+	}
+
+	return liveStream, nil
+}
+
+func (s *StreamService) UpdateStreamByAdmin(id int, req *dto.UpdateStreamRequest) (*model.Stream, error) {
+	liveStream, err := s.repo.Stream.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	liveStream.Title = req.Title
+	liveStream.Description = req.Description
+
+	if err := s.repo.Stream.UpdateStream(liveStream, nil, req.CategoryIDs); err != nil {
+		return nil, err
+	}
+
+	return liveStream, nil
+}
+
 func (s *StreamService) DeleteLiveStream(id int) error {
 	if err := s.repo.Stream.DeleteLiveStream(id); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (s *StreamService) GetLiveStreamByID(id int) (*dto.StreamAndStreamScheduleDto, error) {
+	stream, err := s.repo.Stream.GetByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	scheduleStream, err := s.repo.Stream.GetScheduleStreamByStreamID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &dto.StreamAndStreamScheduleDto{Stream: stream, ScheduleStream: scheduleStream}, nil
 }
 
 func (s *StreamService) toLiveStatDto(v *model.StreamAnalytics, currentViewers uint) *dto.LiveStatRespDTO {
@@ -320,9 +411,9 @@ func (s *StreamService) GetLiveStatWithPagination(req *dto.LiveStatQuery) (*util
 
 	}
 
-	if req.SortBy == "current_viewers" && req.Sort != "" {
+	if req.SortBy == dto.SORT_BY_CURRENT_VIEWERS && req.Sort != "" {
 		result.Page = s.sortByCurrentViewers(containCurrentViewers, req.Sort)
-		if req.Sort == "DESC" {
+		if req.Sort == dto.SORT_DESC {
 			result.Page = append(result.Page, notContainCurrentViewers...)
 		} else {
 			result.Page = append(notContainCurrentViewers, result.Page...)
@@ -332,4 +423,18 @@ func (s *StreamService) GetLiveStatWithPagination(req *dto.LiveStatQuery) (*util
 	}
 
 	return result, nil
+}
+
+func (s *StreamService) IsEncodingVideo(ctx context.Context, streamKey string) (bool, error) {
+	cacheKey := fmt.Sprintf(cache.VIDEO_ENCODING_PREFIX, streamKey+".mp4")
+
+	isEncoding, err := cache.GetRedisValWithTyped[bool](s.redisStore, ctx, cacheKey)
+	if err != nil {
+		if !errors.Is(err, redis.Nil) {
+			log.Println(err)
+			return false, err
+		}
+	}
+
+	return isEncoding, nil
 }

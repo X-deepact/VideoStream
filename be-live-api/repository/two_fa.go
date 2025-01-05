@@ -34,15 +34,3 @@ func (ur *TwoFARepository) UpdateTwoFA(twoFA *model.TwoFA) error {
 	}
 	return nil
 }
-
-func (tr *TwoFARepository) DeleteTwoFA(userID uint) error {
-	result := tr.db.Unscoped().Where("user_id = ?", userID).Delete(&model.TwoFA{})
-	if result.Error != nil {
-		return result.Error
-	}
-	// Check if any record was actually deleted
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-	return nil
-}

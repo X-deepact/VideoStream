@@ -3,9 +3,9 @@ package repository
 import (
 	"errors"
 	"fmt"
-	"gitlab/live/be-live-api/dto"
-	"gitlab/live/be-live-api/model"
-	"gitlab/live/be-live-api/utils"
+	"gitlab/live/be-live-admin/dto"
+	"gitlab/live/be-live-admin/model"
+	"gitlab/live/be-live-admin/utils"
 	"time"
 
 	"gorm.io/gorm"
@@ -97,7 +97,7 @@ func (r *UserRepository) FindByEmail(email string) (*model.User, error) {
 
 func (r *UserRepository) FindByID(id int) (*model.User, error) {
 	var user model.User
-	if err := r.db.Where("id = ?", id).First(&user).Error; err != nil {
+	if err := r.db.Where("id = ?", id).Preload("Role").First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil // User not found
 		}

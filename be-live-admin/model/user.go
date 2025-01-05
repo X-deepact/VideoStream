@@ -10,19 +10,22 @@ import (
 type AdminAction string
 
 const (
-	Login             AdminAction = "end_stream"
-	Logout            AdminAction = "banned_user"
-	LoginAction       AdminAction = "login"
-	LogoutAction      AdminAction = "logout"
-	CreateUserAction  AdminAction = "create_user"
-	UpdateUserAction  AdminAction = "update_user"
-	DeleteUserAction  AdminAction = "delete_user"
-	LiveBroadCastByID AdminAction = "live_broad_cast_by_id"
-	LiveStreamByAdmin AdminAction = "live_stream_by_admin"
-	CreateCategory    AdminAction = "create_category"
-	ForgetPassword    AdminAction = "forget_password"
-	ResetPassword     AdminAction = "reset_password"
-	CreateAdmin       AdminAction = "create_admin"
+	Login                    AdminAction = "end_stream"
+	Logout                   AdminAction = "banned_user"
+	LoginAction              AdminAction = "login"
+	LogoutAction             AdminAction = "logout"
+	CreateUserAction         AdminAction = "create_user"
+	UpdateUserAction         AdminAction = "update_user"
+	ChangeUserPasswordAction AdminAction = "change_user_password"
+	DeleteUserAction         AdminAction = "delete_user"
+	LiveBroadCastByID        AdminAction = "live_broad_cast_by_id"
+	DeleteLiveStreamByAdmin  AdminAction = "delete_live_stream_by_admin"
+	LiveStreamByAdmin        AdminAction = "live_stream_by_admin"
+	UpdateStreamByAdmin      AdminAction = "update_live_stream_by_admin"
+	CreateCategory           AdminAction = "create_category"
+	ForgetPassword           AdminAction = "forget_password"
+	ResetPassword            AdminAction = "reset_password"
+	CreateAdmin              AdminAction = "create_admin"
 )
 
 type RoleType string

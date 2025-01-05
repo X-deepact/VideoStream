@@ -2,7 +2,7 @@ import axios from "axios";
 import authHeader from "./auth-header";
 
 // Consider using an environment variable for the API URL
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8686/api";
+const API_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8686";
 
 export const getLiveStatistics = async (
   page: number,
@@ -20,7 +20,7 @@ export const getLiveStatistics = async (
       ...(keyword && { keyword })
     };
 
-    const response = await axios.get(`${API_URL}/streams/live-statistics`, {
+    const response = await axios.get(`${API_URL}/api/streams/live-statistics`, {
       headers: authHeader(),
       params,
     });

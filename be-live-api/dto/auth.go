@@ -11,13 +11,14 @@ type LoginRequest struct {
 }
 
 type RegisterRequest struct {
-	Username    string `json:"username" from:"username" validate:"required,min=4"`
-	DisplayName string `json:"display_name" from:"display_name"`
-	Email       string `json:"email" from:"email" validate:"required,min=4"`
-	Password    string `json:"password" from:"password" validate:"required,min=4"`
+	Username    string `json:"username" form:"username" validate:"required,min=4"`
+	DisplayName string `json:"display_name" form:"display_name"`
+	Email       string `json:"email" form:"email" validate:"required,min=4"`
+	Password    string `json:"password" form:"password" validate:"required,min=4"`
 }
 
 type LoginResponse struct {
+	ID             uint           `json:"id"`
 	Username       string         `json:"username"`
 	DisplayName    string         `json:"display_name"`
 	AvatarFileURL  string         `json:"avatar_file_url"`

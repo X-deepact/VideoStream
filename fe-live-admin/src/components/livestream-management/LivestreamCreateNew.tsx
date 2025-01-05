@@ -15,10 +15,9 @@ import { Button } from "@/components/ui/button.tsx";
 import { Rss } from "lucide-react";
 import ErrorMessage from "@/components/ui/error-message.tsx";
 import { toast } from "@/hooks/use-toast.ts";
-import {
-	createNewLivestreamSession
-} from "@/services/livestream-session.service.ts";
-import { formatDateToCustomFormat } from "@/lib/date-formated.ts";
+import { createNewLivestreamSession } from "@/services/livestream-session.service.ts";
+import { formatDateToCustomFormat, validateTimestampWithinThreeDays } from "@/lib/date-formated.ts";
+import MultipleCombobox from "@/components/ui/multiple-combobox.tsx";
 
 const FormSchema = z.object({
 	title: z.string().min(2, {
@@ -35,14 +34,18 @@ const FormSchema = z.object({
 	.min(1, {
 		message: "User is required"
 	}),
-	category: z.string()
+	category: z
+	.array(z.string())
 	.min(1, {
 		message: "Category is required"
 	}),
 	startDate: z.date({
 		required_error: "Schedule time is required.",
 		invalid_type_error: "Invalid date selected.",
-	}),
+	})
+		.refine((date) => validateTimestampWithinThreeDays(date), {
+			message: "Date must be within three days from current time"
+		}),
 });
 
 interface ComponentProps {
@@ -66,7 +69,7 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
 	const [assignedUser, setAssignedUser] = React.useState("");
-	const [category, setCategory] = React.useState("");
+	const [category, setCategory] = React.useState<string[]>([]);
 	const [startDate, setStartDate] = React.useState<Date>();
 	const [thumbnailImage, setThumbnailImage] = React.useState<{
 		file: null | File;
@@ -145,7 +148,7 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 		const body = {
 			title: title,
 			description: description,
-			category_ids: category,
+			category_ids: category.map((c) => Number(c)),
 			scheduled_at: formatDateToCustomFormat(startDate),
 			thumbnail: thumbnailImage.file,
 			video: videoFile.file,
@@ -181,7 +184,7 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 		setErrors({});
 		setTitle("");
 		setDescription("");
-		setCategory("");
+		setCategory([]);
 		setAssignedUser("");
 		setStartDate(undefined);
 		setThumbnailImage({
@@ -203,7 +206,7 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 					New Stream
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="max-w-[30rem] xl:max-w-[90rem]" >
+			<DialogContent className="max-w-[30rem] md:max-w-[36rem] lg:max-w-[45rem] xl:max-w-[50rem] 2xl:max-w-[60rem]">
 				<DialogHeader>
 					<DialogTitle className="text-xl">
 						Create Stream
@@ -241,7 +244,7 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 										Description <span className="text-red-500">*</span>
 									</Label>
 									<Textarea
-										className="h-56"
+										className="h-20 xl:h-56"
 										id="description"
 										placeholder="Livestream Description"
 										value={description}
@@ -266,7 +269,7 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 											data={users}
 											onDataChange={setAssignedUser}
 											disabled={isLoading}
-											popOverClass={"w-auto xl:w-[40rem] p-0"}
+											popOverClass={"w-auto xl:w-[22rem] p-0"}
 										/>
 										{
 											errors.assignedUser && <ErrorMessage msg={errors.assignedUser} />
@@ -275,15 +278,17 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 
 									{/*Categories*/}
 									<div>
-										<DataCombobox
+										<MultipleCombobox
 											isRequired={true}
-											placeholder="Select Category"
+											placeholder="Select Categories"
 											label="Categories"
 											emptyMsg="No category found"
 											data={categories}
-											onDataChange={setCategory}
 											disabled={isLoading}
-											popOverClass={"w-auto xl:w-[40rem] p-0"}
+											onValueChange={setCategory}
+											allowAllSelection={true}
+											maxSelection={3}
+											popOverClass={"w-auto xl:w-[22rem] p-0"}
 										/>
 										{
 											errors.category && <ErrorMessage msg={errors.category} />
@@ -322,7 +327,7 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 									<ImageUpload
 										ref={fileRef}
 										width="w-full overflow-hidden"
-										height="h-24 xl:h-[15rem]"
+										height="h-24 lg:h-[12rem] xl:h-[15rem]"
 										onFileChange={(file) => {
 											if (file) handleThumbnailChanges(file)
 										}}
@@ -343,7 +348,7 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 									<ImageUpload
 										ref={fileRef}
 										width="w-full overflow-hidden"
-										height="h-24 xl:h-[20rem]"
+										height="h-24 lg:h-[12rem] xl:h-[15rem]"
 										onFileChange={(file) => {
 											if (file) handleVideoUpload(file)
 										}}

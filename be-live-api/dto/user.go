@@ -14,8 +14,8 @@ type UserDto struct {
 }
 
 type UpdateUserRequest struct {
-	DisplayName    string         `json:"display_name"`
-	Password       string         `json:"password"`
-	NewPassword    string         `json:"new_password"`
-	AvatarFileName sql.NullString `json:"avatar_file_name"`
+	DisplayName    string         `json:"display_name" form:"display_name"`
+	Password       string         `json:"password" form:"password"`
+	NewPassword    string         `json:"new_password" form:"new_password"`
+	AvatarFileName sql.NullString `json:"avatar_file_name" form:"avatar_file_name"`
 }

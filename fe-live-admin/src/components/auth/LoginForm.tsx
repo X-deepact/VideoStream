@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { login } from "@/services/auth.service";
 import loadingImg from "@/assets/loading.svg";
 import { useAuth } from "@/lib/auth-util";
+import { APP_DASHBOARD_PATH } from "@/router";
 
 const LoginForm: React.FC = () => {
   const navigator = useNavigate();
@@ -56,7 +57,7 @@ const LoginForm: React.FC = () => {
         toast({
           description: res.message,
         });
-        navigator("/dashboard");
+        navigator(APP_DASHBOARD_PATH);
         // window.location.reload();
       },
       (error) => {

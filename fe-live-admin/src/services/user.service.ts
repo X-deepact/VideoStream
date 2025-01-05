@@ -5,28 +5,27 @@ const API_URL = import.meta.env.VITE_API_BASE_URL + "/api";
 
 export const getAccountList = (
   page: number = 1,
-  pageSize: number = 20,
+  pageSize: number = 10,
   sort_by: string = "username",
-  sort: string = "ASC"
+  sort: string = "ASC",
+  keyword: string = ""
 ) => {
   return axios.get(
-    `${API_URL}/users?page=${page}&limit=${pageSize}&sort_by=${sort_by}&sort=${sort}`,
+    `${API_URL}/users?page=${page}&limit=${pageSize}&sort_by=${sort_by}&sort=${sort}&keyword=${keyword}`,
     {
       headers: authHeader(),
     }
   );
 };
 
-export const getAccountListWithRole = (
-  role: string
-) => {
+export const getAccountListWithRole = (role: string) => {
   return axios.get(
     `${API_URL}/users?page=1&limit=20&sort_by=username&sort=ASC&role=${role}`,
     {
       headers: authHeader(),
     }
   );
-}
+};
 
 export const createAccount = async (data: any) => {
   return await axios.post(
@@ -60,6 +59,7 @@ export const updateAccount = async (userId: string, data: any) => {
 };
 
 export const deleteAccount = async (userId: string) => {
+  if (userId.length === 0) return;
   return await axios.delete(`${API_URL}/users/${userId}`, {
     headers: authHeader(),
   });

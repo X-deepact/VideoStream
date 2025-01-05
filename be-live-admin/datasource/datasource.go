@@ -1,13 +1,14 @@
 package datasource
 
 import (
-	"github.com/redis/go-redis/v9"
+	"gitlab/live/be-live-admin/cache"
+
 	"gorm.io/gorm"
 )
 
 type DataSource struct {
-	DB      *gorm.DB
-	RClient *redis.Client
+	DB         *gorm.DB
+	RedisStore cache.RedisStore
 }
 
 func NewDataSource() (*DataSource, error) {
@@ -16,13 +17,13 @@ func NewDataSource() (*DataSource, error) {
 		return nil, err
 	}
 
-	redisClient, err := LoadRedis()
+	redisStore, err := LoadRedis()
 	if err != nil {
 		return nil, err
 	}
 
 	return &DataSource{
-		DB:      db,
-		RClient: redisClient,
+		DB:         db,
+		RedisStore: redisStore,
 	}, nil
 }

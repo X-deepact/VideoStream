@@ -12,7 +12,7 @@ import (
 
 func SkipMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		excludedPaths := []string{"/api/auth/", "/api/file/", "/html/", "/ws/"}
+		excludedPaths := []string{"/api/auth/", "/ws/", "/html/", "/api/file/avatar/"}
 		requestPath := c.Request().URL.Path
 
 		log.Println(requestPath)
@@ -55,7 +55,7 @@ func JWTMiddlewareStreamer() echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			claims := c.Get("user").(*Claims)
 			roleType := claims.RoleType
-			if string(model.STREAMER) != roleType {
+			if model.STREAMER != roleType {
 				return BuildErrorResponse(c, http.StatusUnauthorized, errors.New("you haven't authorized the role streamer"), nil)
 			}
 			// Call the next handler

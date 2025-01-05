@@ -99,7 +99,7 @@ const LivestreamList = ({livestream}) => {
 							</DialogContent>
 						</Dialog>
 						{
-							status === LIVESTREAM_STATUS.STARTED && (
+							status === LIVESTREAM_STATUS.STREAMING && (
 								<>
 									<Button variant="destructive">
 										<CircleStop /> End Stream

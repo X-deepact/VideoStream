@@ -1,22 +1,21 @@
 package service
 
 import (
+	"gitlab/live/be-live-api/cache"
 	"gitlab/live/be-live-api/dto"
 	"gitlab/live/be-live-api/model"
 	"gitlab/live/be-live-api/repository"
-
-	"github.com/redis/go-redis/v9"
 )
 
 type UserService struct {
-	repo  *repository.Repository
-	redis *redis.Client
+	repo       *repository.Repository
+	redisStore cache.RedisStore
 }
 
-func newUserService(repo *repository.Repository, redis *redis.Client) *UserService {
+func newUserService(repo *repository.Repository, redis cache.RedisStore) *UserService {
 	return &UserService{
-		repo:  repo,
-		redis: redis,
+		repo:       repo,
+		redisStore: redis,
 	}
 }
 
@@ -27,30 +26,13 @@ func (us *UserService) CheckUserExist(username string, email string) (bool, erro
 }
 
 func (us *UserService) CreateUser(register dto.RegisterRequest, roleTypeId uint) (*model.User, error) {
-	user, err := us.repo.User.CreateUser(&model.User{
+	return us.repo.User.CreateUser(&model.User{
 		Username:     register.Username,
 		DisplayName:  register.DisplayName,
 		Email:        register.Email,
 		PasswordHash: register.Password,
 		RoleID:       roleTypeId,
 	})
-	
-	if err != nil {
-		return nil, err
-	}
-
-	// Initialize 2FA settings
-	twoFA := &model.TwoFA{
-		UserID:       user.ID,
-		Secret:       "",  // Empty initially
-		Is2faEnabled: false,
-	}
-	
-	if err := us.repo.TwoFA.CreateTwoFA(twoFA); err != nil {
-		return nil, err
-	}
-
-	return user, nil
 }
 
 func (us *UserService) GetUserLogin(username string) (*model.User, error) {

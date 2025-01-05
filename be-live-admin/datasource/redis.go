@@ -2,28 +2,24 @@ package datasource
 
 import (
 	"fmt"
+	"gitlab/live/be-live-admin/cache"
+	"gitlab/live/be-live-admin/conf"
 	"log"
-	"os"
 
 	"github.com/redis/go-redis/v9"
 )
 
-func LoadRedis() (*redis.Client, error) {
-	host := os.Getenv("REDIS_HOST")
-	port := os.Getenv("REDIS_PORT")
-	user := os.Getenv("REDIS_USER")
-	pass := os.Getenv("REDIS_PASS")
+func LoadRedis() (cache.RedisStore, error) {
+	redisCfg := conf.GetRedisConfig()
 
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", host, port),
-		Username: user,
-		Password: pass,
+		Addr:     fmt.Sprintf("%s:%d", redisCfg.Host, redisCfg.Port),
+		Username: redisCfg.User,
+		Password: redisCfg.Pass,
 		DB:       0,
 	})
 
 	log.Println("Successfully connected to redis")
 
-	return rdb, nil
-
-	// return nil, nil
+	return &cache.RedisClient{Rdb: rdb}, nil
 }

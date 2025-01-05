@@ -22,9 +22,24 @@ export const getLivestreamSessionList = (
 }
 
 export const createNewLivestreamSession = (body: any) => {
+	const formData = new FormData();
+
+	for (const key in body) {
+		if (Array.isArray(body[key])) {
+			const values = key === "category_ids"
+				? body[key].map(value => JSON.stringify(value))
+				: [JSON.stringify(body[key])];
+
+			values.forEach(value => formData.append(key, value));
+		} else {
+			formData.append(key, body[key]);
+		}
+	}
+
+
 	return axios.post(
 		`${API_URL}`,
-		body,
+		formData,
 		{
 			headers: {
 				...authHeader(),

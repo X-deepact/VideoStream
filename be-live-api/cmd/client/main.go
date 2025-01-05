@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"gitlab/live/be-live-api/cache"
 	"gitlab/live/be-live-api/cmd/client/handler"
 	"gitlab/live/be-live-api/conf"
+	"gitlab/live/be-live-api/cron"
 	"gitlab/live/be-live-api/datasource"
 	"gitlab/live/be-live-api/pkg/utils"
 	"gitlab/live/be-live-api/repository"
@@ -13,8 +15,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
+
+	cmiddleware "gitlab/live/be-live-api/pkg/middleware"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
@@ -43,16 +48,26 @@ func main() {
 
 	repo := repository.NewRepository(ds.DB)
 
-	srv := service.NewService(repo, ds.RClient)
+	srv := service.NewService(repo, ds.RedisStore)
 
 	if err := utils.InitFolder(); err != nil {
 		log.Fatal(err)
 	}
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	var wsWg sync.WaitGroup
+
+	// cron
+	cron.NewCron(srv, ctx, &wsWg)
+
+	appCfg := conf.GetApplicationConfig()
+
 	e := echo.New()
 
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"http://localhost:8080", "http://localhost:5173"},
+		AllowOrigins: appCfg.AllowedOrigins,
 		AllowMethods: []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete},
 	}))
 
@@ -65,18 +80,36 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
+	// it would be messed up if config change to other paths
+	e.Use(cmiddleware.ExcludePathMiddleware("/api/file/recordings/", "/api/file/scheduled_videos/"))
+
 	v := validator.New()
 	// Register custom validator with Echo
 	e.Validator = &CustomValidator{validator: v}
 
-	e.Static("/api/file", conf.GetFileStorageConfig().RootFolder)
+	fileH := e.Group("/api/file")
+
+	fileH.GET("/videos/:filename", func(c echo.Context) error {
+		videoName := c.Param("filename")
+		cacheKey := fmt.Sprintf(cache.VIDEO_ENCODING_PREFIX, videoName)
+		isEncoding, _ := cache.GetRedisValWithTyped[bool](ds.RedisStore, c.Request().Context(), cacheKey)
+		if isEncoding {
+			return utils.BuildSuccessResponse(c, http.StatusAccepted, map[string]string{
+				"message": "The video is currently being encoded. Please try again later.",
+			})
+		}
+		videosPath := conf.GetFileStorageConfig().VideoFolder + videoName
+
+		return c.File(videosPath)
+
+	})
+
+	fileH.Static("/", conf.GetFileStorageConfig().RootFolder)
 
 	root := e.Group("/")
 
-	handler := handler.NewHandler(root, srv)
+	handler := handler.NewHandler(root, srv, ctx, &wsWg)
 	handler.Register()
-
-	appCfg := conf.GetApplicationConfig()
 
 	go func() {
 		if err := e.Start(fmt.Sprintf(":%d", appCfg.Port)); err != nil && err != http.ErrServerClosed {
@@ -84,18 +117,19 @@ func main() {
 		}
 	}()
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	<-quit
-	fmt.Println("Shutting down server...")
+	<-ctx.Done()
+	log.Println("Shutdown signal received, shutting down server...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	wsWg.Wait()
+
+	// Create a context with timeout for server shutdown
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := e.Shutdown(ctx); err != nil {
-		e.Logger.Fatal(err)
+	if err := e.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
 	}
 
-	fmt.Println("Server gracefully stopped")
+	log.Println("Server shutdown gracefully.")
 
 }

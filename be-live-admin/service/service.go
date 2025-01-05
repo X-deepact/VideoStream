@@ -1,9 +1,8 @@
 package service
 
 import (
-	"gitlab/live/be-live-api/repository"
-
-	"github.com/redis/go-redis/v9"
+	"gitlab/live/be-live-admin/cache"
+	"gitlab/live/be-live-admin/repository"
 )
 
 type Service struct {
@@ -15,12 +14,12 @@ type Service struct {
 	Category     *CategoryService
 }
 
-func NewService(repo *repository.Repository, redis *redis.Client, streamServer *streamServerService) *Service {
+func NewService(repo *repository.Repository, redis cache.RedisStore, streamServer *streamServerService) *Service {
 	return &Service{
 		User:     newUserService(repo, redis),
-		Admin:    newAdminService(repo, redis),
-		Role:     NewRoleService(repo, redis),
-		Category: newCategoryService(repo, redis),
+		Admin:    newAdminService(repo),
+		Role:     NewRoleService(repo),
+		Category: newCategoryService(repo),
 		Stream:   newStreamService(repo, redis, streamServer),
 	}
 }

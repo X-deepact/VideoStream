@@ -43,7 +43,7 @@ func (h *authHandler) register() {
 
 func (h *authHandler) Register(c echo.Context) error {
 	var req dto.RegisterRequest
-	if err := utils.BindFormData(c, &req); err != nil {
+	if err := utils.BindAndValidate(c, &req); err != nil {
 		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("invalid request body"), nil)
 	}
 
@@ -81,6 +81,7 @@ func (h *authHandler) Register(c echo.Context) error {
 	}
 
 	resp := dto.LoginResponse{
+		ID:             user.ID,
 		Username:       user.Username,
 		DisplayName:    user.DisplayName,
 		Email:          user.Email,
@@ -121,6 +122,7 @@ func (h *authHandler) Login(c echo.Context) error {
 	}
 
 	resp := dto.LoginResponse{
+		ID:             user.ID,
 		Username:       user.Username,
 		DisplayName:    user.DisplayName,
 		Email:          user.Email,

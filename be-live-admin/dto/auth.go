@@ -1,6 +1,6 @@
 package dto
 
-import "gitlab/live/be-live-api/model"
+import "gitlab/live/be-live-admin/model"
 
 type LoginDTO struct {
 	Email    string `json:"email" validate:"required,email,max=100"`

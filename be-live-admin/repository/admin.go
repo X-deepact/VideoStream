@@ -2,9 +2,9 @@ package repository
 
 import (
 	"fmt"
-	"gitlab/live/be-live-api/dto"
-	"gitlab/live/be-live-api/model"
-	"gitlab/live/be-live-api/utils"
+	"gitlab/live/be-live-admin/dto"
+	"gitlab/live/be-live-admin/model"
+	"gitlab/live/be-live-admin/utils"
 
 	"gorm.io/gorm"
 )
@@ -50,11 +50,22 @@ func (s *AdminRepository) GetAdminLogs(req *dto.AdminLogQuery) (*utils.Paginatio
 	var query = s.db.Model(model.AdminLog{}).Joins("LEFT JOIN users ON users.id = admin_logs.user_id")
 	if req != nil {
 		if req.Keyword != "" {
-			query = query.Where("users.email ILIKE ?", "%"+req.Keyword+"%")
-			query = query.Or("users.username ILIKE ?", "%"+req.Keyword+"%")
-			query = query.Or("users.display_name ILIKE ?", "%"+req.Keyword+"%")
-			query = query.Or("admin_logs.action ILIKE ?", "%"+req.Keyword+"%")
-			query = query.Or("admin_logs.details ILIKE ?", "%"+req.Keyword+"%")
+			if req.FilterBy == "email" {
+				query = query.Where("users.email ILIKE ?", "%"+req.Keyword+"%")
+			}
+			if req.FilterBy == "username" {
+				query = query.Where("users.username = ?", req.Keyword)
+			}
+			if req.FilterBy == "id" {
+				query = query.Where("users.id = ?", req.Keyword)
+			}
+			if req.FilterBy == "action" {
+				query = query.Where("admin_logs.action = ?", req.Keyword)
+			}
+			if req.FilterBy == "details" {
+				query = query.Where("admin_logs.details ILIKE ?", "%"+req.Keyword+"%")
+			}
+
 		}
 		if len(req.UserIDs) > 0 {
 			query = query.Where("admin_logs.user_id IN ?", req.UserIDs)

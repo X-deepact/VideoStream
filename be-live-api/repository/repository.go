@@ -10,6 +10,8 @@ type Repository struct {
 	Stream      *StreamRepository
 	TwoFA       *TwoFARepository
 	Interaction *InteractionRepository
+	Category    *CategoryRepository
+	Subscribe   *SubscribeRepository
 }
 
 func NewRepository(db *gorm.DB) *Repository {
@@ -20,6 +22,8 @@ func NewRepository(db *gorm.DB) *Repository {
 	streamRepo := newStreamRepository(db)
 	twoFARepo := newTwoFARepository(db)
 	irRepo := newInteractionRepository(db)
+	categoryRepo := newCategoryRepository(db)
+	subscribeRepo := newSubscribeRepository(db)
 
 	return &Repository{
 		Admin:       adminRepo,
@@ -29,5 +33,7 @@ func NewRepository(db *gorm.DB) *Repository {
 		Stream:      streamRepo,
 		TwoFA:       twoFARepo,
 		Interaction: irRepo,
+		Category:    categoryRepo,
+		Subscribe:   subscribeRepo,
 	}
 }

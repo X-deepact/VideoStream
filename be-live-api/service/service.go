@@ -1,33 +1,32 @@
 package service
 
 import (
+	"gitlab/live/be-live-api/cache"
 	"gitlab/live/be-live-api/repository"
-
-	"github.com/redis/go-redis/v9"
 )
 
 type Service struct {
 	User         *UserService
-	Admin        *AdminService
 	StreamServer *streamServerService
 	Role         *RoleService
-	Otp          *OtpService
 	Stream       *StreamService
 	TwoFA        *TwoFAService
 	Interaction  *interactionService
+	Category     *CategoryService
+	Subscribe    *SubscribeService
 }
 
-func NewService(repo *repository.Repository, redis *redis.Client) *Service {
+func NewService(repo *repository.Repository, redis cache.RedisStore) *Service {
 	streamServer := newStreamServerService()
 
 	return &Service{
 		User:         newUserService(repo, redis),
-		Admin:        newAdminService(repo, redis),
 		StreamServer: streamServer,
-		Role:         newRoleService(repo, redis),
-		Otp:          newOtpService(repo, redis),
+		Role:         newRoleService(repo),
 		Stream:       newStreamService(repo, redis, streamServer),
-		TwoFA:        newTwoFAService(repo, redis),
-		Interaction:  newInteractionService(repo, redis),
+		TwoFA:        newTwoFAService(repo),
+		Interaction:  newInteractionService(repo),
+		Category:     newCategoryService(repo),
+		Subscribe:    newSubscribeService(repo),
 	}
 }

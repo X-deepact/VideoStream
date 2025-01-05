@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	"gitlab/live/be-live-api/model"
+	"gitlab/live/be-live-admin/model"
 	"log"
 	"time"
 

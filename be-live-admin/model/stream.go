@@ -171,8 +171,3 @@ type ScheduleStream struct {
 	UpdatedAt   time.Time `gorm:"default:CURRENT_TIMESTAMP;autoUpdateTime;not null"`
 	Stream      Stream    `gorm:"foreignKey:StreamID;constraint:OnDelete:CASCADE"`
 }
-
-type LiveCurrentViewers struct {
-	StreamID uint `json:"stream_id"`
-	Viewers  uint `json:"viewers"`
-}

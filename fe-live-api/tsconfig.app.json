@@ -21,13 +21,11 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
-    },
-    "allowSyntheticDefaultImports": true
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src"]
 }

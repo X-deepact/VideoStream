@@ -2,9 +2,9 @@ package repository
 
 import (
 	"fmt"
-	"gitlab/live/be-live-api/dto"
-	"gitlab/live/be-live-api/model"
-	"gitlab/live/be-live-api/utils"
+	"gitlab/live/be-live-admin/dto"
+	"gitlab/live/be-live-admin/model"
+	"gitlab/live/be-live-admin/utils"
 	"log"
 	"slices"
 	"strings"
@@ -36,7 +36,7 @@ func (s *StreamRepository) PaginateStreamStatisticsData(cond *dto.StatisticsQuer
 			}
 		}
 	} else {
-		query = query.Order(fmt.Sprintf("stream_analytics.%s %s", "created_at", "DESC"))
+		query = query.Order(fmt.Sprintf("stream_analytics.%s %s", "created_at", dto.SORT_DESC))
 	}
 
 	if cond != nil {
@@ -71,10 +71,10 @@ func (s *StreamRepository) PaginateLiveStatData(cond *dto.LiveStatQuery) (*utils
 		}
 
 		if cond.SortBy != "" && cond.Sort != "" {
-			if !strings.Contains(cond.SortBy, "title") && !strings.Contains(cond.SortBy, "description") {
-				if strings.Contains(cond.SortBy, "total_viewers") {
+			if !strings.Contains(cond.SortBy, dto.SORT_BY_TITLE) && !strings.Contains(cond.SortBy, dto.SORT_BY_DESCRIPTION) {
+				if strings.Contains(cond.SortBy, dto.SORT_BY_TOTAL_VIEWERS) {
 					query = query.Order(fmt.Sprintf("stream_analytics.views %s", cond.Sort))
-				} else if !strings.Contains(cond.SortBy, "current_viewers") {
+				} else if !strings.Contains(cond.SortBy, dto.SORT_BY_CURRENT_VIEWERS) {
 					query = query.Order(fmt.Sprintf("stream_analytics.%s %s", cond.SortBy, cond.Sort))
 				}
 			} else {
@@ -148,8 +148,8 @@ func (s *StreamRepository) PaginateLiveStreamBroadCastData(page, limit uint, con
 			query = query.Where("streams.ended_at BETWEEN ? AND ?", from, end)
 		}
 
-		if cond.Sort != "" && cond.SortBy != "" && cond.SortBy != "duration" {
-			if slices.Contains([]string{"views", "likes", "comments", "video_size"}, cond.SortBy) {
+		if cond.Sort != "" && cond.SortBy != "" && cond.SortBy != dto.SORT_BY_DURATION {
+			if slices.Contains([]string{dto.SORT_BY_VIEWERS, dto.SORT_BY_LIKES, dto.SORT_BY_COMMENTS, dto.SORT_BY_VIDEO_SIZE}, cond.SortBy) {
 				query = query.Joins("LEFT JOIN stream_analytics ON streams.id = stream_analytics.stream_id")
 				query = query.Order(fmt.Sprintf("stream_analytics.%s %s", cond.SortBy, cond.Sort))
 			} else {
@@ -169,6 +169,15 @@ func (s *StreamRepository) GetByID(id int) (*model.Stream, error) {
 	var result model.Stream
 
 	if err := s.db.Model(model.Stream{}).Where("id=?", id).Preload("User").First(&result).Error; err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (s *StreamRepository) GetScheduleStreamByStreamID(id int) (*model.ScheduleStream, error) {
+	var result model.ScheduleStream
+
+	if err := s.db.Model(model.ScheduleStream{}).Where("stream_id=?", id).First(&result).Error; err != nil {
 		return nil, err
 	}
 	return &result, nil
@@ -221,6 +230,12 @@ func (r *StreamRepository) DeleteLiveStream(id int) error {
 		tx.Rollback()
 		return err
 	}
+
+	if err := tx.Unscoped().Where("stream_id = ?", id).Delete(&model.ScheduleStream{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	if err := tx.Unscoped().Where("id = ?", id).Delete(&model.Stream{}).Error; err != nil {
 		tx.Rollback()
 		return err
@@ -237,6 +252,18 @@ func (r *StreamRepository) DeleteLiveStream(id int) error {
 
 	return tx.Commit().Error
 
+}
+func (r *StreamRepository) GetCategoriesByStreamID(id uint) ([]string, error) {
+	var streamCategories []model.StreamCategory
+	if err := r.db.Model(model.StreamCategory{}).Where("stream_id = ?", id).Preload("Category").Find(&streamCategories).Error; err != nil {
+		return nil, err
+	}
+	var result []string
+	for _, v := range streamCategories {
+		result = append(result, v.Category.Name)
+	}
+
+	return result, nil
 }
 
 func (r *StreamRepository) CreateScheduleStream(stream *model.Stream, scheduleStream *model.ScheduleStream, categoryIDs []uint) error {
@@ -276,6 +303,54 @@ func (r *StreamRepository) CreateScheduleStream(stream *model.Stream, scheduleSt
 	if err := tx.Create(scheduleStream).Error; err != nil {
 		tx.Rollback()
 		return err
+	}
+
+	return tx.Commit().Error
+}
+
+func (r *StreamRepository) UpdateStream(stream *model.Stream, scheduleStream *model.ScheduleStream, categoryIDs []uint) error {
+	tx := r.db.Begin()
+
+	var existingCategoryIDs []uint
+	if err := r.db.Model(&model.Category{}).Where("id IN ?", categoryIDs).Pluck("id", &existingCategoryIDs).Error; err != nil {
+		return err
+	}
+
+	log.Println(existingCategoryIDs, categoryIDs)
+
+	for _, categoryID := range categoryIDs {
+		if !slices.Contains(existingCategoryIDs, categoryID) {
+			return fmt.Errorf("category id %d does not exist", categoryID)
+		}
+	}
+
+	if err := tx.Updates(stream).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// delete old stream categories
+	if err := tx.Exec("DELETE FROM stream_categories WHERE stream_id = ?", stream.ID).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	for _, categoryID := range categoryIDs {
+		streamCategory := &model.StreamCategory{
+			StreamID:   stream.ID,
+			CategoryID: categoryID,
+		}
+
+		if err := tx.Create(streamCategory).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	if scheduleStream != nil {
+		if err := tx.Where("stream_id = ?", stream.ID).Updates(scheduleStream).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	return tx.Commit().Error

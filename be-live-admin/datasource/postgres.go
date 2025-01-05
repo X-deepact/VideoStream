@@ -2,8 +2,8 @@ package datasource
 
 import (
 	"fmt"
-	"gitlab/live/be-live-api/conf"
-	"gitlab/live/be-live-api/model"
+	"gitlab/live/be-live-admin/conf"
+	"gitlab/live/be-live-admin/model"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

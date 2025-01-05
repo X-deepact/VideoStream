@@ -13,12 +13,16 @@ redis:
 
 web:
   port: 8787
+  allowed_origins: ["http://localhost:5173", "http://localhost:8080"]
 
 file_storage:
   root_folder: ./tmp
   thumbnail_folder: ./tmp/thumbnail/
   avatar_folder: ./tmp/avatar/
   live_folder: ./tmp/recordings/live/
+  scheduled_videos_folder: ./tmp/scheduled_videos/
+  video_folder: ./tmp/videos/
+  log_folder: ./tmp/logs/
 
 api_file:
   url: http://localhost:8787

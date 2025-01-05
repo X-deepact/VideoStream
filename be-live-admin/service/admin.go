@@ -2,17 +2,20 @@ package service
 
 import (
 	"database/sql"
-	"gitlab/live/be-live-api/dto"
-	"gitlab/live/be-live-api/model"
-	"gitlab/live/be-live-api/repository"
-	"gitlab/live/be-live-api/utils"
-
-	"github.com/redis/go-redis/v9"
+	"gitlab/live/be-live-admin/dto"
+	"gitlab/live/be-live-admin/model"
+	"gitlab/live/be-live-admin/repository"
+	"gitlab/live/be-live-admin/utils"
 )
 
 type AdminService struct {
-	repo  *repository.Repository
-	redis *redis.Client
+	repo *repository.Repository
+}
+
+func newAdminService(repo *repository.Repository) *AdminService {
+	return &AdminService{
+		repo: repo,
+	}
 }
 
 func (s *AdminService) toCreateAdminDto(user *model.User) *dto.CreateAdminResp {
@@ -145,10 +148,4 @@ func (s *AdminService) GetAdminLogs(req *dto.AdminLogQuery) (*utils.PaginationMo
 
 func (s *AdminService) CreateLog(adminLog *model.AdminLog) error {
 	return s.repo.Admin.Create(adminLog)
-}
-func newAdminService(repo *repository.Repository, redis *redis.Client) *AdminService {
-	return &AdminService{
-		repo:  repo,
-		redis: redis,
-	}
 }

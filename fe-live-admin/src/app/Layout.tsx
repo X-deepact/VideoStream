@@ -9,9 +9,7 @@ export const Layout: React.FC = ()  => {
         <SidebarProvider className="w-screen h-screen">
             <AppSidebar />
             <SidebarInset>
-                <header className="flex sticky top-0 bg-sidebar h-[5rem] shrink-0 items-center gap-2 border-b px-4">
-                    <AppHeader />
-                </header>
+                <AppHeader />
                 <main>
                     <Outlet />
                 </main>

@@ -1,11 +1,16 @@
 import "./App.css";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+	BrowserRouter as Router,
+	Routes,
+	Route,
+	Navigate
+} from "react-router-dom";
 import Login from "@/pages/auth/Login";
 import Dashboard from "@/pages/dashboard/Dashboard.tsx";
 import PrivateRoute from "@/lib/PrivateRoute";
 import { Layout } from "@/app/Layout.tsx";
 import AccountList from "@/components/admin-management/AccountList";
-import { AuthProvider } from "./lib/auth-util";
+import { AuthProvider, useAuth } from "./lib/auth-util";
 import Profile from "./components/admin-management/Profile";
 import VideoLibrary from "./components/video-management/video-library";
 import LivestreamSessions from "@/components/livestream-management/LivestreamSessions.tsx";
@@ -14,25 +19,41 @@ import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import LiveStatistic from "./components/admin-management/LiveStatistic";
+import {
+	APP_ACCOUNT_LIST_PATH,
+	APP_DASHBOARD_PATH, APP_LIVE_LIST_PATH, APP_LIVE_STATISTIC_PATH,
+	APP_LOGIN_PATH,
+	APP_PREFIX_PATH,
+	APP_PROFILE_PATH, APP_VIDEO_LIBRARY_PATH, APP_VIDEO_STATISTIC_PATH
+} from "@/router";
+
+function RedirectHome() {
+	const { isAuthenticated } = useAuth();
+	if (isAuthenticated) {
+		return <Navigate to={APP_DASHBOARD_PATH} replace />;
+	}
+	
+	return <Navigate to={APP_LOGIN_PATH} replace />;
+}
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/login" element={<Login />} />
+	        <Route path="/" element={<RedirectHome />} />
+          <Route path={APP_LOGIN_PATH} element={<Login />} />
           {/* <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} /> */}
-          <Route path="/" element={<PrivateRoute loginUrl={"/login"} />}>
-	          <Route path="/dashboard" element={<Layout />}>
+          <Route element={<PrivateRoute loginUrl={APP_LOGIN_PATH} />}>
+	          <Route path={APP_DASHBOARD_PATH} element={<Layout />}>
 		          <Route index element={<Dashboard />}></Route>
-		          <Route path="profile" element={<Profile />} />
-		          <Route path="account-list" element={<AccountList />} />
-		          <Route path="live-list" element={<LivestreamSessions />} />
-		          <Route path="video-library" element={<VideoLibrary />} />
-		          <Route path="live-statistics" element={<LiveStatistic />} />
-		          <Route path="video-statistics" element={<VideoStatistics />} />
+		          <Route path={APP_PROFILE_PATH} element={<Profile />} />
+		          <Route path={APP_ACCOUNT_LIST_PATH} element={<AccountList />} />
+		          <Route path={APP_LIVE_LIST_PATH} element={<LivestreamSessions />} />
+		          <Route path={APP_VIDEO_LIBRARY_PATH} element={<VideoLibrary />} />
+		          <Route path={APP_LIVE_STATISTIC_PATH} element={<LiveStatistic />} />
+		          <Route path={APP_VIDEO_STATISTIC_PATH} element={<VideoStatistics />} />
 	          </Route>
           </Route>
         </Routes>

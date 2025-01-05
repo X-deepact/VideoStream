@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"gitlab/live/be-live-api/model"
+	"gitlab/live/be-live-admin/model"
 	"time"
 
 	"gorm.io/gorm"
@@ -58,12 +58,11 @@ type AdminLogDTO struct {
 }
 
 type UpdateUserRequest struct {
-	UserName       string         `json:"username" validate:"required,min=3,max=50"`
-	Email          string         `json:"email" validate:"required,email,max=100"`
-	DisplayName    string         `json:"display_name" validate:"required,min=3,max=100"`
-	RoleType       model.RoleType `json:"role_type" validate:"required,oneof=admin streamer user"`
-	AvatarFileName string         `json:"avatar_file_name" validate:"omitempty,min=3,max=200"`
-	UpdatedByID    *uint          `json:"updated_by_id"`
+	UserName    string         `json:"username" validate:"omitempty,min=3,max=50"`
+	Email       string         `json:"email" validate:"omitempty,email,max=100"`
+	DisplayName string         `json:"display_name" validate:"omitempty,min=3,max=100"`
+	RoleType    model.RoleType `json:"role_type" validate:"omitempty,oneof=admin streamer user"`
+	UpdatedByID *uint          `json:"updated_by_id"`
 }
 
 type UpdateUserResponse struct {
@@ -82,4 +81,9 @@ type CreateUserRequest struct {
 	RoleType       model.RoleType `json:"role_type" form:"role_type" validate:"required,oneof=admin streamer user"`
 	AvatarFileName string         `json:"-" form:"-"`
 	CreatedByID    *uint          `json:"-" form:"-"`
+}
+
+type ChangePasswordRequest struct {
+	Password        string `json:"password" form:"password" validate:"required,min=6,max=255"`
+	ConfirmPassword string `json:"confirm_password" form:"confirm_password" validate:"required,min=6,max=255"`
 }

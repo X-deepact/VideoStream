@@ -2,7 +2,7 @@ package repository
 
 import (
 	"errors"
-	"gitlab/live/be-live-api/model"
+	"gitlab/live/be-live-admin/model"
 
 	"gorm.io/gorm"
 )

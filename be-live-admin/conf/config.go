@@ -2,9 +2,9 @@ package conf
 
 import (
 	"crypto/rsa"
-	"gitlab/live/be-live-api/model"
-	"gitlab/live/be-live-api/service"
-	"gitlab/live/be-live-api/utils"
+	"gitlab/live/be-live-admin/model"
+	"gitlab/live/be-live-admin/service"
+	"gitlab/live/be-live-admin/utils"
 	"log"
 	"os"
 
@@ -20,7 +20,7 @@ var cfg *Config
 
 type Config struct {
 	DB           DBConfig           `yaml:"database"`
-	Redis        DBConfig           `yaml:"redis"`
+	Redis        RedisConfig        `yaml:"redis"`
 	Web          ApplicationConfig  `yaml:"web"`
 	FileStorage  FileStorageConfig  `yaml:"file_storage"`
 	StreamServer StreamServerConfig `yaml:"stream_server"`
@@ -53,7 +53,8 @@ type RedisConfig struct {
 }
 
 type ApplicationConfig struct {
-	Port int `yaml:"port"`
+	Port           int      `yaml:"port"`
+	AllowedOrigins []string `yaml:"allowed_origins"`
 }
 
 type FileStorageConfig struct {
@@ -144,6 +145,10 @@ func init() {
 
 func GetDatabaseConfig() *DBConfig {
 	return &cfg.DB
+}
+
+func GetRedisConfig() *RedisConfig {
+	return &cfg.Redis
 }
 
 func GetApplicationConfig() *ApplicationConfig {

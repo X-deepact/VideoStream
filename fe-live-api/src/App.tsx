@@ -1,40 +1,120 @@
-import "./App.css";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Login from "@/pages/auth/Login";
-import Dashboard from "@/pages/dashboard/Dashboard.tsx";
-import PrivateRoute from "@/lib/PrivateRoute";
-import { Layout } from "@/app/Layout.tsx";
-import AccountList from "@/components/admin-management/AccountList";
-import { AuthProvider } from "./lib/auth-util";
-import Profile from "./components/admin-management/Profile";
-import VideoLibrary from "./components/video-management/video-library";
-import VideoStatistics from "./components/admin-management/VideoStatistic";
-import Register from "./pages/auth/Register";
-import ForgotPassword from "./pages/auth/ForgotPassword";
-import ResetPassword from "./pages/auth/ResetPassword";
+import { Navigate, Route, BrowserRouter, Routes } from 'react-router-dom';
+import History from './pages/History';
+import Subscriptions from './pages/Subscriptions';
+import LikedVideos from './pages/LikedVideos';
+import SavedVideos from './pages/SavedVideos';
+import NotFound from './pages/NotFound';
+import {
+  FORGOT_PASSWORD_PATH,
+  HISTORY_PATH,
+  FEED_PATH,
+  LIKED_VIDEOS_PATH,
+  LIVE_STREAM_PATH,
+  LIVE_STREAM_WEBCAM_PATH,
+  LOGIN_PATH,
+  LOGOUT_PATH,
+  PRIVACY_DOCS_PATH,
+  REGISTRATION_PATH,
+  SAVED_VIDEOS_PATH,
+  SETTINGS_PATH,
+  SUBSCRIPTIONS_PATH,
+  TERMS_OF_SERVICES_DOCS_PATH,
+  TEST_LIVE_STREAM_PATH,
+  STREAMER_PROFILE_PATH,
+  WATCH_VIDEO_PATH,
+  WATCH_LIVE_PATH,
+} from './data/route';
+import Register from './pages/Auth/Register';
+import Login from './pages/Auth/Login';
+import ProtectedRoute from './components/ProtectedRoute';
+import Privacy from './pages/public/Privacy';
+import TermsOfServices from './pages/public/TermsOfServices';
+import TestLiveStream from './pages/TestLiveStream';
+import LogoutPage from './pages/Auth/Logout';
+import LiveStream from './pages/LiveStream';
+import LiveStreamWebcam from './pages/LiveStream/Webcam';
+import React from 'react';
+import Settings from './pages/Settings';
+import ForgotPassword from './pages/Auth/ForgotPassword';
+import Feed from './pages/Feed';
+import UserProfile from './pages/UserProfile';
+import WatchVideo from './pages/WatchVideo';
+import WatchLive from './pages/WatchLive';
+
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/" element={<PrivateRoute loginUrl={"/login"} />}>
-          <Route path="/dashboard" element={<Layout />}>
-            <Route index element={<Dashboard />}></Route>
-            <Route path="profile" element={<Profile />} />
-            <Route path="account-list" element={<AccountList />} />
-            <Route path="video-statistics" element={<VideoStatistics />} />
-            <Route path="video-library" element={<VideoLibrary />} />
-          </Route>
-          </Route>
-        </Routes>
-      </Router>
-    </AuthProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to={LOGIN_PATH} />} />
+
+        {/* Feed page */}
+        <Route
+          path={FEED_PATH}
+          element={<ProtectedRoute element={<Feed />} />}
+        />
+
+        <Route
+          path={SUBSCRIPTIONS_PATH}
+          element={<ProtectedRoute element={<Subscriptions />} />}
+        />
+        <Route
+          path={HISTORY_PATH}
+          element={<ProtectedRoute element={<History />} />}
+        />
+        <Route
+          path={LIKED_VIDEOS_PATH}
+          element={<ProtectedRoute element={<LikedVideos />} />}
+        />
+        <Route
+          path={SAVED_VIDEOS_PATH}
+          element={<ProtectedRoute element={<SavedVideos />} />}
+        />
+        <Route
+          path={LIVE_STREAM_PATH}
+          element={<ProtectedRoute element={<LiveStream />} />}
+        />
+        <Route
+          path={LIVE_STREAM_WEBCAM_PATH}
+          element={<ProtectedRoute element={<LiveStreamWebcam />} />}
+        />
+        <Route
+          path={SETTINGS_PATH}
+          element={<ProtectedRoute element={<Settings />} />}
+        />
+        <Route path={LOGOUT_PATH} element={<LogoutPage />} />
+
+        {/* Watch video */}
+        <Route
+          path={WATCH_VIDEO_PATH}
+          element={<ProtectedRoute element={<WatchVideo />} />}
+        />
+        <Route
+          path={WATCH_LIVE_PATH}
+          element={<ProtectedRoute element={<WatchLive />} />}
+        />
+
+        {/* Streamers */}
+        <Route
+          path={STREAMER_PROFILE_PATH}
+          element={<ProtectedRoute element={<UserProfile />} />}
+        />
+
+        {/* Testings */}
+        <Route path={TEST_LIVE_STREAM_PATH} element={<TestLiveStream />} />
+
+        <Route path={LOGIN_PATH} element={<Login />} />
+        <Route path={REGISTRATION_PATH} element={<Register />} />
+        <Route path={FORGOT_PASSWORD_PATH} element={<ForgotPassword />} />
+        <Route path={PRIVACY_DOCS_PATH} element={<Privacy />} />
+        <Route
+          path={TERMS_OF_SERVICES_DOCS_PATH}
+          element={<TermsOfServices />}
+        />
+
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
-export default App;
+export default React.memo(App);

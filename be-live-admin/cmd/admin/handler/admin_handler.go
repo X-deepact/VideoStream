@@ -3,11 +3,11 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"gitlab/live/be-live-api/conf"
-	"gitlab/live/be-live-api/dto"
-	"gitlab/live/be-live-api/model"
-	"gitlab/live/be-live-api/service"
-	"gitlab/live/be-live-api/utils"
+	"gitlab/live/be-live-admin/conf"
+	"gitlab/live/be-live-admin/dto"
+	"gitlab/live/be-live-admin/model"
+	"gitlab/live/be-live-admin/service"
+	"gitlab/live/be-live-admin/utils"
 	"net/http"
 	"strconv"
 

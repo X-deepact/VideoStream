@@ -1,26 +1,42 @@
 package service
 
 import (
+	"database/sql"
+	"errors"
+	"fmt"
+	"gitlab/live/be-live-api/cache"
 	"gitlab/live/be-live-api/conf"
 	"gitlab/live/be-live-api/dto"
 	"gitlab/live/be-live-api/model"
 	"gitlab/live/be-live-api/pkg/utils"
 	"gitlab/live/be-live-api/repository"
+	"log"
+	"os/exec"
+	"time"
 
-	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
 type StreamService struct {
 	repo         *repository.Repository
-	redis        *redis.Client
+	redisStore   cache.RedisStore
 	streamServer *streamServerService
+
+	liveFolder            string
+	scheduledVideosFolder string
+	videoFolder           string
+
+	// [filepath, isEncoding]
 }
 
-func newStreamService(repo *repository.Repository, redis *redis.Client, streamServer *streamServerService) *StreamService {
+func newStreamService(repo *repository.Repository, redis cache.RedisStore, streamServer *streamServerService) *StreamService {
 	return &StreamService{
-		repo:         repo,
-		redis:        redis,
-		streamServer: streamServer,
+		repo:                  repo,
+		redisStore:            redis,
+		streamServer:          streamServer,
+		liveFolder:            conf.GetFileStorageConfig().LiveFolder,
+		scheduledVideosFolder: conf.GetFileStorageConfig().ScheduledVideosFolder,
+		videoFolder:           conf.GetFileStorageConfig().VideoFolder,
 	}
 }
 
@@ -32,17 +48,20 @@ func (s *StreamService) CreateStream(req *dto.StreamRequest) (*model.Stream, err
 	}
 
 	stream := &model.Stream{
-		UserID:            req.UserID,
-		Title:             req.Title,
-		Description:       req.Description,
-		Status:            model.PENDING,
-		StreamToken:       token,
+		UserID:      req.UserID,
+		Title:       req.Title,
+		Description: req.Description,
+		Status:      model.PENDING,
+		StreamToken: sql.NullString{
+			String: token,
+			Valid:  true,
+		},
 		StreamKey:         channelKey,
 		StreamType:        req.StreamType,
 		ThumbnailFileName: req.ThumbnailFileName,
 	}
 
-	if err := s.repo.Stream.Create(stream); err != nil {
+	if err := s.repo.Stream.CreateStreamAndStreamCategory(stream, req.CategoryIDs); err != nil {
 		return nil, err
 	}
 
@@ -61,7 +80,17 @@ func (s *StreamService) Update(stream *model.Stream) error {
 	return s.repo.Stream.Update(stream)
 }
 
-func (s *StreamService) GetComments(streamID uint, page int, limit int) (*utils.PaginationModel[dto.LiveCommentDto], error) {
+func (s *StreamService) endStream(stream *model.Stream) error {
+	stream.Status = model.ENDED
+	stream.EndedAt = sql.NullTime{
+		Time:  time.Now(),
+		Valid: true,
+	}
+
+	return s.Update(stream)
+}
+
+func (s *StreamService) GetComments(streamID uint, userID uint, page int, limit int) (*utils.PaginationModel[dto.LiveCommentDto], error) {
 	pagination, err := s.repo.Interaction.GetComments(streamID, page, limit)
 	if err != nil {
 		return nil, err
@@ -72,8 +101,6 @@ func (s *StreamService) GetComments(streamID uint, page int, limit int) (*utils.
 		avtURL := ""
 		if e.User.AvatarFileName.String != "" {
 			avtURL = utils.GetFileUrl(avtFolder, e.User.AvatarFileName.String)
-		} else {
-			avtURL = ""
 		}
 
 		return dto.LiveCommentDto{
@@ -81,8 +108,190 @@ func (s *StreamService) GetComments(streamID uint, page int, limit int) (*utils.
 			DisplayName: e.User.DisplayName,
 			AvatarURL:   avtURL,
 			Content:     e.Comment,
+			CreatedAt:   e.CreatedAt,
+			IsEdited:    e.CreatedAt != e.UpdatedAt,
+			IsMe:        e.UserID == userID,
 		}
 	})
 	newPage.BasePaginationModel = pagination.BasePaginationModel
 	return newPage, err
+}
+
+func (s *StreamService) FinishLiveStream(stream *model.Stream, isServerClosing bool) error {
+	if err := s.endStream(stream); err != nil {
+		log.Println("Failed to end stream:", err)
+		return err
+	}
+
+	videoName := stream.StreamKey + ".mp4"
+
+	cacheKey := fmt.Sprintf(cache.VIDEO_ENCODING_PREFIX, videoName)
+	s.redisStore.SetWithDefaultCtx(cacheKey, true, time.Hour*5)
+	defer s.redisStore.RemoveWithDefaultCtx(cacheKey)
+
+	// go func() {
+	inputVideoPath, err := utils.MakeLiveVideoPath(s.liveFolder, stream.StreamKey)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	outputVideoPath := utils.MakeVideoPath(s.videoFolder, stream.StreamKey+".mp4")
+	if err := s.EncodeToMp4(inputVideoPath, outputVideoPath, isServerClosing); err != nil {
+		log.Println("Failed to encode video:", err)
+	}
+	// }()
+
+	if err := s.analyzeStream(stream); err != nil {
+		log.Println("Failed to analyze stream:", err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *StreamService) EncodeToMp4(inputVideoPath, outputVideoPath string, isServerClosing bool) error {
+	var cmd *exec.Cmd
+
+	if isServerClosing {
+		cmd = exec.Command("ffmpeg", "-i", inputVideoPath, "-c:v", "copy", "-c:a", "copy", outputVideoPath)
+	} else {
+		cmd = exec.Command("ffmpeg", "-i", inputVideoPath, "-c:v", "libx264", "-c:a", "aac", outputVideoPath)
+	}
+
+	// cmd := exec.Command("sh", "-c", command)
+
+	log.Println("Encoding video...")
+
+	// Run the command
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to encode video: %w", err)
+	}
+
+	log.Println("Video encoded successfully")
+
+	return nil
+
+}
+
+func (s *StreamService) InitializeStreamAnalytics(stream *model.Stream) error {
+	analytics := &model.StreamAnalytics{
+		StreamID:  stream.ID,
+		Views:     0,
+		Likes:     0,
+		Comments:  0,
+		VideoSize: 0,
+	}
+
+	return s.repo.Stream.CreateStreamAnalytics(analytics)
+}
+
+func (s *StreamService) analyzeStream(stream *model.Stream) error {
+	analytics, err := s.repo.Stream.GetStreamAnalyticsByStreamID(stream.ID)
+	if err != nil {
+		log.Println("error getting analytics", err)
+		return err
+	}
+
+	views, err := s.repo.Interaction.CountViewsByStreamID(stream.ID)
+	if err != nil {
+		log.Println("error counting views", err)
+		return err
+	}
+	analytics.Views = uint(views)
+
+	likes, err := s.repo.Interaction.CountLikesByStreamID(stream.ID)
+	if err != nil {
+		log.Println("error counting likes", err)
+		return err
+	}
+	analytics.Likes = uint(likes)
+
+	comments, err := s.repo.Interaction.CountCommentsByStreamID(stream.ID)
+	if err != nil {
+		log.Println("error counting comments", err)
+		return err
+	}
+	analytics.Comments = uint(comments)
+
+	videoPath := utils.MakeVideoPath(s.videoFolder, stream.StreamKey+".mp4")
+	videoSize, err := utils.GetfileSize(videoPath)
+	if err != nil {
+		log.Println("error getting video size", err)
+	}
+
+	log.Println(videoSize)
+	analytics.VideoSize = uint(videoSize)
+
+	duration, err := utils.GetDurationInMicroSeconds(videoPath)
+	if err != nil {
+		log.Println("error getting video duration", err)
+
+		if stream.EndedAt.Valid && stream.StartedAt.Valid {
+			analytics.Duration = uint(stream.EndedAt.Time.Sub(stream.StartedAt.Time).Microseconds())
+		} else {
+			log.Println("shouldn't reach here", stream.EndedAt.Valid, stream.StartedAt.Valid)
+		}
+
+	} else {
+		analytics.Duration = duration
+	}
+
+	return s.repo.Stream.UpdateStreamAnalytics(analytics)
+}
+
+func (s *StreamService) AddViewForLive(streamID uint, userID uint) error {
+	view := &model.View{
+		UserID:    userID,
+		StreamID:  streamID,
+		ViewType:  model.ViewTypeLiveView,
+		IsViewing: true,
+	}
+
+	_, err := s.repo.Stream.GetViewByStreamIDAndUserID(streamID, userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return s.repo.Stream.CreateView(view)
+		}
+		return err
+	}
+
+	return s.repo.Stream.UpdateViewStatus(streamID, userID, true)
+}
+
+func (s *StreamService) QuitView(streamID uint, userID uint) error {
+	return s.repo.Stream.UpdateViewStatus(streamID, userID, false)
+}
+
+func (s *StreamService) GetStreams(filter *dto.StreamQuery) (*utils.PaginationModel[dto.Stream], error) {
+	pagination, err := s.repo.Stream.GetStreams(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	return pagination, err
+}
+
+func (s *StreamService) GetStream(id uint) (*dto.Stream, error) {
+	return s.repo.Stream.GetStream(id)
+}
+
+func (s *StreamService) CheckScheduledStream() ([]*model.ScheduleStream, error) {
+	return s.repo.Stream.CheckScheduledStream()
+}
+
+func (s *StreamService) UpdateStreamAndStreamCategory(stream *model.Stream, categoryIDs []uint) error {
+	return s.repo.Stream.UpdateStreamAndStreamCategory(stream, categoryIDs)
+}
+
+func (s *StreamService) GetScheduleStreamsBetweenLast5And3DaysUTC() ([]*model.ScheduleStream, error) {
+	return s.repo.Stream.GetScheduleStreamsBetweenLast5And3DaysUTC()
+}
+
+func (s *StreamService) GetEndedLiveStreamsBetweenLast5And3DaysUTC() ([]*model.Stream, error) {
+	return s.repo.Stream.GetEndedLiveStreamsBetweenLast5And3DaysUTC()
+}
+
+func (s *StreamService) GetStreamByStreamKey(streamKey string) (*model.Stream, error) {
+	return s.repo.Stream.GetStreamByStreamKey(streamKey)
 }

@@ -13,6 +13,7 @@ redis:
 
 web:
   port: 8686
+  allowed_origins: ["http://localhost:5173", "http://localhost:8080"]
 
 file_storage:
   root_folder: ./tmp

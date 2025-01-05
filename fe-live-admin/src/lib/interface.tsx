@@ -28,8 +28,9 @@ export interface LivestreamStatistics {
 }
 
 export enum LIVESTREAM_STATUS {
+	UPCOMMING = "Up Coming",
 	NOT_STARTED = "Not Started",
-	STARTED = "started",
+	STREAMING = "Streaming",
 	ENDED = "Ended",
 	BANNED = "Banned",
 	DISCONNECTED = "Disconnected",

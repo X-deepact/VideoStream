@@ -1,12 +1,14 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
+// import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import '@fontsource/inter/index.css';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/400-italic.css';
+import './index.css';
+import App from './App.tsx';
 
-import './index.css'
-import App from './App'
-import { Toaster } from './components/ui/toaster'
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <App />
-    <Toaster />
-  </React.StrictMode>,
-)
+// disabled strict mode to prevent double-api-calling (mandatory for 2fa)
+createRoot(document.getElementById('root')!).render(
+  // <StrictMode>
+  <App />
+  // </StrictMode>
+);

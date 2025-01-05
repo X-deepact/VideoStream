@@ -20,7 +20,7 @@ interface ComponentProps {
 	placeholder?: string;
 	emptyMsg?: string;
 	label?: string;
-	data?: {label: string; value: string}[];
+	data: {label: string; value: string}[];
 	onDataChange?: (value: string) => void;
 	popOverClass?: string
 }

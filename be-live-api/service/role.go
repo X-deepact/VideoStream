@@ -3,19 +3,15 @@ package service
 import (
 	"gitlab/live/be-live-api/model"
 	"gitlab/live/be-live-api/repository"
-
-	"github.com/redis/go-redis/v9"
 )
 
 type RoleService struct {
-	repo  *repository.Repository
-	redis *redis.Client
+	repo *repository.Repository
 }
 
-func newRoleService(repo *repository.Repository, redis *redis.Client) *RoleService {
+func newRoleService(repo *repository.Repository) *RoleService {
 	return &RoleService{
-		repo:  repo,
-		redis: redis,
+		repo: repo,
 	}
 }
 

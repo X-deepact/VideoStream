@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-util";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
+import { APP_LOGIN_PATH } from "@/router";
 
 const LogoutButton: React.FC = () => {
   const navigator = useNavigate();
@@ -16,7 +17,7 @@ const LogoutButton: React.FC = () => {
     toast({
       description: "Logout successfully.",
     });
-    navigator("/login");
+    navigator(APP_LOGIN_PATH);
   };
   return (
     <Button

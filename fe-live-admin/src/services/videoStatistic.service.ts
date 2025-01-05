@@ -2,7 +2,7 @@ import axios from "axios";
 import authHeader from "./auth-header";
 
 // You might want to get this from environment variables
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const getVideoStatistics = async (
   page: number = 1,
@@ -13,7 +13,7 @@ export const getVideoStatistics = async (
   id?: string
 ) => {
   try {
-    const url = `${API_URL}/streams`;
+    const url = `${API_URL}/api/streams`;
     const params: any = {
       page,
       limit: pageSize,

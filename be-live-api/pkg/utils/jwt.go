@@ -3,19 +3,20 @@ package utils
 import (
 	"errors"
 	"fmt"
-	"github.com/golang-jwt/jwt/v4"
 	"gitlab/live/be-live-api/model"
 	"log"
 	"time"
+
+	"github.com/golang-jwt/jwt/v4"
 )
 
 // Create a struct that will be encoded to a JWT.
 // We add jwt.RegisteredClaims as an embedded type, to provide fields like expiry time
 type Claims struct {
-	ID       uint   `json:"id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	RoleType string `json:"role_type"`
+	ID       uint           `json:"id"`
+	Username string         `json:"username"`
+	Email    string         `json:"email"`
+	RoleType model.RoleType `json:"role_type"`
 	jwt.RegisteredClaims
 }
 
@@ -31,7 +32,7 @@ func GenerateAccessToken(id uint, username string, email string, roleType model.
 		ID:       id,
 		Username: username,
 		Email:    email,
-		RoleType: string(roleType),
+		RoleType: roleType,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
