@@ -69,6 +69,24 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        toast: {
+          success: {
+            DEFAULT: "hsl(142.1 76.2% 36.3%)", // green-500
+            border: "hsl(142.1 71.8% 29.2%)",  // green-600
+          },
+          error: {
+            DEFAULT: "hsl(0 84.2% 60.2%)",     // red-500
+            border: "hsl(0 72.2% 50.6%)",      // red-600
+          },
+          warning: {
+            DEFAULT: "hsl(48 96% 53.1%)",      // yellow-500
+            border: "hsl(48 96% 48%)",         // yellow-600
+          },
+          info: {
+            DEFAULT: "hsl(217.2 91.2% 59.8%)", // blue-500
+            border: "hsl(217.2 91.2% 54.8%)",  // blue-600
+          },
+        },
       },
     },
   },
