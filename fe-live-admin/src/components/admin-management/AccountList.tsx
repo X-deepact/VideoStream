@@ -7,7 +7,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb.tsx";
-import { Plus, Slash, History, Edit, Trash2, ArrowUpDown } from "lucide-react";
+import { Plus, Slash, Trash2, ArrowUpDown, KeyRound } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -18,10 +18,10 @@ import {
 import { Button } from "../ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
+  changePassword,
   createAccount,
   deleteAccount,
   getAccountList,
-  updateAccount,
 } from "@/services/user.service";
 import { formatDate } from "@/lib/date-formated";
 import { Label } from "../ui/label";
@@ -41,8 +41,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "../ui/dialog";
+import ImageWithAuth from "../ui/imagewithauth";
 
 const AccountList = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -58,6 +58,7 @@ const AccountList = () => {
   const [keyword, setKeyword] = useState("");
   const [formData, setFormData] = useState({
     id: "",
+    avatar: null,
     username: "",
     display_name: "",
     email: "",
@@ -108,9 +109,17 @@ const AccountList = () => {
         });
         return;
       }
+      if (formData.password.length < 8) {
+        toast({
+          description: "Password must be at least 8 characters long!",
+          variant: "destructive",
+        });
+        return;
+      }
       await createAccount(formData);
       setFormData({
         id: "",
+        avatar: null,
         username: "",
         display_name: "",
         email: "",
@@ -131,7 +140,7 @@ const AccountList = () => {
       });
     }
   };
-  const handelEditAccount = async () => {
+  const handelChangePassword = async () => {
     try {
       if (formData.password !== formData.confirmPassword) {
         toast({
@@ -140,9 +149,17 @@ const AccountList = () => {
         });
         return;
       }
-      await updateAccount(formData.id, formData);
+      if (formData.password.length < 8) {
+        toast({
+          description: "Password must be at least 8 characters long!",
+          variant: "destructive",
+        });
+        return;
+      }
+      await changePassword(formData.id, formData);
       setFormData({
         id: "",
+        avatar: null,
         username: "",
         display_name: "",
         email: "",
@@ -153,11 +170,11 @@ const AccountList = () => {
       setIsEditOpen(false);
       fetchData();
       toast({
-        description: "Updated account successfully!",
+        description: "Changed password successfully!",
       });
     } catch (error) {
       toast({
-        description: "Failed to update account. Please try again.",
+        description: "Failed to change password. Please try again.",
         variant: "destructive",
       });
     }
@@ -205,6 +222,7 @@ const AccountList = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableCell></TableCell>
               <TableCell>
                 <Button
                   variant="ghost"
@@ -280,6 +298,19 @@ const AccountList = () => {
             {accountData && accountData.length > 0 ? (
               accountData.map((account: any) => (
                 <TableRow key={account.id}>
+                  <TableCell className="flex justify-center">
+                    {account.avatar_file_name ? (
+                      <ImageWithAuth
+                        url={account.avatar_file_name}
+                        className="h-12 w-12 rounded-full"
+                      />
+                    ) : (
+                      <img
+                        src="https://img.freepik.com/free-psd/3d-illustration-person-with-punk-hair-jacket_23-2149436198.jpg?semt=ais_hybrid"
+                        className="h-12 w-12 rounded-full"
+                      />
+                    )}
+                  </TableCell>
                   <TableCell>{account.username}</TableCell>
                   <TableCell>{account.display_name}</TableCell>
                   <TableCell>{account.email}</TableCell>
@@ -289,51 +320,6 @@ const AccountList = () => {
                   <TableCell>{formatDate(account.updated_at, true)}</TableCell>
                   <TableCell>
                     <div className="flex justify-center gap-2">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="outline">
-                            <History />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md">
-                          <DialogHeader>
-                            <DialogTitle>Account History</DialogTitle>
-                            <DialogDescription></DialogDescription>
-                          </DialogHeader>
-                          <div>
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableCell>Date</TableCell>
-                                  <TableCell>Action</TableCell>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {account.admin_logs &&
-                                account.admin_logs.length > 0 ? (
-                                  account.admin_logs.map((log: any) => (
-                                    <TableRow>
-                                      <TableCell>
-                                        {formatDate(log.performed_at, true)}
-                                      </TableCell>
-                                      <TableCell>{log.action}</TableCell>
-                                    </TableRow>
-                                  ))
-                                ) : (
-                                  <TableRow>
-                                    <TableCell
-                                      colSpan={7}
-                                      className="text-center"
-                                    >
-                                      No account history.
-                                    </TableCell>
-                                  </TableRow>
-                                )}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
                       <Button
                         variant="outline"
                         onClick={() => {
@@ -341,7 +327,7 @@ const AccountList = () => {
                           setFormData(account);
                         }}
                       >
-                        <Edit />
+                        <KeyRound />
                       </Button>
                       <Button
                         variant="destructive"
@@ -425,7 +411,7 @@ const AccountList = () => {
             <Button
               variant="destructive"
               onClick={async () => {
-                if (deleteaccountid == "none") {
+                if (deleteaccountid == "") {
                   toast({
                     description: "Failed to delete account. Please try again.",
                     variant: "destructive",
@@ -460,6 +446,35 @@ const AccountList = () => {
             <DialogTitle>Add Account</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            {formData.avatar && (
+              <div className="flex items-center justify-center">
+                <img
+                  src={
+                    formData.avatar
+                      ? URL.createObjectURL(formData.avatar)
+                      : undefined
+                  }
+                  className="h-36 w-36 object-cover rounded-full"
+                />
+              </div>
+            )}
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="avatar" className="text-right">
+                Avatar
+              </Label>
+              <Input
+                id="avatar"
+                type="file"
+                accept="image/*"
+                onChange={(e: any) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setFormData({ ...formData, avatar: file });
+                  }
+                }}
+                className="col-span-2"
+              />
+            </div>
             <div className="grid grid-cols-3 items-center gap-4">
               <Label htmlFor="username" className="text-right">
                 Username
@@ -554,64 +569,10 @@ const AccountList = () => {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Account</DialogTitle>
+            <DialogTitle>Reset Password</DialogTitle>
             <DialogDescription></DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-3 items-center gap-4">
-              <Label htmlFor="username" className="text-right">
-                Username
-              </Label>
-              <Input
-                id="username"
-                value={formData.username}
-                onChange={handleInputChange}
-                className="col-span-2"
-              />
-            </div>
-            <div className="grid grid-cols-3 items-center gap-4">
-              <Label htmlFor="display_name" className="text-right">
-                Display Name
-              </Label>
-              <Input
-                id="display_name"
-                value={formData.display_name}
-                onChange={handleInputChange}
-                className="col-span-2"
-              />
-            </div>
-            <div className="grid grid-cols-3 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="col-span-2"
-              />
-            </div>
-            <div className="grid grid-cols-3 items-center gap-4">
-              <Label htmlFor="role" className="text-right">
-                Role
-              </Label>
-              <Select
-                value={formData.role}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, role: value })
-                }
-              >
-                <SelectTrigger className="col-span-2">
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="streamer">Streamer</SelectItem>
-                  <SelectItem value="user">User</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             <div className="grid grid-cols-3 items-center gap-4">
               <Label htmlFor="password" className="text-right">
                 Password
@@ -637,14 +598,14 @@ const AccountList = () => {
               />
             </div>
           </div>
-          <DialogFooter className="sm:justify-start">
+          <DialogFooter className="sm:justify-end">
             <DialogClose asChild>
               <Button type="button" variant="secondary">
                 Close
               </Button>
             </DialogClose>
-            <Button variant="outline" onClick={handelEditAccount}>
-              Update
+            <Button variant="outline" onClick={handelChangePassword}>
+              Set
             </Button>
           </DialogFooter>
         </DialogContent>

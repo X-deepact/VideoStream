@@ -16,7 +16,7 @@ import { Rss } from "lucide-react";
 import ErrorMessage from "@/components/ui/error-message.tsx";
 import { toast } from "@/hooks/use-toast.ts";
 import { createNewLivestreamSession } from "@/services/livestream-session.service.ts";
-import { formatDateToCustomFormat, validateTimestampWithinThreeDays } from "@/lib/date-formated.ts";
+import { formatDateToCustomFormat, getTimezoneOffsetAsHoursAndMinutes, validateTimestampWithinThreeDays } from "@/lib/date-formated.ts";
 import MultipleCombobox from "@/components/ui/multiple-combobox.tsx";
 
 const FormSchema = z.object({
@@ -142,14 +142,14 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 		}
 		
 		// clear errors if validation succeeded
-		setErrors({});
+		setErrors({});		
 		
 		//create body
 		const body = {
 			title: title,
 			description: description,
 			category_ids: category.map((c) => Number(c)),
-			scheduled_at: formatDateToCustomFormat(startDate),
+			scheduled_at: formatDateToCustomFormat(startDate as Date, getTimezoneOffsetAsHoursAndMinutes()) ,
 			thumbnail: thumbnailImage.file,
 			video: videoFile.file,
 			user_id: assignedUser
@@ -171,10 +171,17 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 					handleCancel();
 				});
 		} catch ( e ) {
-			toast({
-				description: e.message,
-				variant: "destructive"
-			})
+			if (e instanceof Error) {
+				toast({
+					description: e.message,
+					variant: "destructive"
+				});
+			} else {
+				toast({
+					description: "An unexpected error occurred",
+					variant: "destructive"
+				});
+			}
 		} finally {
 			setLoading(false)
 		}

@@ -2,7 +2,6 @@ package cache
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -66,7 +65,7 @@ func (c *RedisClient) Subscribe(ctx context.Context, handlerFunc func(channel st
 		return err
 	}
 
-	fmt.Printf("Subscribed to channel '%s'\n", strings.Join(channels, ", "))
+	log.Printf("Subscribed to channel '%s'\n", strings.Join(channels, ", "))
 
 	// Listen for messages
 	ch := pubsub.Channel()
@@ -85,4 +84,17 @@ func (c *RedisClient) Subscribe(ctx context.Context, handlerFunc func(channel st
 		}
 	}
 
+}
+
+func (c *RedisClient) Unsubscribe(ctx context.Context, channels ...string) error {
+	pubsub := c.Rdb.Subscribe(ctx)
+
+	err := pubsub.Unsubscribe(ctx, channels...)
+	if err != nil {
+		log.Printf("Failed to unsubscribe from channels: %v", err)
+		return err
+	}
+
+	log.Printf("Unsubscribed from channels: %s\n", strings.Join(channels, ", "))
+	return nil
 }

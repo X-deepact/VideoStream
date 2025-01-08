@@ -125,3 +125,10 @@ export {
   ToastClose,
   ToastAction,
 }
+
+export const TOAST_STYLES = {
+  SUCCESS: "bg-green-500 text-white border-green-600",
+  ERROR: "bg-red-500 text-white border-red-600",
+  WARNING: "bg-yellow-500 text-white border-yellow-600",
+  INFO: "bg-blue-500 text-white border-blue-600"
+} as const;

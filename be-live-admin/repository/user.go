@@ -53,6 +53,14 @@ func (r *UserRepository) Update(updatedUser *model.User) error {
 	return nil
 }
 
+func (r *UserRepository) GetUsernameList() ([]string, error) {
+	var result []string
+	if err := r.db.Model(model.User{}).Where("username != ?", model.SUPER_ADMIN_USERNAME).Select("username").Find(&result).Error; err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func (r *UserRepository) Delete(id, deletedByID uint) error {
 	var userToDelete model.User
 	if err := r.db.First(&userToDelete, "id = ?", id).Error; err != nil {

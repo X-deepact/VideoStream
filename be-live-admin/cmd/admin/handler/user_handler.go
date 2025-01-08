@@ -48,12 +48,23 @@ func (h *userHandler) register() {
 	group.Use(h.JWTMiddleware())
 	group.Use(h.RoleGuardMiddleware())
 	group.GET("", h.page)
+	group.GET("/list-username", h.getUsernameList)
 	group.POST("", h.createUser)
 	group.PUT("/:id", h.updateUser)
 	group.PATCH("/:id/change-password", h.changePassword)
 	group.GET("/:id", h.byId)
 	group.DELETE("/:id", h.deleteByID)
 
+}
+
+func (h *userHandler) getUsernameList(c echo.Context) error {
+
+	data, err := h.srv.User.GetUsernameList()
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	return utils.BuildSuccessResponseWithData(c, http.StatusOK, data)
 }
 
 func (h *userHandler) byId(c echo.Context) error {

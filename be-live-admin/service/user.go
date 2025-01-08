@@ -86,6 +86,10 @@ func (s *UserService) GetUserList(filter *dto.UserQuery, page, limit uint, apiUR
 
 }
 
+func (s *UserService) GetUsernameList() ([]string, error) {
+	return s.repo.User.GetUsernameList()
+}
+
 func (s *UserService) DeleteByID(id uint, deletedByID uint) error {
 	if err := s.repo.User.Delete(id, deletedByID); err != nil {
 		return err

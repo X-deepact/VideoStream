@@ -1,5 +1,4 @@
 import { Separator } from "@/components/ui/separator.tsx";
-import { AspectRatio } from "@/components/ui/aspect-ratio.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Play, FileSliders, CircleStop, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
@@ -17,6 +16,9 @@ import { Label } from "@/components/ui/label.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { toast } from "@/hooks/use-toast.ts";
 import ImageWithAuth from "@/components/ui/imagewithauth.tsx";
+import { useState } from "react";
+import { endLivestreamSession } from "@/services/livestream-session.service.ts";
+import { TOAST_STYLES } from "@/components/ui/toast.tsx";
 
 const LivestreamList = ({livestream}) => {
 	const {
@@ -29,6 +31,8 @@ const LivestreamList = ({livestream}) => {
 		broadcast_url,
 		thumbnail_file_name
 	} = livestream;
+
+	const [showEndDialog, setShowEndDialog] = useState(false);
 
 	const handleCopyURL = () => {
 		if (navigator.clipboard) {
@@ -46,6 +50,34 @@ const LivestreamList = ({livestream}) => {
 			})
 		}
 	}
+
+	const handleEndLive = async () => {
+		try {
+			const response = await endLivestreamSession(livestream.id);
+			
+			if (response.status === 200) {
+				toast({
+					description: "Stream ended successfully",
+					variant: "default",
+					className: TOAST_STYLES.SUCCESS
+				});
+			} else if (response.status === 202) {
+				toast({
+					description: "Stream is already being ended, please wait",
+					variant: "default",
+					className: TOAST_STYLES.SUCCESS
+				});
+			}
+		} catch (error) {
+			toast({
+				description: "Failed to end stream. Please try again!",
+				variant: "destructive",
+			});
+		} finally {
+			setShowEndDialog(false);
+		}
+	};
+
 	return (
 		<div className="w-full mt-5">
 			<Separator />
@@ -119,7 +151,29 @@ const LivestreamList = ({livestream}) => {
 						<Button>
 							<Play /> Preview
 						</Button>
-
+						<Dialog open={showEndDialog} onOpenChange={setShowEndDialog}>
+							<DialogTrigger asChild>
+								<Button variant="destructive">
+									<CircleStop /> End Live
+								</Button>
+							</DialogTrigger>
+							<DialogContent className="sm:max-md">
+								<DialogHeader>
+									<DialogTitle className="text-red-500">End Live Stream: Are You Sure?</DialogTitle>
+									<DialogDescription className="text-gray-600">
+									Ending this live stream will immediately stop the broadcast. The viewer count and live status will reset, and the streamer will be notified. Ensure this action is intentional, as it cannot be undone.
+									</DialogDescription>
+								</DialogHeader>
+								<div className="flex justify-end gap-3 mt-4">
+									<Button variant="outline" onClick={() => setShowEndDialog(false)}>
+										Cancel
+									</Button>
+									<Button variant="destructive" onClick={handleEndLive}>
+										Confirm to End
+									</Button>
+								</div>
+							</DialogContent>
+						</Dialog>
 					</div>
 				</div>
 				<div className="ml-auto mr-0">

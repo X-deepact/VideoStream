@@ -1,6 +1,5 @@
 import * as React from "react";
 import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,6 +33,8 @@ export const DateTimePicker = (props: ComponentProps) => {
 
 	const hours = Array.from({ length: 12 }, (_, i) => i + 1);
 	const minutes = Array.from({ length: 60 }, (_, i) => i);
+
+	const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 	const handleDateSelect = (selectedDate: Date | undefined) => {
 		if (selectedDate) {
 			setDate(selectedDate);
@@ -52,7 +53,7 @@ export const DateTimePicker = (props: ComponentProps) => {
 	) => {
 		if (!date) setDate(new Date()); // Initialize if undefined
 
-		const newDate = new Date(date);
+		const newDate = new Date(date ?? Date.now());
 
 		if (type === "hour") {
 			const currentHours = newDate.getHours();
@@ -68,8 +69,8 @@ export const DateTimePicker = (props: ComponentProps) => {
 				newDate.setHours(currentHours - 12);
 			}
 		}
-
-		setDate(newDate);
+		
+		setDate(newDate);		
 		onDateChange?.(newDate);
 	};
 
@@ -86,7 +87,15 @@ export const DateTimePicker = (props: ComponentProps) => {
 				>
 					<CalendarIcon className="mr-2 h-4 w-4" />
 					{date ? (
-						format(date, "MM/dd/yyyy hh:mm aa")
+						new Intl.DateTimeFormat("en-US", {
+							timeZone: userTimeZone,
+							month: "2-digit",
+							day: "2-digit",
+							year: "numeric",
+							hour: "2-digit",
+							minute: "2-digit",
+							hour12: true
+						}).format(date)
 					) : (
 						<span>{placeholder}</span>
 					)}
@@ -110,6 +119,7 @@ export const DateTimePicker = (props: ComponentProps) => {
 							<div className="flex sm:flex-col p-2">
 								{hours.reverse().map((hour) => (
 									<Button
+										disabled={!date}
 										type="button"
 										key={hour}
 										size="icon"
@@ -131,6 +141,7 @@ export const DateTimePicker = (props: ComponentProps) => {
 							<div className="flex sm:flex-col p-2">
 								{minutes.map((minute) => (
 									<Button
+										disabled={!date}
 										type="button"
 										key={minute}
 										size="icon"
@@ -154,6 +165,7 @@ export const DateTimePicker = (props: ComponentProps) => {
 							<div className="flex sm:flex-col p-2">
 								{["AM", "PM"].map((ampm) => (
 									<Button
+										disabled={!date}
 										type="button"
 										key={ampm}
 										size="icon"

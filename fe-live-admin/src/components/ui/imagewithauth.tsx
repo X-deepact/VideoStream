@@ -4,8 +4,6 @@ import authHeader from "@/services/auth-header";
 import loadingImg from "@/assets/loading.svg";
 import { useToast } from "@/hooks/use-toast";
 
-const API_URL = import.meta.env.VITE_API_BASE_URL;
-
 interface ComponentProps {
   className?: string;
   url: string;
@@ -13,14 +11,11 @@ interface ComponentProps {
 
 const ImageWithAuth = (props: ComponentProps) => {
   const { toast } = useToast();
-  const {
-    url,
-    className
-  } = props;
+  const { url, className } = props;
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const fetchImage = async () => {
     try {
-      const response = await axios.get(`${API_URL}${url}`, {
+      const response = await axios.get(`${url}`, {
         headers: authHeader(),
         responseType: "blob",
       });
@@ -41,14 +36,9 @@ const ImageWithAuth = (props: ComponentProps) => {
   return (
     <div>
       {imageSrc ? (
-        <img
-          className={`${className}`}
-          src={imageSrc}
-        />
+        <img className={`${className}`} src={imageSrc} />
       ) : (
-        <img
-          src={loadingImg}
-        />
+        <img src={loadingImg} />
       )}
     </div>
   );

@@ -165,7 +165,7 @@ func (s *StreamRepository) PaginateLiveStreamBroadCastData(page, limit uint, con
 	return utils.Create(pagination, int(page), int(limit))
 }
 
-func (s *StreamRepository) GetByID(id int) (*model.Stream, error) {
+func (s *StreamRepository) GetByIDWithUserPreload(id int) (*model.Stream, error) {
 	var result model.Stream
 
 	if err := s.db.Model(model.Stream{}).Where("id=?", id).Preload("User").First(&result).Error; err != nil {
@@ -173,6 +173,18 @@ func (s *StreamRepository) GetByID(id int) (*model.Stream, error) {
 	}
 	return &result, nil
 }
+
+func (s *StreamRepository) GetByID(id uint) (*model.Stream, error) {
+	var stream model.Stream
+
+	if err := s.db.Model(model.Stream{}).Where("id = ?", id).First(&stream).Error; err != nil {
+		return nil, err
+	}
+
+	return &stream, nil
+}
+
+// func (s *StreamRepository) GetBy
 
 func (s *StreamRepository) GetScheduleStreamByStreamID(id int) (*model.ScheduleStream, error) {
 	var result model.ScheduleStream

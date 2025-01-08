@@ -257,7 +257,7 @@ func (s *StreamService) GetLiveStreamBroadCastWithPagination(page, limit uint, r
 }
 
 func (s *StreamService) GetLiveStreamBroadCastByID(id int, apiUrl, rtmpURL, hlsURL string) (*dto.LiveStreamBroadCastDTO, error) {
-	v, err := s.repo.Stream.GetByID(id)
+	v, err := s.repo.Stream.GetByIDWithUserPreload(id)
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +296,7 @@ func (s *StreamService) CreateStreamByAdmin(req *dto.StreamRequest) (*model.Stre
 func (s *StreamService) UpdateScheduledStreamByAdmin(id int, req *dto.UpdateScheduledStreamRequest) (*model.Stream, error) {
 	var scheduleStream *model.ScheduleStream
 
-	liveStream, err := s.repo.Stream.GetByID(id)
+	liveStream, err := s.repo.Stream.GetByIDWithUserPreload(id)
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +326,7 @@ func (s *StreamService) UpdateScheduledStreamByAdmin(id int, req *dto.UpdateSche
 }
 
 func (s *StreamService) UpdateStreamByAdmin(id int, req *dto.UpdateStreamRequest) (*model.Stream, error) {
-	liveStream, err := s.repo.Stream.GetByID(id)
+	liveStream, err := s.repo.Stream.GetByIDWithUserPreload(id)
 	if err != nil {
 		return nil, err
 	}
@@ -348,7 +348,7 @@ func (s *StreamService) DeleteLiveStream(id int) error {
 }
 
 func (s *StreamService) GetLiveStreamByID(id int) (*dto.StreamAndStreamScheduleDto, error) {
-	stream, err := s.repo.Stream.GetByID(id)
+	stream, err := s.repo.Stream.GetByIDWithUserPreload(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -364,6 +364,10 @@ func (s *StreamService) GetLiveStreamByID(id int) (*dto.StreamAndStreamScheduleD
 	}
 
 	return &dto.StreamAndStreamScheduleDto{Stream: stream, ScheduleStream: scheduleStream}, nil
+}
+
+func (s *StreamService) GetStreamByID(id uint) (*model.Stream, error) {
+	return s.repo.Stream.GetByID(id)
 }
 
 func (s *StreamService) toLiveStatDto(v *model.StreamAnalytics, currentViewers uint) *dto.LiveStatRespDTO {
@@ -437,4 +441,30 @@ func (s *StreamService) IsEncodingVideo(ctx context.Context, streamKey string) (
 	}
 
 	return isEncoding, nil
+}
+
+func (s *StreamService) IsEndingLive(ctx context.Context, id uint) (bool, error) {
+	cacheKey := fmt.Sprintf(cache.IS_ENDING_LIVE_PREFIX, id)
+
+	isEndingLive, err := cache.GetRedisValWithTyped[bool](s.redisStore, ctx, cacheKey)
+	if err != nil {
+		if !errors.Is(err, redis.Nil) {
+			log.Println(err)
+			return false, err
+		}
+	}
+
+	return isEndingLive, nil
+
+}
+
+func (s *StreamService) EndLivByRedis(ctx context.Context, id uint) error {
+	cacheKey := fmt.Sprintf(cache.IS_ENDING_LIVE_PREFIX, id)
+	if err := s.redisStore.Set(ctx, cacheKey, true, time.Hour); err != nil {
+		return err
+	}
+
+	channelKey := fmt.Sprintf(cache.CHANNEL_END_LIVE, id)
+
+	return s.redisStore.Publish(ctx, channelKey, true)
 }

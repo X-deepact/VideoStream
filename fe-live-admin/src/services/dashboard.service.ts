@@ -1,7 +1,8 @@
 import axios from "axios";
 import authHeader from "@/services/auth-header.ts";
 
-const API_URL = "http://localhost:8686/api/streams/statistics";
+// const API_URL = "http://localhost:8686/api/streams/statistics";
+const API_URL = import.meta.env.VITE_API_BASE_URL + "/api/streams/statistics";
 
 	export const getOverviewStatistics = () => {
 		return axios.get(`${API_URL}/total`, {headers: authHeader()});

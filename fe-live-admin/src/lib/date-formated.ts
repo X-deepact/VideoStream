@@ -36,12 +36,13 @@ export function formatDate(
  * @returns A formatted date string in "YYYY-MM-DD HH:mm:ss.SSS ±ZZZZ" if time included and "DD/MM/YYYY if not" .
  */
 
-export function formatDateToCustomFormat(dateInput) {
+export function formatDateToCustomFormat(dateInput: Date, timezoneOffset: string) {
   const date = new Date(dateInput);
 
   if (isNaN(date.getTime())) {
     throw new Error("Invalid date input");
   }
+
 
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
@@ -51,14 +52,18 @@ export function formatDateToCustomFormat(dateInput) {
   const seconds = String(date.getSeconds()).padStart(2, '0');
   const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
 
-  const offset = date.getTimezoneOffset();
-  const offsetSign = offset <= 0 ? '+' : '-';
-  const offsetHours = String(Math.abs(Math.floor(offset / 60))).padStart(2, '0');
-  const offsetMinutes = String(Math.abs(offset % 60)).padStart(2, '0');
-
-  const timezoneOffset = `${offsetSign}${offsetHours}${offsetMinutes}`;
-
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds} ${timezoneOffset}`;
+}
+
+export function getTimezoneOffsetAsHoursAndMinutes() {
+  const offsetMinutes = new Date().getTimezoneOffset();
+  const absoluteMinutes = Math.abs(offsetMinutes);
+
+  const hours = Math.floor(absoluteMinutes / 60);
+  const minutes = absoluteMinutes % 60;
+
+  const sign = offsetMinutes <= 0 ? "+" : "-"; // Positive offset means behind UTC, so we invert the sign
+  return `${sign}${hours.toString().padStart(2, "0")}${minutes.toString().padStart(2, "0")}`;
 }
 
 export function validateTimestampWithinThreeDays(input: Date): boolean {

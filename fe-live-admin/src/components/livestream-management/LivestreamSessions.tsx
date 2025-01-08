@@ -28,16 +28,17 @@ import LivestreamCreateNew
 	from "@/components/livestream-management/LivestreamCreateNew.tsx";
 import { getLivestreamSessionList } from "@/services/livestream-session.service.ts";
 import { toast } from "@/hooks/use-toast.ts";
-import { AccountProps, Catalogue, LivestreamSession } from "@/lib/interface.tsx";
+import { AccountProps, Catalogue, LIVESTREAM_STATUS, LivestreamSession } from "@/lib/interface.tsx";
 import { getCategories } from "@/services/category.service.ts";
 import { getAccountListWithRole } from "@/services/user.service.ts";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area.tsx";
 
 const LivestreamSessions = () => {
 	const [openFilterDialog, setOpenFilterDialog] = useState(false);
 	
 	//Filters
 	const [streamType, setStreamType] = useState("");
-	const [status, setStatus] = useState("");
+	const [status, setStatus] = useState<string[]>(["started", "upcoming"]);
 	const [startDate, setStartDate] = useState<Date | undefined>(undefined);
 	const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 	const [categories, setCategories] = useState<{
@@ -79,7 +80,7 @@ const LivestreamSessions = () => {
 		try {
 			const options = [];
 			if (streamType) options.push(`catalog=${streamType}`);
-			if (status) options.push(`status=${status}`);
+			if (status) status.map((s) => options.push(`status=${s}`));
 			if (title) options.push(`keyword=${title}`);
 			const response = await getLivestreamSessionList(currentPage, options);
 			const { data } = response.data;
@@ -203,10 +204,12 @@ const LivestreamSessions = () => {
 									<Label htmlFor="status" className="text-left">Status</Label>
 									<Select
 										id="status"
-										value={status}
+										value={status.length === 2 ? "" : status[0]}
 										onValueChange={(value) => {
-											setStatus(value)
+											const newValue = value.split(",").filter(Boolean);
+											setStatus(newValue)
 											setCurrentPage(1)
+											setOpenFilterDialog(false)
 										}}
 									>
 										<SelectTrigger className="col-span-2">
@@ -215,9 +218,8 @@ const LivestreamSessions = () => {
 										<SelectContent>
 											<SelectGroup>
 												<SelectLabel>Status</SelectLabel>
-												<SelectItem value="started">Started</SelectItem>
-												<SelectItem value="ended">Ended</SelectItem>
-												<SelectItem value="pending">Pending</SelectItem>
+												<SelectItem value={LIVESTREAM_STATUS.STARTED}>Started</SelectItem>
+												<SelectItem value={LIVESTREAM_STATUS.UPCOMING}>Upcoming</SelectItem>
 											</SelectGroup>
 										</SelectContent>
 									</Select>
@@ -230,6 +232,7 @@ const LivestreamSessions = () => {
 										onValueChange={(value) => {
 											setStreamType(value)
 											setCurrentPage(1)
+											setOpenFilterDialog(false)
 										}}
 									>
 										<SelectTrigger className="col-span-2">
@@ -240,7 +243,7 @@ const LivestreamSessions = () => {
 												<SelectLabel>Category</SelectLabel>
 												{categories.map((category) => {
 													return (
-														<SelectItem key={category.label} value={category.value}>
+														<SelectItem key={category.label} value={category.label}>
 															{category.label}
 														</SelectItem>
 													)
@@ -256,11 +259,12 @@ const LivestreamSessions = () => {
 			</div>
 
 			<div className="mt-10 mb-4 w-full m-auto items-center flex justify-between">
-				<div>
-					<label htmlFor="page-input" className="mr-2 text-lg font-bold">
+				<div className="flex flex-row">
+					<Label htmlFor="page-input" className="mr-2 text-lg font-bold">
 						Page
-					</label>
-					<input
+					</Label>
+					<Input
+						className="text-center w-auto bg-white text-black"
 						id="page-input"
 						type="number"
 						min="1"
@@ -273,7 +277,6 @@ const LivestreamSessions = () => {
 							);
 							setCurrentPage(page);
 						}}
-						className="text-center border rounded"
 					/>
 					<span className="ml-2 text-lg font-bold">of {totalPages} on showing {itemLength} of total {totalItems} livestreams.</span>
 				</div>
@@ -300,16 +303,21 @@ const LivestreamSessions = () => {
 			</div>
 
 			{/*livestream session list*/}
-			{
-				data.length > 0
-				?
-				data.map((livestream: LivestreamSession) => (
-					<LivestreamList
-						key={livestream.id}
-						livestream={livestream}
-					/>
-				)) : (<div>No Result</div>)
-			}
+			<ScrollArea className="w-auto h-[60rem]">
+				{
+					data.length > 0
+						?
+						data.map((livestream: LivestreamSession) => (
+							<div className="pr-5">
+								<LivestreamList
+									key={livestream.id}
+									livestream={livestream}
+								/>
+							</div>
+						)) : (<div>No Result</div>)
+				}
+				<ScrollBar orientation="vertical" />
+			</ScrollArea>
 		</div>
 	);
 };
