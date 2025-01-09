@@ -35,14 +35,9 @@ import {
 } from "../ui/select";
 
 const Profile = () => {
-  const [profileData, setProfileData] = useState({
-    id: "",
-    username: "",
-    displayname: "",
-    email: "",
-    role: "",
-    avatar: "",
-  });
+  const [profileData, setProfileData] = useState(
+    JSON.parse(localStorage.getItem("user") || ({} as any))
+  );
   const [formData, setFormData] = useState({
     id: "",
     username: "",
@@ -62,8 +57,6 @@ const Profile = () => {
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem("user") || "{}");
-    setProfileData(userData);
     fetchData();
   }, [sort, sort_by, currentPage, pageSize]);
 
@@ -94,30 +87,19 @@ const Profile = () => {
     });
   };
   const handleEditInfo = async () => {
-    try {
-      await updateAccount(profileData.id, formData);
-      setFormData({
-        id: "",
-        username: "",
-        display_name: "",
-        email: "",
-        role: "",
-        password: "",
-        confirmPassword: "",
-      });
-      setIsEditing(false);
-      fetchData();
-      toast({
-        description: "Updated account successfully!",
-        variant: "default",
-      });
-      localStorage.setItem("user", JSON.stringify(profileData));
-    } catch (error) {
-      toast({
-        description: "Failed to update account. Please try again.",
-        variant: "destructive",
-      });
-    }
+    await updateAccount(profileData.id, formData);
+    setFormData({
+      id: "",
+      username: "",
+      display_name: "",
+      email: "",
+      role: "",
+      password: "",
+      confirmPassword: "",
+    });
+    setIsEditing(false);
+    fetchData();
+    localStorage.setItem("user", JSON.stringify(profileData));
   };
   const handelChangePassword = async () => {
     try {
@@ -350,9 +332,6 @@ const Profile = () => {
                     </Button>
                   </TableCell>
                   <TableCell>
-                    <Label>User</Label>
-                  </TableCell>
-                  <TableCell>
                     <Label>Action</Label>
                   </TableCell>
                   <TableCell>
@@ -367,7 +346,6 @@ const Profile = () => {
                       <TableCell>
                         {formatDate(log.performed_at, true)}
                       </TableCell>
-                      <TableCell>{log.user.username}</TableCell>
                       <TableCell>{log.action}</TableCell>
                       <TableCell>{log.details}</TableCell>
                     </TableRow>

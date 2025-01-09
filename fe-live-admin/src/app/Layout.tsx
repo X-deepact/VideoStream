@@ -8,12 +8,13 @@ export const Layout: React.FC = ()  => {
     return (
         <SidebarProvider className="w-screen h-screen">
             <AppSidebar />
-            <SidebarInset>
+            <SidebarInset className="flex flex-col">
                 <AppHeader />
-                <main>
+                <main className="flex-1 overflow-auto">
                     <Outlet />
                 </main>
             </SidebarInset>
         </SidebarProvider>
     );
 };
+

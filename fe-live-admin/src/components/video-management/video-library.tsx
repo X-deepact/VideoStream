@@ -41,11 +41,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "../ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
+import authHeader from "@/services/auth-header";
+import { formatDate } from "@/lib/date-formated";
 
 const VideoLibrary = () => {
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deleteID, setDeleteID] = useState("");
   const [videoData, setVideoData] = useState([]);
   const [pageSize, setPageSize] = useState(5);
   const [sort, setSort] = useState("ASC");
@@ -78,16 +82,16 @@ const VideoLibrary = () => {
     }
   };
 
-  const ondeletehandle = async (id: any) => {
+  const ondeletehandle = async () => {
     try {
-      const res = await deleteVideo(id);
-      if (res.status == 200) fetchData();
-      else {
-        toast({
-          description: "Failed to delete video. Please try again.",
-          variant: "destructive",
-        });
-      }
+      await deleteVideo(deleteID);
+      fetchData();
+      setIsDeleteOpen(false);
+      setDeleteID("");
+      toast({
+        description: "Video deleted successfully.",
+        variant: "default",
+      });
     } catch (err) {
       toast({
         description: "Failed to delete video. Please try again.",
@@ -95,7 +99,43 @@ const VideoLibrary = () => {
       });
     }
   };
+  const handleplay = async (videourl: any) => {
+    try {
+      const response = await fetch(videourl, {
+        method: "GET",
+        headers: authHeader(),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch resource");
+      }
 
+      // Get the response URL or data
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+
+      // Open the URL in a new tab
+      window.open(url, "_blank");
+
+      // Optionally, revoke the object URL after some time
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      console.error("Error opening tab:", error);
+    }
+  };
+
+  const handledownload = async (videourl: any, videotitle: any) => {
+    const response = await axios.get(videourl, {
+      headers: authHeader(),
+      responseType: "blob",
+    });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", videotitle + ".mp4");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
   return (
     <div className="w-full p-4">
       <Breadcrumb>
@@ -140,6 +180,9 @@ const VideoLibrary = () => {
                 <Label>Type</Label>
               </TableCell>
               <TableCell>
+                <Label>Category</Label>
+              </TableCell>
+              <TableCell>
                 <Label>Action</Label>
               </TableCell>
             </TableRow>
@@ -159,19 +202,33 @@ const VideoLibrary = () => {
                     <TableCell>{video.title}</TableCell>
                     <TableCell>{video.description}</TableCell>
                     <TableCell>
-                      {new Date(video.started_at).toLocaleString()}
+                      {video.started_at
+                        ? formatDate(video.started_at, true)
+                        : ""}
                     </TableCell>
                     <TableCell>
-                      {new Date(video.ended_at).toLocaleString()}
+                      {video.ended_at ? formatDate(video.ended_at, true) : ""}
                     </TableCell>
                     <TableCell>{video.user.display_name}</TableCell>
                     <TableCell>{video.stream_type}</TableCell>
+                    <TableCell>
+                      {video.categories && video.categories.length > 0
+                        ? video.categories
+                            .map((category: any) => category.name)
+                            .join(", ")
+                        : ""}
+                    </TableCell>
                     <TableCell className="items-center justify-center">
                       <div className="flex flex-row gap-1 justify-center">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="outline">
+                              <Button
+                                variant="outline"
+                                onClick={() =>
+                                  handleplay(video.schedule_stream.video_url)
+                                }
+                              >
                                 <Play />
                               </Button>
                             </TooltipTrigger>
@@ -183,7 +240,15 @@ const VideoLibrary = () => {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="outline">
+                              <Button
+                                variant="outline"
+                                onClick={() =>
+                                  handledownload(
+                                    video.schedule_stream.video_url,
+                                    video.title
+                                  )
+                                }
+                              >
                                 <Download />
                               </Button>
                             </TooltipTrigger>
@@ -192,41 +257,24 @@ const VideoLibrary = () => {
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
-                        <Dialog>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <DialogTrigger asChild>
-                                  <Button variant="destructive">
-                                    <Trash2 />
-                                  </Button>
-                                </DialogTrigger>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Delete Video</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <DialogContent className="sm:max-w-[425px]">
-                            <DialogHeader>
-                              <DialogTitle>Delete Video</DialogTitle>
-                              <DialogDescription>
-                                Do you want to delete this video?
-                              </DialogDescription>
-                            </DialogHeader>
-                            <DialogFooter>
-                              <DialogClose asChild>
-                                <Button variant="secondary">Close</Button>
-                              </DialogClose>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
                               <Button
                                 variant="destructive"
-                                onClick={() => ondeletehandle(video.id)}
+                                onClick={() => {
+                                  setIsDeleteOpen(true);
+                                  setDeleteID(video.id);
+                                }}
                               >
-                                Delete
+                                <Trash2 />
                               </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Delete Video</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -286,6 +334,24 @@ const VideoLibrary = () => {
           </Button>
         </div>
       </div>
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Video</DialogTitle>
+            <DialogDescription>
+              Do you want to delete this video?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="secondary">Close</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={() => ondeletehandle()}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

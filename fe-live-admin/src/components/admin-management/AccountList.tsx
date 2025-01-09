@@ -74,23 +74,16 @@ const AccountList = () => {
   }, [pageSize, currentPage, sort, sort_by, keyword]);
 
   const fetchData = async () => {
-    try {
-      const response = await getAccountList(
-        currentPage,
-        pageSize,
-        sort_by,
-        sort,
-        keyword
-      );
-      setAccountData(response.data.data.page);
-      setCurrentPage(response.data.data.current_page);
-      setTotalPages(response.data.data.length);
-    } catch (err) {
-      toast({
-        description: "Failed to fetch account list data.",
-        variant: "destructive",
-      });
-    }
+    const response = await getAccountList(
+      currentPage,
+      pageSize,
+      sort_by,
+      sort,
+      keyword
+    );
+    setAccountData(response.page);
+    setCurrentPage(response.current_page);
+    setTotalPages(response.length);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,44 +94,33 @@ const AccountList = () => {
   };
 
   const handleAddAccount = async () => {
-    try {
-      if (formData.password !== formData.confirmPassword) {
-        toast({
-          description: "Passwords do not match!",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (formData.password.length < 8) {
-        toast({
-          description: "Password must be at least 8 characters long!",
-          variant: "destructive",
-        });
-        return;
-      }
-      await createAccount(formData);
-      setFormData({
-        id: "",
-        avatar: null,
-        username: "",
-        display_name: "",
-        email: "",
-        role: "",
-        password: "",
-        confirmPassword: "",
-      });
-      setIsCreateOpen(false);
-      fetchData();
+    if (formData.password !== formData.confirmPassword) {
       toast({
-        description: "Created account successfully!",
-        variant: "default",
-      });
-    } catch (error) {
-      toast({
-        description: "Failed to create account. Please try again.",
+        description: "Passwords do not match!",
         variant: "destructive",
       });
+      return;
     }
+    if (formData.password.length < 8) {
+      toast({
+        description: "Password must be at least 8 characters long!",
+        variant: "destructive",
+      });
+      return;
+    }
+    await createAccount(formData);
+    setFormData({
+      id: "",
+      avatar: null,
+      username: "",
+      display_name: "",
+      email: "",
+      role: "",
+      password: "",
+      confirmPassword: "",
+    });
+    setIsCreateOpen(false);
+    fetchData();
   };
   const handelChangePassword = async () => {
     try {

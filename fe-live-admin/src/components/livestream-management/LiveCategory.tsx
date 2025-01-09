@@ -140,7 +140,7 @@ const LiveCategory = () => {
           <TableBody>
             {categories && categories.length > 0 ? (
               categories.map((category: any) => (
-                <TableRow>
+                <TableRow key={category.id}>
                   <TableCell>{category.name}</TableCell>
                   <TableCell>{category.created_by_user.username}</TableCell>
                   <TableCell>{formatDate(category.created_at, true)}</TableCell>

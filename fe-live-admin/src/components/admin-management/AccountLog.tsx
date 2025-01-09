@@ -46,15 +46,8 @@ const AccountLog = () => {
   }, [pageSize, currentPage, sort, sort_by, keyword]);
 
   const fetchUsernames = async () => {
-    try {
-      const response = await getUsernames();
-      setUsernames(response.data.data);
-    } catch {
-      toast({
-        description: "Failed to fetch account list data.",
-        variant: "destructive",
-      });
-    }
+    const response = await getUsernames();
+    setUsernames(response);
   };
   const fetchData = async () => {
     try {
