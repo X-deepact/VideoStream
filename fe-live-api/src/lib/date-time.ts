@@ -40,3 +40,34 @@ export const getFormattedElapsedTime = (seconds: number): string => {
     return moment.utc(seconds * 1000).format('mm:ss');
   }
 };
+
+/**
+ * Formats a given micro seconds time to HH:mm:ss.
+ * @param {number} microseconds - Time in seconds.
+ * @returns {string} - Formatted time string.
+ */
+export const getMicrosecondsToHHMMSS = (microseconds: number): string => {
+  const milliseconds = Math.floor(microseconds / 1000);
+  const duration = moment.duration(milliseconds);
+
+  const hours = Math.floor(duration.asHours());
+  const minutes = duration.minutes();
+  const seconds = duration.seconds();
+
+  if (hours > 0) {
+    // show full hh:mm:ss format if hours exist
+    return `${hours.toString().padStart(2, '0')}:${minutes
+      .toString()
+      .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  if (minutes > 0) {
+    // show mm:ss if minutes exist but no hours
+    return `${minutes.toString().padStart(1, '0')}:${seconds
+      .toString()
+      .padStart(2, '0')}`;
+  }
+
+  // show only ss if only seconds exist
+  return `00:${seconds.toString().padStart(2, '0')}`;
+};

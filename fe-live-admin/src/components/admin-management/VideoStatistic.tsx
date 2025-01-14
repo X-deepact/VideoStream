@@ -11,20 +11,20 @@ import { Slash } from "lucide-react";
 import { DataTable } from "../ui/datatable";
 import { getVideoStatistics } from "@/services/videoStatistic.service";
 import { columns } from "@/components/admin-management/VideoStatisticColumns.tsx";
-import { formatDuration, formatFileSize, formatDate } from "@/lib/utils";
+import { formatDuration, formatFileSize } from "@/lib/utils";
+import { formatDate } from "@/lib/date-formated";
 import { useToast } from "@/hooks/use-toast";
 
 import { Input } from "../ui/input";
-
+  
 
 const VideoStatistic = () => {
   const { toast } = useToast();
   const [streamData, setStreamData] = useState([]);
-  const [globalFilter, setGlobalFilter] = useState("");
   const [pageSize, setPageSize] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [sortBy, setSortBy] = useState("started_at");
+  const [sortBy, setSortBy] = useState("created_at");
   const [sort, setSort] = useState("DESC");
   const [searchKeyword, setSearchKeyword] = useState("");
 
@@ -56,14 +56,15 @@ const VideoStatistic = () => {
         });
         return;
       }
+
       const transformedStreamData = streams.map((stream: any) => ({
         title: stream.title,
-        viewers: stream.live_stream_analytic?.viewers ?? 0,
-        likes: stream.live_stream_analytic?.likes ?? 0,
-        duration: formatDuration(stream.live_stream_analytic?.duration ?? 0),
-        comments: stream.live_stream_analytic?.comments ?? 0,
-        video_size: formatFileSize(stream.live_stream_analytic?.video_size ?? 0),
-        created_at: formatDate(stream.started_at),
+        viewers: stream.viewers || 0,
+        likes: stream.likes || 0,
+        duration: formatDuration(stream.duration || 0),
+        comments: stream.comments || 0,
+        video_size: formatFileSize(stream.video_size || 0),
+        created_at: formatDate(stream.created_at, true) || 'Na',
       }));
 
       setStreamData(transformedStreamData);
@@ -94,7 +95,7 @@ const VideoStatistic = () => {
     comments: "comments",
     duration: "duration",
     video_size: "video_size",
-    created_at: "started_at"
+    created_at: "created_at"
   };
 
   const handleSortChange = (columnId: string) => {

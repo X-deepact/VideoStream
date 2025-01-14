@@ -18,10 +18,8 @@ import { Separator } from "@/components/ui/separator.tsx";
 
 interface ComponentProps {
 	disabled?: boolean;
-	isRequired?: boolean;
 	placeholder?: string;
 	emptyMsg?: string;
-	label?: string;
 	data: {
 		label: string;
 		value: string;
@@ -30,24 +28,26 @@ interface ComponentProps {
 	allowAllSelection?: boolean;
 	maxSelection?: number;
 	popOverClass?: string;
+	value?: string[];
+	isPreviewing?: boolean;
 }
 
 const MultipleCombobox = (props: ComponentProps) => {
 	const {
 		disabled = false,
-		isRequired = false,
 		placeholder = "Select Item",
-		emptyMsg = " No Item Found",
-		label = "Multiple Selected Combobox Component",
+		emptyMsg = "No Item Found",
 		onValueChange,
 		data = [],
 		allowAllSelection = false,
 		maxSelection = 3,
-		popOverClass
+		popOverClass,
+		value,
+		isPreviewing = false
 	} = props;
 	
 	
-	const [selectedValues, setSelectedValues] = useState<string[]>([]);
+	const [selectedValues, setSelectedValues] = useState<string[]>(value ?? []);
 	const [openPopover, setOpenPopover] = useState(false);
 	
 	const handleClear = () => {
@@ -83,7 +83,6 @@ const MultipleCombobox = (props: ComponentProps) => {
 
 	return (
 		<div>
-			<FieldLabel label={label} isRequired={isRequired} />
 			<Popover
 				open={openPopover}
 				onOpenChange={setOpenPopover}
@@ -117,7 +116,7 @@ const MultipleCombobox = (props: ComponentProps) => {
 											})
 										}
 										{
-											selectedValues.length < maxSelection && (
+											!isPreviewing && selectedValues.length < maxSelection && (
 												<Badge>
 													{`+ ${maxSelection - selectedValues.length} more`}
 												</Badge>

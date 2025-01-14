@@ -6,12 +6,16 @@ import {
   apiFetchCommentsList,
   apiFetchVideoDetails,
   apiFetchVideosList,
-  apiInitializeStream,
+  apiCreateStream,
   apiReactOnVideo,
   apiSubscribeUnSubscribe,
   apiUpdateComment,
+  apiUpdateStreamDetails,
+  apiBookmarkVideo,
+  apiUnBookmarkVideo,
 } from '@/api/stream';
 import {
+  ApiResult,
   FindAndCountResponse,
   ServiceResponse,
   SuccessResponse,
@@ -27,10 +31,10 @@ import {
   UpdateCommentRequest,
   AddViewResponse,
 } from '@/data/dto/stream';
-import { STREAM_TYPE } from '@/data/types/stream';
-import { MAX_CATEGORY_COUNT, StreamInitializeRules } from '@/data/validations';
-import { StreamInitializeFields } from '@/data/types/stream';
+import { STREAM_TYPE, StreamDetailsUpdateRequest } from '@/data/types/stream';
+import { MAX_CATEGORY_COUNT, StreamDetailsRules } from '@/data/validations';
 import { Reaction, ReactionStats } from '@/data/chat';
+import { FORM_MODE } from '@/data/types/ui/form';
 
 export enum StreamInitializeError {
   INVALID_TITLE = 'INVALID_TITLE',
@@ -41,85 +45,93 @@ export enum StreamInitializeError {
   ACTION_FAILURE = 'ACTION_FAILURE',
 }
 
-export const initializeStream = async ({
-  title,
-  description,
-  categories,
-  streamType,
-  thumbnailImage,
-}: StreamInitializeFields): Promise<
-  ServiceResponse<StreamDetailsResponse, StreamInitializeError>
-> => {
-  let errors: Partial<Record<StreamInitializeError, boolean>> = {};
-  let titleFailure = false,
-    descriptionFailure = false,
-    categoryFailure = false,
-    streamTypeFailure = false,
-    thumbnailImageFailure = false;
+type ApiFunction = (
+  params: StreamDetailsUpdateRequest
+) => Promise<ApiResult<StreamDetailsResponse | null>>;
 
-  if (
+export const saveVideoOrStream = async (
+  payload: StreamDetailsUpdateRequest,
+  mode: FORM_MODE
+): Promise<ServiceResponse<StreamDetailsResponse, StreamInitializeError>> => {
+  const {
+    title,
+    description,
+    categories,
+    streamType,
+    thumbnailImage,
+    thumbnailPreview,
+  } = payload;
+
+  let apiFunction: ApiFunction | null = null;
+
+  if (mode === FORM_MODE.CREATE) apiFunction = apiCreateStream;
+  else if (mode === FORM_MODE.EDIT) apiFunction = apiUpdateStreamDetails;
+
+  let errors: Partial<Record<StreamInitializeError, boolean>> = {};
+  const invalidTitle =
     !title ||
-    title.length < StreamInitializeRules.title.min ||
-    title.length > StreamInitializeRules.title.max
-  )
-    titleFailure = true;
-  if (!description || description.length === 0) descriptionFailure = true;
-  if (
+    title.length < StreamDetailsRules.title.min ||
+    title.length > StreamDetailsRules.title.max;
+  const invalidDescription =
+    !description ||
+    description.length < StreamDetailsRules.description.min ||
+    description.length > StreamDetailsRules.description.max;
+  const invalidCategories =
     !categories ||
     categories.length === 0 ||
-    categories?.length > MAX_CATEGORY_COUNT
-  )
-    categoryFailure = true;
-  if (!Object.values(STREAM_TYPE)?.includes(streamType))
-    streamTypeFailure = true;
-  if (thumbnailImage === null) thumbnailImageFailure = true;
+    categories?.length > MAX_CATEGORY_COUNT;
+  const invalidThumbnail = !thumbnailImage && !thumbnailPreview;
+  const invalidStreamType = !Object.values(STREAM_TYPE)?.includes(streamType);
 
   let result: StreamDetailsResponse | undefined = undefined;
   let msg: string = '';
   if (
-    !titleFailure &&
-    !descriptionFailure &&
-    !streamTypeFailure &&
-    !thumbnailImageFailure
+    !invalidTitle &&
+    !invalidDescription &&
+    !invalidCategories &&
+    !invalidThumbnail &&
+    !invalidStreamType
   ) {
-    const { data, error, message } = await apiInitializeStream({
-      title,
-      description,
-      categories,
-      streamType,
-      thumbnailImage,
-    });
-    if (!error && !_.isEmpty(data)) {
-      errors = {};
-      const {
-        id,
+    if (apiFunction) {
+      const { data, error, message } = await apiFunction({
+        id: mode === FORM_MODE.EDIT ? payload?.id : undefined,
         title,
         description,
-        thumbnail_url,
-        push_url,
-        broadcast_url,
-        category_ids,
-      } = data; // code, message, data
+        categories,
+        streamType,
+        thumbnailImage,
+      });
+      if (!error && !_.isEmpty(data)) {
+        errors = {};
+        const {
+          id,
+          title,
+          description,
+          thumbnail_url,
+          push_url,
+          broadcast_url,
+          category_ids,
+        } = data; // code, message, data
 
-      result = {
-        id,
-        title,
-        description,
-        category_ids,
-        thumbnail_url,
-        push_url,
-        broadcast_url,
-      };
-    } else {
-      msg = message;
+        result = {
+          id,
+          title,
+          description,
+          category_ids,
+          thumbnail_url,
+          push_url,
+          broadcast_url,
+        };
+      } else {
+        msg = message;
+      }
     }
   } else {
-    errors[StreamInitializeError.INVALID_TITLE] = titleFailure;
-    errors[StreamInitializeError.INVALID_DESCRIPTION] = descriptionFailure;
-    errors[StreamInitializeError.INVALID_CATEGORY] = categoryFailure;
-    errors[StreamInitializeError.INVALID_STREAM_TYPE] = streamTypeFailure;
-    errors[StreamInitializeError.INVALID_THUMBNAIL_IMAGE] =
-      thumbnailImageFailure;
+    errors[StreamInitializeError.INVALID_TITLE] = invalidTitle;
+    errors[StreamInitializeError.INVALID_DESCRIPTION] = invalidDescription;
+    errors[StreamInitializeError.INVALID_CATEGORY] = invalidCategories;
+    errors[StreamInitializeError.INVALID_STREAM_TYPE] = invalidStreamType;
+    errors[StreamInitializeError.INVALID_THUMBNAIL_IMAGE] = invalidThumbnail;
   }
 
   return {
@@ -225,4 +237,22 @@ export const updateComment = async ({
   }
 
   return null;
+};
+
+export const bookmarkVideo = async (
+  videoId: number
+): Promise<SuccessResponse> => {
+  const { data } = await apiBookmarkVideo(videoId);
+  return {
+    success: data && data!.success,
+  };
+};
+
+export const unBookmarkVideo = async (
+  videoId: number
+): Promise<SuccessResponse> => {
+  const { data } = await apiUnBookmarkVideo(videoId);
+  return {
+    success: data && data!.success,
+  };
 };

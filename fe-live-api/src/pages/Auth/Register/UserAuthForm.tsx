@@ -227,10 +227,7 @@ const UserAuthForm = () => {
   if (usernameFailure) invalidUsernameError = <div>Username Required</div>;
   if (passwordFailure)
     invalidPasswordError = (
-      <div>
-        Password Required, min {PasswordRules.min}, max {PasswordRules.max}{' '}
-        characters.
-      </div>
+      <div>Password Required, min {PasswordRules.min} characters.</div>
     );
   if (confirmPasswordFailure)
     invalidConfirmPasswordError = <div>Passwords should be matched</div>;

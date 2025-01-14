@@ -15,39 +15,37 @@ func GetRedisValWithTyped[T any](r RedisStore, ctx context.Context, key string) 
 		return result, err
 	}
 
-	switch any(result).(type) {
-	case string:
-		return any(val).(T), nil
-	case int:
-		var intVal int
-		if intVal, err = strconv.Atoi(val); err != nil {
-			return result, err
-		}
-		return any(intVal).(T), nil
-	case float64:
-		var floatVal float64
-		if floatVal, err = strconv.ParseFloat(val, 64); err != nil {
-			return result, err
-		}
-		return any(floatVal).(T), nil
-	case bool:
-		var boolVal bool
-		if boolVal, err = strconv.ParseBool(val); err != nil {
-			return result, err
-		}
-		return any(boolVal).(T), nil
-	default:
-		// Attempt JSON unmarshalling for complex types
-		if err := json.Unmarshal([]byte(val), &result); err != nil {
-			return result, err
-		}
-		return result, nil
-	}
+	return ParseAndCast[T](val)
 }
-
 func GetRedisValWithTypedAndDefaultctx[T any](r RedisStore, key string) (T, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	return GetRedisValWithTyped[T](r, ctx, key)
+}
+
+func ParseAndCast[T any](input string) (T, error) {
+	var result T
+	var err error
+
+	switch any(result).(type) {
+	case string:
+		return any(input).(T), nil
+	case int:
+		var intVal int
+		intVal, err = strconv.Atoi(input)
+		return any(intVal).(T), err
+	case float64:
+		var floatVal float64
+		floatVal, err = strconv.ParseFloat(input, 64)
+		return any(floatVal).(T), err
+	case bool:
+		var boolVal bool
+		boolVal, err = strconv.ParseBool(input)
+		return any(boolVal).(T), err
+	default:
+		// Attempt JSON unmarshalling for complex types
+		err = json.Unmarshal([]byte(input), &result)
+		return result, err
+	}
 }

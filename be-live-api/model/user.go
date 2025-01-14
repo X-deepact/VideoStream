@@ -10,21 +10,22 @@ import (
 type AdminAction string
 
 const (
-	Login                   AdminAction = "end_stream"
-	Logout                  AdminAction = "banned_user"
-	LoginAction             AdminAction = "login"
-	LogoutAction            AdminAction = "logout"
-	CreateUserAction        AdminAction = "create_user"
-	UpdateUserAction        AdminAction = "update_user"
-	DeleteUserAction        AdminAction = "delete_user"
-	LiveBroadCastByID       AdminAction = "live_broad_cast_by_id"
-	DeleteLiveStreamByAdmin AdminAction = "delete_live_stream_by_admin"
-	LiveStreamByAdmin       AdminAction = "live_stream_by_admin"
-	UpdateStreamByAdmin     AdminAction = "update_live_stream_by_admin"
-	CreateCategory          AdminAction = "create_category"
-	ForgetPassword          AdminAction = "forget_password"
-	ResetPassword           AdminAction = "reset_password"
-	CreateAdmin             AdminAction = "create_admin"
+	LoginAction                  AdminAction = "login"
+	CreateUserAction             AdminAction = "create_user"
+	UpdateUserAction             AdminAction = "update_user"
+	ChangeUserPasswordAction     AdminAction = "change_user_password"
+	ChangeAvatarByAdmin          AdminAction = "change_avatar_by_admin"
+	DeleteUserAction             AdminAction = "delete_user"
+	DeleteStreamByAdmin          AdminAction = "delete_stream_by_admin"
+	ScheduledLiveStreamByAdmin   AdminAction = "scheduled_stream_by_admin"
+	UpdateStreamByAdmin          AdminAction = "update_stream_by_admin"
+	UpdateThumbnailByAdmin       AdminAction = "update_thumbnail_by_admin"
+	UpdateScheduledStreamByAdmin AdminAction = "update_scheduled_stream_by_admin"
+	EndLiveStreamByAdmin         AdminAction = "end_live_stream_by_admin"
+	CreateCategory               AdminAction = "create_category"
+	ForgetPassword               AdminAction = "forget_password"
+	ResetPassword                AdminAction = "reset_password"
+	CreateAdmin                  AdminAction = "create_admin"
 )
 
 type RoleType string
@@ -39,6 +40,14 @@ const (
 const (
 	SUPER_ADMIN_EMAIL    = "superAdmin@gmail.com"
 	SUPER_ADMIN_USERNAME = "superAdmin"
+)
+
+type UserStatusType string
+
+const (
+	ONLINE  UserStatusType = "online"
+	OFFLINE UserStatusType = "offline"
+	BLOCKED UserStatusType = "blocked"
 )
 
 type Role struct {
@@ -69,6 +78,8 @@ type User struct {
 	DeletedAt           gorm.DeletedAt `json:"deleted_at,omitempty"`
 	DeletedByID         *uint          `json:"deleted_by_id,omitempty"`
 	AvatarFileName      sql.NullString `gorm:"type:varchar(255)" json:"avatar_file_name,omitempty"`
+	Status              UserStatusType `gorm:"type:varchar(50);not null;default:'offline'" json:"status,omitempty"`
+	BlockedReason       string         `gorm:"type:text" json:"blocked_reason,omitempty"`
 	AdminLogs           []AdminLog     `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	CreatedByCategories []Category     `gorm:"foreignKey:CreatedByID"`
 	UpdatedByCategories []Category     `gorm:"foreignKey:UpdatedByID"`

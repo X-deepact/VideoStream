@@ -34,7 +34,12 @@ export function getAvatarFallbackText(str: string): string {
   return str?.length > 0 ? str.substring(0, 2).toUpperCase() : 'PF';
 }
 
-export function formatReactionCount(count: number | undefined): string {
+/**
+ *
+ * @param count (number)
+ * @returns count in K, M, B format (eg: 1k, 2M, 1.3B likes, comments, etc)
+ */
+export function formatKMBCount(count: number | undefined): string {
   if (count === undefined) return '';
   if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
   if (count >= 1_000) return `${(count / 1_000).toFixed(1)}k`;

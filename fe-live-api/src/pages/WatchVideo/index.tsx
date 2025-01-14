@@ -5,19 +5,27 @@ import { Button } from '@/components/ui/button';
 import VideoDescriptionBox from '@/components/VideoDescriptionBox';
 import useVideoDetails from '@/hooks/useVideoDetails';
 import { useParams } from 'react-router-dom';
-import { formatReactionCount } from '@/lib/utils';
+import { formatKMBCount } from '@/lib/utils';
 import Reactions from '@/components/Chat/Reactions';
 import { Reaction, ReactionStats } from '@/data/chat';
-import { addView, reactOnVideo, subscribeUnsubscribe } from '@/services/stream';
+import {
+  addView,
+  bookmarkVideo,
+  reactOnVideo,
+  subscribeUnsubscribe,
+  unBookmarkVideo,
+} from '@/services/stream';
 import { RECORD_VIEW_AFTER_SECONDS } from '@/data/validations';
 import VideoComment from '@/components/VideoComment';
-import { Sparkles, SquarePlay, VideoOff } from 'lucide-react';
+import { Bookmark, Sparkles, SquarePlay, VideoOff } from 'lucide-react';
 import { FEED_PATH } from '@/data/route';
 import NotFoundCentered from '@/components/NotFoundCentered';
 import FullscreenLoading from '@/components/FullscreenLoading';
 import VideoPlayerMP4 from '@/components/VideoPlayerMP4';
 import { fetchImageWithAuth } from '@/api/image';
 import AppAvatar from '@/components/AppAvatar';
+import AppButton from '@/components/AppButton';
+import { toast } from 'sonner';
 
 const WatchVideo = () => {
   const { id: videoId } = useParams<{ id: string }>();
@@ -39,6 +47,7 @@ const WatchVideo = () => {
 
   // subscription
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [subscribedCount, setSubscribedCount] = useState(0);
   // view
   const [viewsCount, setViewsCount] = useState(0);
@@ -70,6 +79,27 @@ const WatchVideo = () => {
         setReactionStats(data);
         if (currentReactionType === reaction) setCurrentReactionType(null);
         else setCurrentReactionType(reaction);
+      }
+    }
+  };
+
+  const handleBookmarkVideo = async () => {
+    if (videoDetails && videoDetails?.id) {
+      if (!isSaved) {
+        setIsSaved(true);
+
+        const isSuccess = await bookmarkVideo(videoDetails?.id);
+        if (!isSuccess) {
+          setIsSaved(false);
+          toast.error('Error saving to Bookmark videos');
+        }
+      } else if (isSaved) {
+        setIsSaved(false);
+        const isSuccess = await unBookmarkVideo(videoDetails?.id);
+        if (!isSuccess) {
+          setIsSaved(true);
+          toast.error('Error removing from Bookmark videos');
+        }
       }
     }
   };
@@ -135,6 +165,7 @@ const WatchVideo = () => {
   // update subscribe button, views count, current reaction type
   useEffect(() => {
     if (videoDetails) {
+      setIsSaved(videoDetails?.is_saved);
       setIsSubscribed(videoDetails?.is_subscribed);
       setSubscribedCount(videoDetails?.subscriptions);
 
@@ -227,7 +258,7 @@ const WatchVideo = () => {
         </h1>
 
         {/* Uploader and Interaction Section */}
-        <div ref={streamerAvatarRef} className="flex space-y-4 items-center">
+        <div ref={streamerAvatarRef} className="flex items-center">
           <div className="flex items-center space-x-4 flex-1">
             <AppAvatar url={videoDetails?.avatar_file_url || DefaultPf} />
             <div>
@@ -235,7 +266,7 @@ const WatchVideo = () => {
                 {videoDetails?.display_name}
               </h3>
               <p className="text-gray-400 text-sm">
-                {formatReactionCount(subscribedCount)} Subscribers
+                {formatKMBCount(subscribedCount)} Subscribers
               </p>
             </div>
             {!videoDetails?.is_owner && (
@@ -256,6 +287,15 @@ const WatchVideo = () => {
             )}
           </div>
           <div className="flex space-x-2 items-center">
+            <AppButton
+              Icon={Bookmark}
+              isIconActive={isSaved}
+              label={isSaved ? 'Bookmarked' : 'Bookmark'}
+              tooltipOnSmallScreens
+              size="sm"
+              variant="outline"
+              onClick={handleBookmarkVideo}
+            />
             <Reactions
               stats={{
                 likeCount: 0,

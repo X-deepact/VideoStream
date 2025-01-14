@@ -18,6 +18,7 @@ interface ComponentProps {
 	onDateChange?: (date: Date) => void;
 	disabled?: boolean;
 	within72hours?: boolean;
+	value?: Date;
 }
 
 export const DateTimePicker = (props: ComponentProps) => {
@@ -26,9 +27,10 @@ export const DateTimePicker = (props: ComponentProps) => {
 		within72hours = false,
 		placeholder,
 		width = "w-full",
-		onDateChange
+		onDateChange,
+		value
 	} = props;
-	const [date, setDate] = React.useState<Date>();
+	const [date, setDate] = React.useState<Date | undefined>(value);
 	const [isOpen, setIsOpen] = React.useState(false);
 
 	const hours = Array.from({ length: 12 }, (_, i) => i + 1);

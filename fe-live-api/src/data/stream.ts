@@ -19,5 +19,10 @@ export const modalTexts = {
       description:
         "Ending your live stream will immediately stop your broadcast, and your viewer count and live status will reset. Make sure you're ready to wrap up before confirming.",
     },
+    successUpdate: {
+      title: 'Stream Details Updated Successfully!',
+      description:
+        "You have successfully updated your content's details information.",
+    },
   },
 };

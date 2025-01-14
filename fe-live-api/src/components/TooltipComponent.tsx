@@ -7,7 +7,7 @@ import {
 
 interface ComponentProps {
   align?: 'start' | 'center' | 'end';
-  text: string;
+  text?: string;
   children: JSX.Element;
 }
 
@@ -16,14 +16,18 @@ const TooltipComponent = (props: ComponentProps) => {
 
   return (
     <TooltipProvider>
-      <Tooltip>
+      <Tooltip delayDuration={100}>
         <TooltipTrigger asChild>{children}</TooltipTrigger>
-        <TooltipContent
-          className="bg-secondary dark:bg-muted text-black dark:text-white max-w-full"
-          align={align || 'start'}
-        >
-          <p>{text}</p>
-        </TooltipContent>
+        {text && (
+          <TooltipContent
+            arrowPadding={10}
+            sideOffset={6}
+            className="TooltipContent bg-secondary dark:bg-white text-black dark:text-black"
+            align={align || 'start'}
+          >
+            <p>{text}</p>
+          </TooltipContent>
+        )}
       </Tooltip>
     </TooltipProvider>
   );

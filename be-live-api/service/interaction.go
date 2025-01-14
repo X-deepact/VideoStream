@@ -68,7 +68,7 @@ func (s *interactionService) GetInitialLiveMessage(streamID, userID uint) (*dto.
 		comment.AvatarURL = utils.GetFileUrl(conf.GetFileStorageConfig().AvatarFolder, comment.AvatarFileName)
 	}
 
-	likeInfo, err := s.GetLikeInfo(streamID, userID)
+	likeInfo, err := s.GetLikeInfo(streamID)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (s *interactionService) GetCommentInfoByCommentID(commentID uint) (*dto.Liv
 	return comment, nil
 }
 
-func (s *interactionService) GetLikeInfo(streamID, userID uint) (*dto.LikeInfo, error) {
+func (s *interactionService) GetLikeInfo(streamID uint) (*dto.LikeInfo, error) {
 	total, err := s.repo.Interaction.GetLikeCount(streamID)
 	if err != nil {
 		return nil, err
@@ -154,7 +154,7 @@ func (s *interactionService) GetLikeInfo(streamID, userID uint) (*dto.LikeInfo, 
 	return message, nil
 }
 
-func (s *interactionService) AddViewForRecord(streamID uint, userID uint) (int64, error) {
+func (s *interactionService) AddViewForRecord(streamID uint, userID uint) (*model.View, int64, error) {
 	view := &model.View{
 		UserID:    userID,
 		StreamID:  streamID,
@@ -162,7 +162,8 @@ func (s *interactionService) AddViewForRecord(streamID uint, userID uint) (int64
 		IsViewing: false,
 	}
 
-	return s.repo.Interaction.FirstOrCreateViewRecord(view)
+	rowsAffected, err := s.repo.Interaction.FirstOrCreateViewRecord(view)
+	return view, rowsAffected, err
 }
 
 func (s *interactionService) GetComment(id uint) (*model.Comment, error) {
@@ -250,4 +251,25 @@ func (s *interactionService) CountViewsByStream(streamID uint) (int64, error) {
 
 func (s *interactionService) CountCommentsByStreamID(streamID uint) (int64, error) {
 	return s.repo.Interaction.CountCommentsByStreamID(streamID)
+}
+
+func (s *interactionService) CountViewsByStreamLive(streamID uint) (int64, error) {
+	return s.repo.Interaction.CountViewsByStreamLiveID(streamID)
+}
+
+func (s *interactionService) UpdateViewForRecord(view *model.View) error {
+	return s.repo.Interaction.UpdateViewRecord(view)
+}
+
+func (s *interactionService) Bookmark(streamID uint, userID uint) error {
+	bookmark := &model.Bookmark{
+		UserID:   userID,
+		StreamID: streamID,
+	}
+
+	return s.repo.Interaction.FirstOrCreateBookmarkRecord(bookmark)
+}
+
+func (s *interactionService) DeleteBookmark(streamID, userID uint) error {
+	return s.repo.Interaction.DeleteBookmark(streamID, userID)
 }

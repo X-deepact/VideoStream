@@ -17,6 +17,7 @@ type RedisStore interface {
 	RemoveWithDefaultCtx(key string) error
 	Publish(ctx context.Context, channel string, message any) error
 	Subscribe(ctx context.Context, handlerFunc func(channel string, message string), channels ...string) error
+	Unsubscribe(ctx context.Context, channels ...string) error
 }
 
 type RedisClient struct {

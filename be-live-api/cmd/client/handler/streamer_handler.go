@@ -62,6 +62,8 @@ func (h *streamHandler) register() {
 	group.DELETE("/delete-comment/:id", h.deleteComment)
 	group.POST("/:id/add-view", h.addView)
 	group.POST("/:id/like", h.actionLike)
+	group.POST("/:id/bookmark", h.bookmark)
+	group.DELETE("/:id/bookmark", h.deleteBookmark)
 
 	// middleware will come here
 	group.Use(utils.JWTMiddlewareStreamer())
@@ -145,6 +147,24 @@ func (h *streamHandler) initializeStream(c echo.Context) error {
 
 }
 
+// @Summary      Get Streams
+// @Description  Fetch a list of streams with optional filters
+// @Tags         Stream
+// @Accept       json
+// @Produce      json
+// @Param        page          query    int     false  "Page number"            default(1)
+// @Param        limit         query    int     false  "Number of items per page" default(10)
+// @Param        status        query    string  false  "Status of the stream"   default()
+// @Param        title         query    string  false  "Title filter"
+// @Param        category_ids  query    []int   false  "Category IDs"           collectionFormat(multi)
+// @Param        is_me         query    bool    false  "Filter by user streams" default(nil)
+// @Param        is_liked      query    bool    false  "Filter by liked streams" default(nil)
+// @Param        is_history    query    bool    false  "Filter by history streams" default(nil)
+// @Param        is_saved      query    bool    false  "Filter by saved streams" default(nil)
+// @Security     BearerAuth
+// @Success      200  {object}  dto.StreamDto
+// @Failure      401  "Unauthorized"
+// @Router       /api/streams [get]
 func (h *streamHandler) getStreams(c echo.Context) error {
 	var err error
 
@@ -161,10 +181,8 @@ func (h *streamHandler) getStreams(c echo.Context) error {
 		req.Limit = utils.DEFAULT_LIMIT
 	}
 
-	if req.IsMe != nil {
-		claims := c.Get("user").(*utils.Claims)
-		req.UserID = claims.ID
-	}
+	claims := c.Get("user").(*utils.Claims)
+	req.UserID = claims.ID
 
 	pagination, err := h.srv.Stream.GetStreams(&req)
 	if err != nil {
@@ -176,6 +194,7 @@ func (h *streamHandler) getStreams(c echo.Context) error {
 		thumbnailURL := ""
 		avtURL := ""
 		var views, duration uint
+		var startedAt *time.Time
 
 		if e.ThumbnailFileName != "" {
 			thumbnailURL = utils.MakeThumbnailURL(h.ApiURL, e.ThumbnailFileName)
@@ -196,19 +215,30 @@ func (h *streamHandler) getStreams(c echo.Context) error {
 			avtURL = utils.GetFileUrl(h.AvatarFolder, e.User.AvatarFileName.String)
 		}
 
+		if e.StartedAt.Valid {
+			startedAt = &e.StartedAt.Time
+		}
+
 		return dto.StreamDto{
 			ID:            e.ID,
 			Title:         e.Title,
 			Status:        e.Status,
 			ThumbnailURL:  thumbnailURL,
-			StartedAt:     e.StartedAt.Time,
+			StartedAt:     startedAt,
 			UserID:        e.User.ID,
 			DisplayName:   e.User.DisplayName,
 			AvatarFileURL: avtURL,
 			Views:         views,
 			Duration:      duration,
+			ScheduledAt:   e.ScheduledAt,
+			IsSaved:       e.IsSaved,
 		}
 	})
+
+	if req.IsHistory != nil && *req.IsHistory {
+		newPage.BasePaginationModel = pagination.BasePaginationModel
+		return utils.BuildSuccessResponse(c, http.StatusOK, newPage)
+	}
 
 	liveStreams := []dto.StreamDto{}
 	upcomings := []dto.StreamDto{}
@@ -230,6 +260,15 @@ func (h *streamHandler) getStreams(c echo.Context) error {
 	return utils.BuildSuccessResponse(c, http.StatusOK, newPage)
 }
 
+// @Summary      Get Stream Details
+// @Description  Fetch detailed information of a specific stream by ID
+// @Tags         Stream
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int     true  "Stream ID"
+// @Security     BearerAuth
+// @Failure      401  "Unauthorized"
+// @Router       /api/streams/{id} [get]
 func (h *streamHandler) getStream(c echo.Context) error {
 	streamID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -238,7 +277,7 @@ func (h *streamHandler) getStream(c echo.Context) error {
 
 	claims := c.Get("user").(*utils.Claims)
 
-	stream, err := h.srv.Stream.GetStream(uint(streamID))
+	stream, err := h.srv.Stream.GetStream(uint(streamID), claims.ID)
 	if err != nil {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
@@ -270,6 +309,18 @@ func (h *streamHandler) getStream(c echo.Context) error {
 	} else if stream.Status == model.STARTED {
 		status = dto.LIVE
 		broadcastURL = utils.MakeBroadcastURL(h.hlsURL, stream.StreamKey)
+		countView, err := h.srv.Interaction.CountViewsByStreamLive(stream.ID)
+		if err != nil {
+			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+		}
+		views = uint(countView)
+
+		countComment, err := h.srv.Interaction.CountCommentsByStreamID(stream.ID)
+		if err != nil {
+			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+		}
+		comments = uint(countComment)
+	} else {
 		countView, err := h.srv.Interaction.CountViewsByStream(stream.ID)
 		if err != nil {
 			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
@@ -292,7 +343,7 @@ func (h *streamHandler) getStream(c echo.Context) error {
 		avtURL = utils.GetFileUrl(h.AvatarFolder, stream.User.AvatarFileName.String)
 	}
 
-	likeInfo, err = h.srv.Interaction.GetLikeInfo(stream.ID, claims.ID)
+	likeInfo, err = h.srv.Interaction.GetLikeInfo(stream.ID)
 	if err != nil {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
@@ -342,6 +393,8 @@ func (h *streamHandler) getStream(c echo.Context) error {
 		Comments:        comments,
 		Duration:        duration,
 		Categories:      categories,
+		ScheduledAt:     stream.ScheduledAt,
+		IsSaved:         stream.IsSaved,
 	}
 
 	return utils.BuildSuccessResponse(c, http.StatusOK, streamDetailDto)
@@ -353,15 +406,32 @@ func (h *streamHandler) addView(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("invalid id parameter"), nil)
 	}
 	streamID := uint(strID)
+
 	claims := c.Get("user").(*utils.Claims)
 
-	rowsAffected, err := h.srv.Interaction.AddViewForRecord(streamID, claims.ID)
+	stream, err := h.srv.Stream.GetStream(streamID, claims.ID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("stream not found"), nil)
+		}
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	if stream.Status != model.ENDED {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("this isn't a video, you can't add views"), nil)
+	}
+
+	view, rowsAffected, err := h.srv.Interaction.AddViewForRecord(streamID, claims.ID)
 	if err != nil {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
 	if rowsAffected == 1 {
 		if err := h.srv.Interaction.UpdateStreamAnalyticsView(streamID); err != nil {
+			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+		}
+	} else {
+		if err := h.srv.Interaction.UpdateViewForRecord(view); err != nil {
 			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 		}
 	}
@@ -378,12 +448,24 @@ func (h *streamHandler) actionLike(c echo.Context) error {
 	}
 	streamID := uint(strID)
 
+	claims := c.Get("user").(*utils.Claims)
+
+	stream, err := h.srv.Stream.GetStream(streamID, claims.ID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("stream not found"), nil)
+		}
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	if stream.Status != model.ENDED {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("this isn't a video, you can't react"), nil)
+	}
+
 	var like dto.LiveLike
 	if err := utils.BindAndValidate(c, &like); err != nil {
 		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
 	}
-
-	claims := c.Get("user").(*utils.Claims)
 
 	pLike, err := h.srv.Interaction.GetLike(streamID, claims.ID)
 	isUpdate := false
@@ -418,7 +500,7 @@ func (h *streamHandler) actionLike(c echo.Context) error {
 		}
 	} else {
 		if pLike == nil {
-			likeInfo, err := h.srv.Interaction.GetLikeInfo(streamID, claims.ID)
+			likeInfo, err := h.srv.Interaction.GetLikeInfo(streamID)
 			if err != nil {
 				return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 			}
@@ -439,7 +521,7 @@ func (h *streamHandler) actionLike(c echo.Context) error {
 		}
 	}
 
-	likeInfo, err := h.srv.Interaction.GetLikeInfo(streamID, claims.ID)
+	likeInfo, err := h.srv.Interaction.GetLikeInfo(streamID)
 	if err != nil {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
@@ -536,6 +618,9 @@ func (h *streamHandler) updateComment(c echo.Context) error {
 
 	comment, err := h.srv.Interaction.GetComment(req.ID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("comment not found"), nil)
+		}
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
@@ -575,6 +660,9 @@ func (h *streamHandler) deleteComment(c echo.Context) error {
 
 	comment, err := h.srv.Interaction.GetComment(uint(commentID))
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("comment not found"), nil)
+		}
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
@@ -632,44 +720,89 @@ func (h *streamHandler) update(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
-	streamDto, err := h.srv.Stream.GetStream(stream.ID)
+	return utils.BuildSuccessResponse(c, http.StatusOK, map[string]any{
+		"id":            stream.ID,
+		"title":         stream.Title,
+		"description":   stream.Description,
+		"thumbnail_url": utils.MakeThumbnailURL(h.ApiURL, stream.ThumbnailFileName),
+		"push_url":      utils.MakePushURL(h.rtmpURL, stream.StreamToken.String),
+		"broadcast_url": utils.MakeBroadcastURL(h.hlsURL, stream.StreamKey),
+		"category_ids":  req.CategoryIDs,
+	})
+}
+
+// @Summary      Bookmark stream
+// @Description  Bookmark stream by ID
+// @Tags         Stream
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int     true  "ID stream"
+// @Security     BearerAuth
+// @Success      200  {object}  nil
+// @Failure 	 401  "Unauthorized"
+// @Router       /api/streams/{id}/bookmark [post]
+func (h *streamHandler) bookmark(c echo.Context) error {
+	strID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("invalid id parameter"), nil)
+	}
+	streamID := uint(strID)
+
+	claims := c.Get("user").(*utils.Claims)
+
+	stream, err := h.srv.Stream.GetStream(streamID, claims.ID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("stream not found"), nil)
+		}
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
-	thumbnailURL := ""
-	avtURL := ""
-	var views, duration uint
-
-	if streamDto.ThumbnailFileName != "" {
-		thumbnailURL = utils.MakeThumbnailURL(h.ApiURL, streamDto.ThumbnailFileName)
+	if stream.Status != model.ENDED {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("this isn't a video, you can't save"), nil)
 	}
 
-	if streamDto.Status == model.ENDED {
-		if len(streamDto.StreamAnalytics) > 0 {
-			views = streamDto.StreamAnalytics[0].Views
-			duration = streamDto.StreamAnalytics[0].Duration
+	if err := h.srv.Interaction.Bookmark(streamID, claims.ID); err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	return utils.BuildSuccessResponse(c, http.StatusOK, nil)
+}
+
+// @Summary      Remove the bookmark stream
+// @Description  Remove the bookmark stream by ID
+// @Tags         Stream
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int     true  "ID stream"
+// @Security     BearerAuth
+// @Success      200  {object}  nil
+// @Failure 	 401  "Unauthorized"
+// @Router       /api/streams/{id}/bookmark [delete]
+func (h *streamHandler) deleteBookmark(c echo.Context) error {
+	strID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("invalid id parameter"), nil)
+	}
+	streamID := uint(strID)
+
+	claims := c.Get("user").(*utils.Claims)
+
+	stream, err := h.srv.Stream.GetStream(streamID, claims.ID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("stream not found"), nil)
 		}
-
-		streamDto.Status = model.StreamStatus(dto.VIDEO)
-	} else if streamDto.Status == model.STARTED {
-		streamDto.Status = model.StreamStatus(dto.LIVE)
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
-	if streamDto.User.AvatarFileName.String != "" {
-		avtURL = utils.GetFileUrl(h.AvatarFolder, streamDto.User.AvatarFileName.String)
+	if stream.Status != model.ENDED {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("this isn't a video, you can't delete"), nil)
 	}
 
-	return utils.BuildSuccessResponse(c, http.StatusOK, dto.StreamDto{
-		ID:            streamDto.ID,
-		Title:         streamDto.Title,
-		Status:        streamDto.Status,
-		ThumbnailURL:  thumbnailURL,
-		StartedAt:     streamDto.StartedAt.Time,
-		UserID:        streamDto.User.ID,
-		DisplayName:   streamDto.User.DisplayName,
-		AvatarFileURL: avtURL,
-		Views:         views,
-		Duration:      duration,
-	})
+	if err := h.srv.Interaction.DeleteBookmark(streamID, claims.ID); err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	return utils.BuildSuccessResponse(c, http.StatusOK, nil)
 }

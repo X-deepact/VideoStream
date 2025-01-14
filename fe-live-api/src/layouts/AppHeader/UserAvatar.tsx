@@ -12,7 +12,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/CustomSidebar';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { DropdownMenu } from '@/components/ui/dropdown-menu';
 import { ModeSwitcher } from '@/components/ModeSwitcher';
@@ -20,64 +20,49 @@ import { getLoggedInUserInfo } from '@/data/model/userAccount';
 import { useProfileNavItems } from '@/hooks/useProfileNavItems';
 import DefaultPf from '@/assets/images/pf.png';
 import { EVENT_EMITTER_NAME, EventEmitter } from '@/lib/event-emitter';
-import { UserProfileInfoUpdateRequest } from '@/data/dto/user';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getAvatarFallbackText } from '@/lib/utils';
 
 const UserAvatar = React.memo(() => {
   const [isOpen, setIsOpen] = useState(false);
 
+  const currentUser = getLoggedInUserInfo();
   const profileNavItems = useProfileNavItems();
-  const currentUser = React.useMemo(() => getLoggedInUserInfo(), []);
 
   const [user, setUser] = useState<{
     username: string;
     displayName: string;
     avatarUrl: string;
   }>({
-    username: '',
-    displayName: '',
-    avatarUrl: '',
+    username: currentUser.username || 'unknown',
+    displayName: currentUser.display_name || 'Unknown',
+    avatarUrl: currentUser.avatar_file_name || DefaultPf,
   });
 
-  const handleAccountChange = useCallback(
-    (updatedUser: UserProfileInfoUpdateRequest) => {
-      setUser((prevData) => {
-        return {
-          ...prevData,
-          displayName: updatedUser.displayName,
-          avatarUrl:
-            typeof updatedUser.avatarFile === 'string'
-              ? updatedUser.avatarFile
-              : DefaultPf,
-        };
+  const handleAccountChange = () => {
+    const updatedUser = getLoggedInUserInfo();
+    if (updatedUser) {
+      setUser({
+        username: updatedUser.username || 'unknown',
+        displayName: updatedUser.display_name || 'Unknown',
+        avatarUrl: updatedUser.avatar_file_name || DefaultPf,
       });
-    },
-    []
-  );
+    }
+  };
 
   useEffect(() => {
-    if (currentUser)
-      setUser((prev) => ({
-        ...prev,
-        username: currentUser?.username || 'unknown',
-        displayName: currentUser?.display_name || 'Unknown',
-        avatarUrl: currentUser?.avatar_file_name || DefaultPf,
-      }));
-
     EventEmitter.subscribe(
       EVENT_EMITTER_NAME.USER_PROFILE_UPDATE,
       handleAccountChange
     );
 
-    // Cleanup subscription on unmount
     return () => {
       EventEmitter.unsubscribe(
         EVENT_EMITTER_NAME.USER_PROFILE_UPDATE,
         handleAccountChange
       );
     };
-  }, [currentUser, handleAccountChange]);
+  }, []);
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>

@@ -47,24 +47,24 @@ interface AccountStorage {
   createdAt?: string;
 }
 
-export const retrieveAuthToken = (): string | null => {
-  const { expiration_time, token } = data;
-  const nowMm = moment().add(2, 'minutes');
-
-  if (!!expiration_time && expiration_time.isAfter(nowMm)) return token;
-
-  onAuthExpired();
-
-  return null;
+export const isAuthenticated = (): boolean => {
+  return !!localStorage.getItem(STORAGE_KEY);
 };
 
-const onAuthExpired = (): void => {
-  clearData();
+export const isAuthorized = (pathname: string): boolean => {
+  const currentUser = getLoggedInUserInfo();
+
+  if (currentUser && !currentUser?.id && !currentUser?.role_type) return false;
+
+  const allowedPaths = LEFT_MAIN_MENU[currentUser.role_type as USER_ROLE];
+  return allowedPaths.some((allowedPath) =>
+    matchPath({ path: allowedPath, end: false }, pathname)
+  );
 };
 
-export const invalidateAccount = (): void => {
-  clearData();
-  onAccountChange();
+const onAccountChange = (): void => {
+  const newData = { ...data };
+  EventEmitter.emit(EVENT_EMITTER_NAME.USER_ACCOUNT_CHANGE, newData);
 };
 
 const clearData = (): void => {
@@ -84,17 +84,9 @@ const clearData = (): void => {
   localStorage.removeItem(STORAGE_KEY);
 };
 
-export const updateUserProfileInfoLS = (
-  displayName: string,
-  avatarFileName: string
-): void => {
-  const storedData = localStorage.getItem(STORAGE_KEY);
-  const authInfo = storedData ? JSON.parse(storedData) : {};
-
-  authInfo.display_name = displayName;
-  authInfo.avatar_file_name = avatarFileName;
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(authInfo));
+const onAuthExpired = (): void => {
+  clearData();
+  onAccountChange();
 };
 
 export const authAccount = (
@@ -138,24 +130,43 @@ export const authAccount = (
   onAccountChange();
 };
 
-export const isAuthenticated = (): boolean => {
-  return !!localStorage.getItem(STORAGE_KEY); // Adjust based on your auth logic
+export const updateAccountProfile = (
+  displayName?: string,
+  avatarFileName?: string
+): void => {
+  if (displayName) data = { ...data, display_name: displayName };
+  if (avatarFileName) data = { ...data, avatar_file_name: avatarFileName };
+
+  const storedData = localStorage.getItem(STORAGE_KEY);
+  let dataStorage: AccountStorage = {
+    id: '',
+    email: '',
+    username: '',
+    display_name: '',
+    avatar_file_name: '',
+    role_type: '',
+    token: '',
+    expiration_time: '',
+    createdAt: '',
+  };
+  if (storedData) {
+    dataStorage = JSON.parse(storedData);
+    dataStorage = {
+      ...dataStorage,
+      display_name: displayName || 'Unknown',
+      avatar_file_name: avatarFileName || '',
+    };
+
+    const storageStr = JSON.stringify(dataStorage);
+    localStorage.setItem(STORAGE_KEY, storageStr);
+
+    onAccountChange();
+  }
 };
 
-export const isAuthorized = (pathname: string): boolean => {
-  const currentUser = getLoggedInUserInfo();
-
-  if (currentUser && !currentUser?.id && !currentUser?.role_type) return false;
-
-  const allowedPaths = LEFT_MAIN_MENU[currentUser.role_type as USER_ROLE];
-  return allowedPaths.some((allowedPath) =>
-    matchPath({ path: allowedPath, end: false }, pathname)
-  );
-};
-
-const onAccountChange = (): void => {
-  const newData = { ...data };
-  EventEmitter.emit(EVENT_EMITTER_NAME.USER_ACCOUNT_CHANGE, newData);
+export const invalidateAccount = (): void => {
+  clearData();
+  onAccountChange();
 };
 
 const loadStorage = (): void => {
@@ -196,6 +207,21 @@ const loadStorage = (): void => {
 };
 loadStorage();
 
+export const getLoggedInUserInfo = (): UserAccountModel => {
+  return { ...data };
+};
+
+export const retrieveAuthToken = (): string | null => {
+  const { expiration_time, token } = data;
+  const nowMm = moment().add(2, 'minutes');
+
+  if (!!expiration_time && expiration_time.isAfter(nowMm)) return token;
+
+  onAuthExpired();
+
+  return null;
+};
+
 export const subscribeAccountChange = (
   onChange: (data: UserAccountModel) => void
 ): void => {
@@ -212,7 +238,3 @@ EventEmitter.subscribe(
   EVENT_EMITTER_NAME.EVENT_UNAUTHORIZED_USER,
   onAuthExpired
 );
-
-export const getLoggedInUserInfo = (): UserAccountModel => {
-  return { ...data };
-};

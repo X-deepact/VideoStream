@@ -1,6 +1,6 @@
 import { Reaction, ReactionIcons, ReactionStats } from '@/data/chat';
 import { Button } from '../ui/button';
-import { formatReactionCount } from '@/lib/utils';
+import { formatKMBCount } from '@/lib/utils';
 import { useMemo, useState } from 'react';
 import { useSidebar } from '@/components/CustomSidebar';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
@@ -46,13 +46,13 @@ const Reactions = (props: ComponentProps) => {
     return popularReaction;
   }, [stats.likeInfo, reactions]);
 
-  const mostPopularCount = formatReactionCount(
+  const mostPopularCount = formatKMBCount(
     mostPopularReaction ? stats.likeInfo[mostPopularReaction] : 0
   );
 
   const currentReaction = stats.currentReactionType;
   const currentReactionCount = currentReaction
-    ? formatReactionCount(stats.likeInfo[currentReaction])
+    ? formatKMBCount(stats.likeInfo[currentReaction])
     : null;
 
   const triggerReactions = useMemo(() => {
@@ -90,9 +90,7 @@ const Reactions = (props: ComponentProps) => {
             <div className="flex flex-wrap gap-2 items-center justify-center">
               {reactions.map((reaction) => {
                 const isActive = stats?.currentReactionType === reaction;
-                const reactionCount = formatReactionCount(
-                  stats.likeInfo[reaction]
-                );
+                const reactionCount = formatKMBCount(stats.likeInfo[reaction]);
 
                 return (
                   <Button
@@ -145,7 +143,7 @@ const Reactions = (props: ComponentProps) => {
       {reactions.map((reaction) => {
         const isActive = stats?.currentReactionType === reaction;
 
-        const reactionCount = formatReactionCount(stats.likeInfo[reaction]);
+        const reactionCount = formatKMBCount(stats.likeInfo[reaction]);
 
         return (
           <Button

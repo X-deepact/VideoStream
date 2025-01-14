@@ -67,7 +67,7 @@ const VideoDescriptionBox = (props: ComponentProps) => {
             isExpanded ? '' : 'line-clamp-3'
           }`}
         >
-          {description || 'No Description'}
+          {description}
         </p>
       </div>
     </div>

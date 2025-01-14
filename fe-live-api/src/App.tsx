@@ -1,8 +1,8 @@
 import { Navigate, Route, BrowserRouter, Routes } from 'react-router-dom';
-import History from './pages/History';
+import WatchedHistory from './pages/WatchedHistory';
 import Subscriptions from './pages/Subscriptions';
 import LikedVideos from './pages/LikedVideos';
-import SavedVideos from './pages/SavedVideos';
+import BookmarkVideos from './pages/BookmarkVideos';
 import NotFound from './pages/NotFound';
 import {
   FORGOT_PASSWORD_PATH,
@@ -23,6 +23,7 @@ import {
   STREAMER_PROFILE_PATH,
   WATCH_VIDEO_PATH,
   WATCH_LIVE_PATH,
+  FEED_SEARCH_PATH,
 } from './data/route';
 import Register from './pages/Auth/Register';
 import Login from './pages/Auth/Login';
@@ -40,6 +41,7 @@ import Feed from './pages/Feed';
 import UserProfile from './pages/UserProfile';
 import WatchVideo from './pages/WatchVideo';
 import WatchLive from './pages/WatchLive';
+import FeedSearch from './pages/Feed/Search';
 
 function App() {
   return (
@@ -52,6 +54,10 @@ function App() {
           path={FEED_PATH}
           element={<ProtectedRoute element={<Feed />} />}
         />
+        <Route
+          path={FEED_SEARCH_PATH}
+          element={<ProtectedRoute element={<FeedSearch />} />}
+        />
 
         <Route
           path={SUBSCRIPTIONS_PATH}
@@ -59,7 +65,7 @@ function App() {
         />
         <Route
           path={HISTORY_PATH}
-          element={<ProtectedRoute element={<History />} />}
+          element={<ProtectedRoute element={<WatchedHistory />} />}
         />
         <Route
           path={LIKED_VIDEOS_PATH}
@@ -67,7 +73,7 @@ function App() {
         />
         <Route
           path={SAVED_VIDEOS_PATH}
-          element={<ProtectedRoute element={<SavedVideos />} />}
+          element={<ProtectedRoute element={<BookmarkVideos />} />}
         />
         <Route
           path={LIVE_STREAM_PATH}

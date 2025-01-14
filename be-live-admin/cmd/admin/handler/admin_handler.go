@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 	"gitlab/live/be-live-admin/conf"
 	"gitlab/live/be-live-admin/dto"
 	"gitlab/live/be-live-admin/model"
@@ -37,13 +36,23 @@ func (h *adminHandler) register() {
 	group := h.r.Group("api/admins")
 
 	group.Use(h.JWTMiddleware())
-	group.Use(h.RoleGuardMiddleware())
-	group.POST("", h.createAdmin)
 	group.GET("/logs", h.getAdminLogs)
 	group.GET("/:id", h.byId)
+	group.GET("/actions", h.getAdminActions)
 
 }
 
+// @Summary      Get Admin by ID
+// @Description  Get admin details by ID
+// @Tags         Admin
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Admin ID"
+// @Success      200  {object}  dto.UserResponseDTO  "Admin details"
+// @Failure      400         "Invalid ID parameter or not found"
+// @Failure      500         "Internal Server Error"
+// @Security     Bearer
+// @Router       /api/admins/{id} [get]
 func (h *adminHandler) byId(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -55,16 +64,37 @@ func (h *adminHandler) byId(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
+	if data == nil {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("not found"), nil)
+	}
+
 	return utils.BuildSuccessResponseWithData(c, http.StatusOK, data)
 
 }
 
+// @Summary      Get Admin Logs
+// @Description  Get logs for the current admin
+// @Tags         Admin
+// @Accept       json
+// @Produce      json
+// @Param        adminLogQuery  query      dto.AdminLogQuery  true  "Admin Log Query"
+// @Success      200 {object} utils.PaginationModel[dto.AdminLogRespDTO]  "Admin logs"
+// @Failure      400                  "Bad Request"
+// @Failure      500                  "Internal Server Error"
+// @Security     Bearer
+// @Router       /api/admins/logs [get]
 func (h *adminHandler) getAdminLogs(c echo.Context) error {
 
 	var req dto.AdminLogQuery
 	if err := utils.BindAndValidate(c, &req); err != nil {
 		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
 	}
+
+	currentUser := c.Get("user").(*utils.Claims)
+	if currentUser.RoleType == model.ADMINROLE {
+		req.IsAdmin = true
+	}
+	req.UserID = currentUser.ID
 
 	data, err := h.srv.Admin.GetAdminLogs(&req)
 
@@ -75,26 +105,19 @@ func (h *adminHandler) getAdminLogs(c echo.Context) error {
 	return utils.BuildSuccessResponseWithData(c, http.StatusOK, data)
 }
 
-func (h *adminHandler) createAdmin(c echo.Context) error {
-	var err error
-	var req dto.CreateAdminRequest
-	if err := utils.BindAndValidate(c, &req); err != nil {
-		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
-	}
-	currentUser := c.Get("user").(*utils.Claims)
-	req.CreatedByID = &currentUser.ID
-	data, err := h.srv.Admin.CreateAdmin(&req)
-	if err != nil {
-		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
-	}
-
-	adminLog := h.srv.Admin.MakeAdminLogModel(data.ID, model.CreateAdmin, fmt.Sprintf(" %s created admin", data.Email))
-
-	err = h.srv.Admin.CreateLog(adminLog)
-
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
+// @Summary      Get Admin Actions
+// @Description  Get actions for admin logs
+// @Tags         Admin
+// @Accept       json
+// @Produce      json
+// @Success      200 {array} string   "Admin actions"
+// @Security     Bearer
+// @Router       /api/admins/actions [get]
+func (h *adminHandler) getAdminActions(c echo.Context) error {
+	var data []string
+	for _, value := range model.Actions {
+		data = append(data, value)
 	}
 
-	return utils.BuildSuccessResponseWithData(c, http.StatusAccepted, data)
+	return utils.BuildSuccessResponseWithData(c, http.StatusOK, data)
 }

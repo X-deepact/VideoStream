@@ -7,6 +7,8 @@ import (
 	"gitlab/live/be-live-admin/model"
 	"gitlab/live/be-live-admin/repository"
 	"gitlab/live/be-live-admin/utils"
+	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -30,6 +32,7 @@ func (s *UserService) toUserResponseDTO(user *model.User, apiURL string) dto.Use
 	userResp.Username = user.Username
 	userResp.DisplayName = user.DisplayName
 	userResp.Email = user.Email
+	userResp.Status = user.Status
 	if user.AvatarFileName.Valid {
 		userResp.AvatarFileName = utils.MakeAvatarURL(apiURL, user.AvatarFileName.String)
 	}
@@ -98,12 +101,15 @@ func (s *UserService) DeleteByID(id uint, deletedByID uint) error {
 
 }
 
-func (s *UserService) toUpdatedUserDTO(user *model.User, role model.RoleType) *dto.UpdateUserResponse {
+func (s *UserService) toUpdatedUserDTO(user *model.User, role model.RoleType, apiURL string) *dto.UpdateUserResponse {
 	return &dto.UpdateUserResponse{
+		ID:          user.ID,
 		UserName:    user.Username,
 		DisplayName: user.DisplayName,
 		Email:       user.Email,
+		Status:      user.Status,
 		UpdatedAt:   user.UpdatedAt,
+		Avatar:      utils.MakeAvatarURL(apiURL, user.AvatarFileName.String),
 		Role:        role,
 	}
 }
@@ -133,7 +139,7 @@ func (s *UserService) makeUpdatedUserModel(user *model.User, updatedUser *dto.Up
 	return user, nil
 }
 
-func (s *UserService) UpdateUser(updatedUser *dto.UpdateUserRequest, id uint) (*dto.UpdateUserResponse, error) {
+func (s *UserService) UpdateUser(updatedUser *dto.UpdateUserRequest, id uint, apiUrl string) (*dto.UpdateUserResponse, error) {
 
 	user, err := s.repo.Admin.ById(id)
 	if err != nil {
@@ -145,11 +151,11 @@ func (s *UserService) UpdateUser(updatedUser *dto.UpdateUserRequest, id uint) (*
 		return nil, err
 	}
 
-	return s.toUpdatedUserDTO(user, updatedUser.RoleType), err
+	return s.toUpdatedUserDTO(user, updatedUser.RoleType, apiUrl), err
 
 }
 
-func (s *UserService) ChangePassword(user *model.User, changePassword *dto.ChangePasswordRequest, id uint, updatedByID uint) (*dto.UpdateUserResponse, error) {
+func (s *UserService) ChangePassword(user *model.User, changePassword *dto.ChangePasswordRequest, id uint, updatedByID uint, apiUrl string) (*dto.UpdateUserResponse, error) {
 	var err error
 	if changePassword.Password != "" {
 		user.PasswordHash, err = utils.HashPassword(changePassword.Password)
@@ -163,7 +169,20 @@ func (s *UserService) ChangePassword(user *model.User, changePassword *dto.Chang
 		return nil, err
 	}
 
-	return s.toUpdatedUserDTO(user, user.Role.Type), err
+	return s.toUpdatedUserDTO(user, user.Role.Type, apiUrl), err
+}
+
+func (s *UserService) ChangeAvatar(user *model.User, changeAvartar *dto.ChangeAvatarRequest, id uint, updatedByID uint, apiUrl string) (*dto.UpdateUserResponse, error) {
+
+	user.UpdatedByID = &updatedByID
+	user.AvatarFileName = sql.NullString{Valid: true, String: changeAvartar.AvatarFileName}
+	user.UpdatedBy = nil
+
+	if err := s.repo.User.Update(user); err != nil {
+		return nil, err
+	}
+
+	return s.toUpdatedUserDTO(user, user.Role.Type, apiUrl), nil
 }
 
 func (s *UserService) CreateUser(request *dto.CreateUserRequest) error {
@@ -202,6 +221,14 @@ func (s *UserService) FindByID(id uint) (*model.User, error) {
 	return s.repo.User.FindByID(int(id))
 }
 
+func (s *UserService) ChangeStatusUser(user *model.User, updatedByID uint, status model.UserStatusType, reason, apiUrl string) (*dto.UpdateUserResponse, error) {
+	user.Status = status
+	user.BlockedReason = reason
+	user.UpdatedByID = &updatedByID
+	user.UpdatedAt = time.Now()
+	return s.toUpdatedUserDTO(user, user.Role.Type, apiUrl), s.repo.User.Update(user)
+}
+
 func (s *UserService) FindByUsername(username string) (*model.User, error) {
 	return s.repo.User.FindByUsername(username)
 }
@@ -223,4 +250,247 @@ func (s *UserService) UpdatePassword(userID uint, hashedPassword string) error {
 
 func (s *UserService) CheckUserTypeByID(id int) (*model.User, error) {
 	return s.repo.User.CheckUserTypeByID(id)
+}
+
+func (s *UserService) GetUserStatistics(req *dto.UserStatisticsRequest) (*utils.PaginationModel[dto.UserStatisticsResponse], error) {
+	var result = new(utils.PaginationModel[dto.UserStatisticsResponse])
+	var data []dto.UserStatisticsResponse
+	pagination, err := s.repo.User.GetUserStatistics(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	var wgSubThread sync.WaitGroup
+
+	for _, user := range pagination.Page {
+		wg.Add(1)
+		go func(user dto.UserStatisticsResponse) {
+			defer wg.Done()
+
+			var comments, likes, views, streams int64
+			var err error
+
+			// Fetch comments
+			wgSubThread.Add(1)
+			go func() {
+				defer wgSubThread.Done()
+				comments, err = s.repo.User.GetCommentsByUserID(user.UserID)
+				if err != nil {
+					comments = 0
+				}
+			}()
+
+			// Fetch likes
+			wgSubThread.Add(1)
+			go func() {
+				defer wgSubThread.Done()
+				likes, err = s.repo.User.GetLikesByUserID(user.UserID)
+				if err != nil {
+					likes = 0
+				}
+			}()
+
+			// Fetch views
+			wgSubThread.Add(1)
+			go func() {
+				defer wgSubThread.Done()
+				views, err = s.repo.User.GetViewsByUserID(user.UserID)
+				if err != nil {
+					views = 0
+				}
+			}()
+
+			// Fetch streams
+			wgSubThread.Add(1)
+			go func() {
+				defer wgSubThread.Done()
+				streams, err = s.repo.User.GetStreamsByUserID(user.UserID)
+				if err != nil {
+					streams = 0
+				}
+			}()
+
+			wgSubThread.Wait()
+
+			mu.Lock()
+			data = append(data, dto.UserStatisticsResponse{
+				UserID:        user.UserID,
+				Username:      user.Username,
+				DisplayName:   user.DisplayName,
+				RoleType:      user.RoleType,
+				TotalComments: uint(comments),
+				TotalLikes:    uint(likes),
+				TotalViews:    uint(views),
+				TotalStreams:  uint(streams),
+			})
+			mu.Unlock()
+		}(user)
+	}
+
+	wg.Wait()
+
+	// sort by
+	if req.SortBy != "" && req.Sort != "" {
+		if req.SortBy == "total_streams" {
+			data = s.sortByTotalStreams(data, req.Sort)
+		}
+		if req.SortBy == "total_views" {
+			data = s.sortByViewers(data, req.Sort)
+		}
+		if req.SortBy == "total_comments" {
+			data = s.sortByTotalComments(data, req.Sort)
+		}
+		if req.SortBy == "total_likes" {
+			data = s.sortByTotalLikes(data, req.Sort)
+		}
+	}
+	result.Page = data
+	result.BasePaginationModel = pagination.BasePaginationModel
+	return result, nil
+}
+
+func (s *UserService) sortByViewers(a []dto.UserStatisticsResponse, sort string) []dto.UserStatisticsResponse {
+	if len(a) < 2 {
+		return a
+	}
+
+	left, right := 0, len(a)-1
+
+	// Pick a pivot
+	pivotIndex := rand.Int() % len(a)
+
+	// Move the pivot to the right
+	a[pivotIndex], a[right] = a[right], a[pivotIndex]
+
+	// Pile elements smaller than the pivot on the left
+	for i := range a {
+		if a[i].TotalViews < a[right].TotalViews && sort == dto.SORT_ASC {
+			a[i], a[left] = a[left], a[i]
+			left++
+		}
+
+		if a[i].TotalViews > a[right].TotalViews && sort == dto.SORT_DESC {
+			a[i], a[left] = a[left], a[i]
+			left++
+		}
+	}
+
+	// Place the pivot after the last smaller element
+	a[left], a[right] = a[right], a[left]
+
+	// Go down the rabbit hole
+	s.sortByViewers(a[:left], sort)
+	s.sortByViewers(a[left+1:], sort)
+
+	return a
+}
+
+func (s *UserService) sortByTotalStreams(a []dto.UserStatisticsResponse, sort string) []dto.UserStatisticsResponse {
+	if len(a) < 2 {
+		return a
+	}
+
+	left, right := 0, len(a)-1
+
+	// Pick a pivot
+	pivotIndex := rand.Int() % len(a)
+
+	// Move the pivot to the right
+	a[pivotIndex], a[right] = a[right], a[pivotIndex]
+
+	// Pile elements smaller than the pivot on the left
+	for i := range a {
+		if a[i].TotalStreams < a[right].TotalStreams && sort == dto.SORT_ASC {
+			a[i], a[left] = a[left], a[i]
+			left++
+		}
+
+		if a[i].TotalStreams > a[right].TotalStreams && sort == dto.SORT_DESC {
+			a[i], a[left] = a[left], a[i]
+			left++
+		}
+	}
+
+	// Place the pivot after the last smaller element
+	a[left], a[right] = a[right], a[left]
+
+	// Go down the rabbit hole
+	s.sortByTotalStreams(a[:left], sort)
+	s.sortByTotalStreams(a[left+1:], sort)
+
+	return a
+}
+
+func (s *UserService) sortByTotalComments(a []dto.UserStatisticsResponse, sort string) []dto.UserStatisticsResponse {
+	if len(a) < 2 {
+		return a
+	}
+
+	left, right := 0, len(a)-1
+
+	// Pick a pivot
+	pivotIndex := rand.Int() % len(a)
+
+	// Move the pivot to the right
+	a[pivotIndex], a[right] = a[right], a[pivotIndex]
+
+	// Pile elements smaller than the pivot on the left
+	for i := range a {
+		if a[i].TotalComments < a[right].TotalComments && sort == dto.SORT_ASC {
+			a[i], a[left] = a[left], a[i]
+			left++
+		}
+
+		if a[i].TotalComments > a[right].TotalComments && sort == dto.SORT_DESC {
+			a[i], a[left] = a[left], a[i]
+			left++
+		}
+	}
+
+	// Place the pivot after the last smaller element
+	a[left], a[right] = a[right], a[left]
+
+	// Go down the rabbit hole
+	s.sortByTotalComments(a[:left], sort)
+	s.sortByTotalComments(a[left+1:], sort)
+
+	return a
+}
+func (s *UserService) sortByTotalLikes(a []dto.UserStatisticsResponse, sort string) []dto.UserStatisticsResponse {
+	if len(a) < 2 {
+		return a
+	}
+
+	left, right := 0, len(a)-1
+
+	// Pick a pivot
+	pivotIndex := rand.Int() % len(a)
+
+	// Move the pivot to the right
+	a[pivotIndex], a[right] = a[right], a[pivotIndex]
+
+	// Pile elements smaller than the pivot on the left
+	for i := range a {
+		if a[i].TotalLikes < a[right].TotalLikes && sort == dto.SORT_ASC {
+			a[i], a[left] = a[left], a[i]
+			left++
+		}
+
+		if a[i].TotalLikes > a[right].TotalLikes && sort == dto.SORT_DESC {
+			a[i], a[left] = a[left], a[i]
+			left++
+		}
+	}
+
+	// Place the pivot after the last smaller element
+	a[left], a[right] = a[right], a[left]
+
+	// Go down the rabbit hole
+	s.sortByTotalLikes(a[:left], sort)
+	s.sortByTotalLikes(a[left+1:], sort)
+
+	return a
 }

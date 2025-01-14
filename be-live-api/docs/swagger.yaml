@@ -1,0 +1,247 @@
+basePath: /
+definitions:
+  dto.LoginRequest:
+    properties:
+      password:
+        minLength: 4
+        type: string
+      username:
+        minLength: 4
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  dto.LoginResponse:
+    properties:
+      avatar_file_url:
+        type: string
+      display_name:
+        type: string
+      email:
+        type: string
+      expiration_time:
+        type: string
+      id:
+        type: integer
+      role_type:
+        $ref: '#/definitions/model.RoleType'
+      token:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.StreamDto:
+    properties:
+      avatar_file_url:
+        type: string
+      display_name:
+        type: string
+      duration:
+        type: integer
+      id:
+        type: integer
+      scheduled_at:
+        type: string
+      started_at:
+        type: string
+      status:
+        $ref: '#/definitions/model.StreamStatus'
+      thumbnail_url:
+        type: string
+      title:
+        type: string
+      user_id:
+        type: integer
+      views:
+        type: integer
+    type: object
+  model.RoleType:
+    enum:
+    - super_admin
+    - admin
+    - streamer
+    - user
+    type: string
+    x-enum-varnames:
+    - SUPPERADMINROLE
+    - ADMINROLE
+    - STREAMER
+    - USERROLE
+  model.StreamStatus:
+    enum:
+    - pending
+    - started
+    - ended
+    - upcoming
+    type: string
+    x-enum-varnames:
+    - PENDING
+    - STARTED
+    - ENDED
+    - UPCOMING
+host: localhost:8787
+info:
+  contact: {}
+  description: Swagger API Live Stream.
+  title: API Live Stream
+  version: "1.0"
+paths:
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates the user and returns a JWT token
+      parameters:
+      - description: User Login Data
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            $ref: '#/definitions/dto.LoginResponse'
+        "400":
+          description: Invalid request
+      summary: Login a user
+      tags:
+      - Auth
+  /api/streams:
+    get:
+      consumes:
+      - application/json
+      description: Fetch a list of streams with optional filters
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - default: ""
+        description: Status of the stream
+        in: query
+        name: status
+        type: string
+      - description: Title filter
+        in: query
+        name: title
+        type: string
+      - collectionFormat: multi
+        description: Category IDs
+        in: query
+        items:
+          type: integer
+        name: category_ids
+        type: array
+      - description: Filter by user streams
+        in: query
+        name: is_me
+        type: boolean
+      - description: Filter by liked streams
+        in: query
+        name: is_liked
+        type: boolean
+      - description: Filter by history streams
+        in: query
+        name: is_history
+        type: boolean
+      - description: Filter by saved streams
+        in: query
+        name: is_saved
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.StreamDto'
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Get Streams
+      tags:
+      - Stream
+  /api/streams/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Fetch detailed information of a specific stream by ID
+      parameters:
+      - description: Stream ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Get Stream Details
+      tags:
+      - Stream
+  /api/streams/{id}/bookmark:
+    delete:
+      consumes:
+      - application/json
+      description: Remove the bookmark stream by ID
+      parameters:
+      - description: ID stream
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Remove the bookmark stream
+      tags:
+      - Stream
+    post:
+      consumes:
+      - application/json
+      description: Bookmark stream by ID
+      parameters:
+      - description: ID stream
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Bookmark stream
+      tags:
+      - Stream
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -1,6 +1,7 @@
 import { Separator } from "@/components/ui/separator.tsx";
+import { AspectRatio } from "@/components/ui/aspect-ratio.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
-import { Play, FileSliders, CircleStop, Copy } from "lucide-react";
+import { Play, FileSliders, CircleStop, Copy, TextSearch } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { LIVESTREAM_STATUS } from "@/lib/interface.tsx";
 import { formatDate } from "@/lib/date-formated.ts";
@@ -16,12 +17,15 @@ import { Label } from "@/components/ui/label.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { toast } from "@/hooks/use-toast.ts";
 import ImageWithAuth from "@/components/ui/imagewithauth.tsx";
+import LivestreamPreview from "@/components/livestream-management/LivestreamPreview.tsx";
+import copyToClipBoard from "@/lib/copy.ts";
 import { useState } from "react";
 import { endLivestreamSession } from "@/services/livestream-session.service.ts";
 import EndLiveDialog from "./EndLiveDialog";
 
 const LivestreamList = ({livestream}) => {
 	const {
+		id,
 		title,
 		description,
 		user,
@@ -34,27 +38,10 @@ const LivestreamList = ({livestream}) => {
 
 	const [showEndDialog, setShowEndDialog] = useState(false);
 
-	const handleCopyURL = () => {
-		if (navigator.clipboard) {
-			navigator.clipboard.writeText(broadcast_url)
-			.then(() => {
-				toast({
-					description: "URL successfully copied to clipboard!"
-				})
-			})
-			.catch((error) => {
-				toast({
-					description: "Failed to copy URL. Please try again!",
-					variant: "destructive"
-				})
-			})
-		}
-	}
-
 	const handleEndLive = async () => {
 		try {
 			const response = await endLivestreamSession(livestream.id);
-			
+
 			if (response.status === 200) {
 				toast({
 					description: "Stream ended successfully",
@@ -120,7 +107,7 @@ const LivestreamList = ({livestream}) => {
 									<Button
 										size="sm"
 										className="px-3"
-										onClick={handleCopyURL}
+										onClick={() => copyToClipBoard(broadcast_url)}
 									>
 										<span className="sr-only">Copy</span>
 										<Copy />
@@ -128,6 +115,13 @@ const LivestreamList = ({livestream}) => {
 								</div>
 							</DialogContent>
 						</Dialog>
+						{
+							status === LIVESTREAM_STATUS.UPCOMING && (
+								<>
+									<LivestreamPreview sessionId={id} />
+								</>
+							)
+						}
 						{
 							status === LIVESTREAM_STATUS.NOT_STARTED && (
 								<>
@@ -137,14 +131,11 @@ const LivestreamList = ({livestream}) => {
 								</>
 							)
 						}
-						<Button>
-							<Play /> Preview
-						</Button>
-						<EndLiveDialog 
-									livestreamId={livestream.id}
-									isOpen={showEndDialog}
-									onOpenChange={setShowEndDialog}
-								/>
+						<EndLiveDialog
+							livestreamId={livestream.id}
+							isOpen={showEndDialog}
+							onOpenChange={setShowEndDialog}
+						/>
 					</div>
 				</div>
 				<div className="ml-auto mr-0">

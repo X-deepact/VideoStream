@@ -112,12 +112,12 @@ export const updateUserProfileInfo = async (
 ): Promise<
   ServiceResponse<UserProfileInfoUpdateResponse, UserInfoUpdateError>
 > => {
-  const { displayName, avatarFile } = payload;
+  const { displayName, avatarFile, avatarPreview } = payload;
 
   const errors: Partial<Record<UserInfoUpdateError, boolean>> = {};
   const invalidDisplayName =
     !displayName || displayName.length > MAX_DISPLAY_NAME_COUNT;
-  const invalidAvatar = !avatarFile;
+  const invalidAvatar = !avatarFile && !avatarPreview;
 
   let result: UserProfileInfoUpdateResponse | undefined = undefined;
   let msg: string = '';

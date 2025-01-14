@@ -18,98 +18,88 @@ import {
 import { cn } from "@/lib/utils.ts";
 
 interface ComponentProps {
-  disabled?: boolean;
-  isRequired?: boolean;
-  placeholder?: string;
-  emptyMsg?: string;
-  label?: string;
-  data: { label: string; value: string }[];
-  onDataChange?: (value: string) => void;
-  popOverClass?: string;
+	disabled?: boolean;
+	placeholder?: string;
+	emptyMsg?: string;
+	data: {label: string; value: string}[];
+	onDataChange?: (value: string) => void;
+	popOverClass?: string
+	value?: string
 }
 
+
 const DataCombobox = (props: ComponentProps) => {
-  const {
-    disabled = false,
-    isRequired = false,
-    placeholder = "Select Item",
-    label = "Combobox Generic Component",
-    data = [],
-    emptyMsg = "No Item found",
-    popOverClass,
-    onDataChange,
-  } = props;
+	const {
+		disabled = false,
+		placeholder = "Select Item",
+		data = [],
+		emptyMsg = "No Item found",
+		popOverClass,
+		onDataChange,
+		value
+	} = props;
 
-  const [selectedValue, setSelectedValue] = useState("");
-  const [openPopover, setOpenPopover] = useState(false);
 
-  const handleDataChange = (value: string) => {
-    setSelectedValue(value);
-    onDataChange?.(value);
-  };
+	const [selectedValue, setSelectedValue] = useState(value ?? "");
+	const [openPopover, setOpenPopover] = useState(false);
 
-  function ComboboxLabel({ label, isRequired }) {
-    if (isRequired) {
-      return (
-        <Label>
-          {label} <span className="text-red-500"></span>
-        </Label>
-      );
-    }
-    return <Label>{label}</Label>;
-  }
+	const handleDataChange = (value: string) => {
+		setSelectedValue(value);
+		onDataChange?.(value);
+	}
 
-  return (
-    <div>
-      <ComboboxLabel isRequired={isRequired} label={label} />
-      <Popover open={openPopover} onOpenChange={setOpenPopover}>
-        <PopoverTrigger asChild>
-          <Button
-            disabled={disabled}
-            variant="outline"
-            role="combobox"
-            aria-expanded={openPopover}
-            className="w-full justify-between"
-          >
-            {selectedValue
-              ? data.find((d) => d.value === selectedValue)?.label
-              : placeholder}
-            <ChevronsUpDown className="opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContentLayout className={popOverClass}>
-          <Command>
-            <CommandInput placeholder={placeholder} />
-            <CommandList>
-              <CommandEmpty>{emptyMsg}</CommandEmpty>
-              <CommandGroup>
-                {data.map((d) => (
-                  <CommandItem
-                    key={d.value}
-                    value={d.value}
-                    onSelect={(currentValue) => {
-                      handleDataChange(
-                        currentValue === selectedValue ? "" : currentValue
-                      );
-                      setOpenPopover(false);
-                    }}
-                  >
-                    {d.label}
-                    <CheckIcon
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        selectedValue === d.value ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContentLayout>
-      </Popover>
-    </div>
-  );
+	return (
+		<div>
+			<Popover open={openPopover} onOpenChange={setOpenPopover}>
+				<PopoverTrigger asChild>
+					<Button
+						disabled={disabled}
+						variant="outline"
+						role="combobox"
+						aria-expanded={openPopover}
+						className="w-full justify-between"
+					>
+						{
+							selectedValue
+								? data.find((d) => d.value === selectedValue)?.label
+								: placeholder
+						}
+						<ChevronsUpDown className="opacity-50" />
+					</Button>
+				</PopoverTrigger>
+				<PopoverContentLayout className={popOverClass}>
+					<Command>
+						<CommandInput placeholder={placeholder} />
+						<CommandList>
+							<CommandEmpty>{emptyMsg}</CommandEmpty>
+							<CommandGroup>
+								{
+									data.map((d) => (
+										<CommandItem
+											key={d.value}
+											value={d.value}
+											onSelect={(currentValue) => {
+												handleDataChange(currentValue === selectedValue ? "" : currentValue);
+												setOpenPopover(false);
+											}}
+										>
+											{d.label}
+											<CheckIcon
+												className={cn(
+													"mr-2 h-4 w-4",
+													selectedValue === d.value ? "opacity-100" : "opacity-0",
+												)}
+											/>
+										</CommandItem>
+									))
+								}
+							</CommandGroup>
+						</CommandList>
+					</Command>
+				</PopoverContentLayout>
+			</Popover>
+		</div>
+	);
 };
 
 export default DataCombobox;

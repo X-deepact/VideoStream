@@ -24,6 +24,9 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+
+	echoSwagger "github.com/swaggo/echo-swagger"
+	_ "gitlab/live/be-live-api/docs"
 )
 
 type CustomValidator struct {
@@ -38,6 +41,14 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 	return nil
 }
 
+// @title          			   API Live Stream
+// @version         		   1.0
+// @description     		   Swagger API Live Stream.
+// @host            		   localhost:8787
+// @BasePath       			   /
+// @securityDefinitions.apikey BearerAuth
+// @in                         header
+// @name                       Authorization
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
@@ -66,6 +77,8 @@ func main() {
 
 	e := echo.New()
 
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
+
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: appCfg.AllowedOrigins,
 		AllowMethods: []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete},
@@ -77,7 +90,7 @@ func main() {
 	e.Server.MaxHeaderBytes = 10 << 20 //10MB
 
 	// Middleware
-	e.Use(middleware.Logger())
+	// e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
 	// it would be messed up if config change to other paths

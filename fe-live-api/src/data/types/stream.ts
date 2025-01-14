@@ -1,9 +1,11 @@
-export type StreamInitializeFields = {
+export type StreamDetailsUpdateRequest = {
+  id?: number;
   title: string;
   description: string | undefined;
   categories: string[];
   streamType: STREAM_TYPE;
   thumbnailImage: File | null;
+  thumbnailPreview?: string | null;
 };
 
 export enum STREAM_TYPE {

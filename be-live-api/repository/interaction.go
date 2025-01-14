@@ -154,3 +154,23 @@ func (r *InteractionRepository) UpdateComment(comment *model.Comment) error {
 func (r *InteractionRepository) DeleteComment(id uint) error {
 	return r.db.Delete(&model.Comment{}, id).Error
 }
+
+func (r *InteractionRepository) CountViewsByStreamLiveID(streamID uint) (int64, error) {
+	var count int64
+	if err := r.db.Model(&model.View{}).Where("stream_id = ? and is_viewing", streamID).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (r *InteractionRepository) UpdateViewRecord(view *model.View) error {
+	return r.db.Save(view).Error
+}
+
+func (r *InteractionRepository) FirstOrCreateBookmarkRecord(bookmark *model.Bookmark) error {
+	return r.db.Where("stream_id = ? and user_id = ?", bookmark.StreamID, bookmark.UserID).FirstOrCreate(&bookmark).Error
+}
+
+func (ir *InteractionRepository) DeleteBookmark(streamID, userID uint) error {
+	return ir.db.Where("stream_id = ? and user_id = ?", streamID, userID).Delete(&model.Bookmark{}).Error
+}

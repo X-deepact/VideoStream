@@ -18,6 +18,8 @@ import { toast } from "@/hooks/use-toast.ts";
 import { createNewLivestreamSession } from "@/services/livestream-session.service.ts";
 import { formatDateToCustomFormat, getTimezoneOffsetAsHoursAndMinutes, validateTimestampWithinThreeDays } from "@/lib/date-formated.ts";
 import MultipleCombobox from "@/components/ui/multiple-combobox.tsx";
+import FieldLabel from "@/components/ui/field-label.tsx";
+import { FileUpload } from "@/lib/FileUpload.ts";
 
 const FormSchema = z.object({
 	title: z.string().min(2, {
@@ -57,9 +59,11 @@ interface ComponentProps {
 const LivestreamCreateNew = (props: ComponentProps) => {
 	const { categories, users, onReset } = props;
 
-	const fileRef = useRef<{ clear: () => void } | null>(null);
+	const videoFileRef = useRef<{ clear: () => void } | null>(null);
+	const imageFileRef = useRef<{ clear: () => void } | null>(null);
 	const triggerClear = () => {
-		fileRef.current?.clear(); // Call the `clear` method of ImageUpload
+		videoFileRef.current?.clear(); // Call the `clear` method of ImageUpload
+		imageFileRef.current?.clear(); // Call the `clear` method of VideoUpload
 	};
 
 	const [openCreateNewDialog, setOpenCreateNewDialog] = useState(false);
@@ -92,28 +96,39 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 	}>({});
 
 	function handleThumbnailChanges(file: File) {
-		if (!file) {
-			setThumbnailImage({ file: null, preview: null });
-			return;
-		}
-		const reader = new FileReader();
-		reader.onloadend = () => {
-			setThumbnailImage({ file, preview: reader.result as string });
-		};
-		reader.readAsDataURL(file);
+		FileUpload(
+			file,
+			(file, result) => {
+				setThumbnailImage({
+					file,
+					preview: result
+				})
+			},
+			() => {
+				setThumbnailImage({
+					file: null,
+					preview: null
+				})
+			}
+		)
 	}
 
 	function handleVideoUpload(file: File) {
-		if (!file) {
-			setVideoFile({ file: null, name: null });
-			return;
-		}
-		const reader = new FileReader();
-		reader.onloadend = () => {
-			setVideoFile({ file, name: file.name });
-		};
-
-		reader.readAsDataURL(file);
+		FileUpload(
+			file,
+			(file) => {
+				setVideoFile({
+					file,
+					name: file.name
+				})
+			},
+			() => {
+				setVideoFile({
+					file: null,
+					name: null
+				})
+			}
+		)
 	}
 	
 	async function handleCreateNewStream(e: React.FormEvent<HTMLFormElement>) {
@@ -268,10 +283,9 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 								<div className="grid grid-cols-2 xl:grid-cols-1 pb-2 xl:pb-4 gap-2 xl:gap-4">
 									{/*Users*/}
 									<div>
+										<FieldLabel isRequired={true} label="Users" />
 										<DataCombobox
-											isRequired={true}
 											placeholder="Select User"
-											label="Users"
 											emptyMsg="No user found"
 											data={users}
 											onDataChange={setAssignedUser}
@@ -285,10 +299,9 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 
 									{/*Categories*/}
 									<div>
+										<FieldLabel isRequired={true} label="Categories" />
 										<MultipleCombobox
-											isRequired={true}
 											placeholder="Select Categories"
-											label="Categories"
 											emptyMsg="No category found"
 											data={categories}
 											disabled={isLoading}
@@ -332,7 +345,7 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 										thumbnails only accept formats like image/png, image/jpeg, and image/jpg.
 									</p>
 									<ImageUpload
-										ref={fileRef}
+										ref={imageFileRef}
 										width="w-full overflow-hidden"
 										height="h-24 lg:h-[12rem] xl:h-[15rem]"
 										onFileChange={(file) => {
@@ -353,7 +366,7 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 										videos only accept formats like video/mp4 and video/x-flv.
 									</p>
 									<ImageUpload
-										ref={fileRef}
+										ref={videoFileRef}
 										width="w-full overflow-hidden"
 										height="h-24 lg:h-[12rem] xl:h-[15rem]"
 										onFileChange={(file) => {

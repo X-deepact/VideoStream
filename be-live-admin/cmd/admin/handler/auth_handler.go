@@ -3,11 +3,13 @@ package handler
 import (
 	"errors"
 	"fmt"
+	"gitlab/live/be-live-admin/conf"
 	"gitlab/live/be-live-admin/dto"
 	"gitlab/live/be-live-admin/model"
 	"gitlab/live/be-live-admin/service"
 	"gitlab/live/be-live-admin/utils"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -15,14 +17,17 @@ import (
 
 type authHandler struct {
 	Handler
-	r   *echo.Group
-	srv *service.Service
+	r      *echo.Group
+	srv    *service.Service
+	apiURL string
 }
 
 func newAuthHandler(r *echo.Group, srv *service.Service) *authHandler {
+	apiURL := conf.GetApiFileConfig().Url
 	auth := &authHandler{
-		r:   r,
-		srv: srv,
+		r:      r,
+		srv:    srv,
+		apiURL: apiURL,
 	}
 
 	auth.register()
@@ -41,6 +46,15 @@ func (h *authHandler) register() {
 
 }
 
+// @Summary Login a user
+// @Description Authenticates the user and returns a JWT token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param login body dto.LoginDTO true "User Login Data"
+// @Success 200 {object} dto.LoginResponse "Login successful"
+// @Failure 400  "Invalid request"
+// @Router /api/auth/login [post]
 func (h *authHandler) login(c echo.Context) error {
 	var loginDTO dto.LoginDTO
 
@@ -49,35 +63,60 @@ func (h *authHandler) login(c echo.Context) error {
 	}
 
 	user, err := h.srv.User.FindByEmail(loginDTO.Email)
-
 	if err != nil || user == nil || !utils.CheckPasswordHash(loginDTO.Password, user.PasswordHash) {
 		return utils.BuildErrorResponse(c, http.StatusUnauthorized, errors.New("invalid username or password"), nil)
 	}
 
-	roleType := model.RoleType(user.Role.Type)
-	token, expiredTime, err := utils.GenerateAccessToken(user.ID, user.Username, user.Email, roleType) // createdByID is current user id login
+	if user.Status == model.BLOCKED {
+		return utils.BuildErrorResponse(c, http.StatusForbidden, errors.New("user was blocked"), nil)
+	}
+
+	if !slices.Contains([]model.RoleType{model.ADMINROLE, model.SUPPERADMINROLE}, user.Role.Type) {
+		return utils.BuildErrorResponse(c, http.StatusUnauthorized, errors.New("you have no permission to login"), nil)
+	}
+
+	token, expiredTime, err := utils.GenerateAccessToken(user.ID, user.Username, user.Email, user.Role.Type) // createdByID is current user id login
 	if err != nil {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
-	adminLog := h.srv.Admin.MakeAdminLogModel(user.ID, model.LoginAction, fmt.Sprintf(" %s logged in", user.Email))
-
+	adminLog := h.srv.Admin.MakeAdminLogModel(user.ID, model.LoginAction, fmt.Sprintf("%s logged in.", user.Username))
 	err = h.srv.Admin.CreateLog(adminLog)
-
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
 	}
 
-	response := map[string]interface{}{
-		"username":     user.Username,
-		"email":        user.Email,
-		"role":         user.Role.Type,
-		"expired_time": expiredTime,
-		"token":        token,
+	var avatarFileName = ""
+	if user.AvatarFileName.Valid {
+		avatarFileName = utils.MakeAvatarURL(h.apiURL, user.AvatarFileName.String)
 	}
+	response := dto.LoginResponse{
+		ID:          user.ID,
+		Avatar:      avatarFileName,
+		Username:    user.Username,
+		DisplayName: user.DisplayName,
+		Email:       user.Email,
+		Role:        user.Role.Type,
+		ExpiredTime: expiredTime,
+		Token:       token,
+	}
+
 	return utils.BuildSuccessResponse(c, http.StatusOK, "Login successful", response)
 }
 
+// forgetPassword godoc
+// @Summary      Forget Password
+// @Description  Generates an OTP for password reset
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        forgetPasswordDTO  body      dto.ForgetPasswordDTO  true  "Forget Password DTO"
+// @Success      200                      "OTP generated successfully"
+// @Failure      400                      "Bad Request"
+// @Failure      400                      "Email not found"
+// @Failure      500                      "Internal Server Error"
+// @Security Bearer
+// @Router       /api/auth/forgetPassword [post]
 func (h *authHandler) forgetPassword(c echo.Context) error {
 	var forgetPasswordDTO dto.ForgetPasswordDTO
 
@@ -110,10 +149,8 @@ func (h *authHandler) forgetPassword(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 
 	}
-	adminLog := h.srv.Admin.MakeAdminLogModel(user.ID, model.ForgetPassword, fmt.Sprintf(" %s forget_password request", user.Email))
-
+	adminLog := h.srv.Admin.MakeAdminLogModel(user.ID, model.ForgetPassword, fmt.Sprintf("%s made forget password request.", user.Username))
 	err = h.srv.Admin.CreateLog(adminLog)
-
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
 	}
@@ -121,6 +158,18 @@ func (h *authHandler) forgetPassword(c echo.Context) error {
 
 }
 
+// @Summary      Reset Password
+// @Description  Resets the user's password using OTP
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        resetPasswordDTO  body      dto.ResetPasswordDTO  true  "Reset Password DTO"
+// @Success      200                    "Password reset successfully"
+// @Failure      400                    "Bad Request"
+// @Failure      404                    "Email not found"
+// @Failure      500                    "Internal Server Error"
+// @Security Bearer
+// @Router       /api/auth/resetPassword [post]
 func (h *authHandler) resetPassword(c echo.Context) error {
 
 	var resetPasswordDTO dto.ResetPasswordDTO
@@ -161,10 +210,8 @@ func (h *authHandler) resetPassword(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
-	adminLog := h.srv.Admin.MakeAdminLogModel(user.ID, model.ResetPassword, fmt.Sprintf(" %s reset_password request", user.Email))
-
+	adminLog := h.srv.Admin.MakeAdminLogModel(user.ID, model.ResetPassword, fmt.Sprintf("%s made reset password.", user.Username))
 	err = h.srv.Admin.CreateLog(adminLog)
-
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
 	}

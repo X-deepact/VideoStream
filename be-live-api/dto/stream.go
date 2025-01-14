@@ -30,6 +30,9 @@ type StreamQuery struct {
 	IsMe        *bool        `query:"is_me" validate:"omitempty"`
 	UserID      uint         `query:"-"`
 	CategoryIDs []uint       `query:"category_ids" validate:"omitempty,max=3"`
+	IsLiked     *bool        `query:"is_liked" validate:"omitempty"`
+	IsHistory   *bool        `query:"is_history" validate:"omitempty"`
+	IsSaved     *bool        `query:"is_saved" validate:"omitempty"`
 }
 
 type StreamDto struct {
@@ -37,18 +40,22 @@ type StreamDto struct {
 	Title         string             `json:"title"`
 	ThumbnailURL  string             `json:"thumbnail_url"`
 	Status        model.StreamStatus `json:"status"`
-	StartedAt     time.Time          `json:"started_at"`
+	StartedAt     *time.Time         `json:"started_at"`
 	UserID        uint               `json:"user_id"`
 	DisplayName   string             `json:"display_name"`
 	AvatarFileURL string             `json:"avatar_file_url"`
 	Views         uint               `json:"views"`
 	Duration      uint               `json:"duration"`
+	ScheduledAt   *time.Time         `json:"scheduled_at"`
+	IsSaved       bool               `json:"is_saved"`
 }
 
 type Stream struct {
 	model.Stream
 	StreamAnalytics []model.StreamAnalytics `gorm:"foreignKey:StreamID;constraint:OnDelete:CASCADE"`
 	Categories      []model.Category        `gorm:"many2many:stream_categories"`
+	ScheduledAt     *time.Time              `gorm:"scheduled_at"`
+	IsSaved         bool                    `gorm:"is_saved"`
 }
 
 type StreamDetailDto struct {
@@ -74,4 +81,6 @@ type StreamDetailDto struct {
 	IsSubscribed    bool                 `json:"is_subscribed"`
 	Duration        uint                 `json:"duration"`
 	Categories      []CategoryDto        `json:"categories"`
+	ScheduledAt     *time.Time           `json:"scheduled_at"`
+	IsSaved         bool                 `json:"is_saved"`
 }

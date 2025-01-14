@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -56,7 +57,6 @@ func (h *streamHandler) register() {
 	group := h.r.Group("api/streams")
 
 	group.Use(h.JWTMiddleware())
-	group.Use(h.RoleGuardMiddleware())
 	group.GET("/statistics", h.getLiveStreamStatisticsData)
 	group.GET("/live-statistics", h.getLiveStatData)
 	group.GET("/statistics/total", h.getTotalLiveStream)
@@ -65,6 +65,7 @@ func (h *streamHandler) register() {
 	group.POST("", h.createLiveStreamByAdmin)
 	group.PATCH("/:id", h.updateLiveStreamByAdmin)
 	group.PATCH("/:id/scheduled", h.updateScheduledStreamByAdmin)
+	group.PATCH("/:id/change-thumbnail", h.updateThumbnailByAdmin)
 	group.DELETE("/:id", h.deleteLiveStream)
 	group.POST("/:id/end_live", h.endLiveStream)
 
@@ -134,7 +135,7 @@ func (h *streamHandler) deleteLiveStream(c echo.Context) error {
 	go utils.RemoveFilesWithNoErrReturn(filesToRemove)
 
 	currentUser := c.Get("user").(*utils.Claims)
-	adminLog := h.srv.Admin.MakeAdminLogModel(currentUser.ID, model.DeleteLiveStreamByAdmin, fmt.Sprintf(" delete live_stream_broad_cast id: %d, status: %s, stream_type: %s", id, deletedStream.Stream.Status, deletedStream.Stream.StreamType))
+	adminLog := h.srv.Admin.MakeAdminLogModel(currentUser.ID, model.DeleteStreamByAdmin, fmt.Sprintf("%s deleted stream id: %d, status: %s and stream_type: %s.", currentUser.Username, deletedStream.Stream.ID, deletedStream.Stream.Status, deletedStream.Stream.StreamType))
 	err = h.srv.Admin.CreateLog(adminLog)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
@@ -154,13 +155,7 @@ func (h *streamHandler) getLiveStreamBroadCastByID(c echo.Context) error {
 	if err != nil {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
-	adminLog := h.srv.Admin.MakeAdminLogModel(data.User.ID, model.LiveBroadCastByID, fmt.Sprintf(" %s live_stream_broad_cast request", data.User.DisplayName))
 
-	err = h.srv.Admin.CreateLog(adminLog)
-
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
-	}
 	return utils.BuildSuccessResponseWithData(c, http.StatusOK, data)
 
 }
@@ -181,10 +176,8 @@ func (h *streamHandler) updateLiveStreamByAdmin(c echo.Context) error {
 	}
 
 	currentUser := c.Get("user").(*utils.Claims)
-	adminLog := h.srv.Admin.MakeAdminLogModel(currentUser.ID, model.UpdateStreamByAdmin, fmt.Sprintf(" %s update_live_stream_by_admin request", currentUser.Email))
-
+	adminLog := h.srv.Admin.MakeAdminLogModel(currentUser.ID, model.UpdateStreamByAdmin, fmt.Sprintf("%s updated a stream with id %d and status %s.", currentUser.Username, stream.ID, stream.Status))
 	err = h.srv.Admin.CreateLog(adminLog)
-
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
 	}
@@ -212,26 +205,163 @@ func (h *streamHandler) updateScheduledStreamByAdmin(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("invalid schedule"), nil)
 	}
 
-	stream, err := h.srv.Stream.UpdateScheduledStreamByAdmin(id, &req)
+	// remove old scheduled stream video
+	scheduleStream, err := h.srv.Stream.GetSechduleStreamByID(uint(id))
 	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+	}
+	oldScheduledVideoPath := fmt.Sprintf("%s%s", h.scheduledVideosFolder, scheduleStream.VideoName)
+
+	currentUser := c.Get("user").(*utils.Claims)
+
+	//save video
+	video, err := c.FormFile("video")
+	if err != nil && strings.Compare(err.Error(), "http: no such file") != 0 {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, fmt.Sprintf("upload video failed: %s", err.Error()))
+	}
+
+	var filesToRemove []string
+	if video != nil {
+
+		if video.Size > utils.MAX_VIDEO_SIZE {
+			return utils.BuildErrorResponse(c, http.StatusBadRequest, nil, "Video size exceeds the 2GB limit")
+		}
+
+		isVideo, err := utils.IsVideoFile(video)
+		if err != nil {
+			return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+		}
+
+		if !isVideo {
+			return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("file is not a supported video format"), nil)
+		}
+
+		fileVideoExt := utils.GetFileExtension(video)
+		req.VideoFileName = fmt.Sprintf("%d_%s%s", currentUser.ID, utils.MakeUniqueIDWithTime(), fileVideoExt)
+		videoPath := fmt.Sprintf("%s%s", h.scheduledVideosFolder, req.VideoFileName)
+
+		filesToRemove := append(filesToRemove, videoPath)
+
+		videoSrc, err := video.Open()
+		if err != nil {
+			go utils.RemoveFiles(filesToRemove)
+			return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+		}
+		defer videoSrc.Close()
+
+		dstRecord, err := os.Create(videoPath)
+		if err != nil {
+			go utils.RemoveFiles(filesToRemove)
+			return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+		}
+		defer dstRecord.Close()
+
+		if _, err = io.Copy(dstRecord, videoSrc); err != nil {
+			go utils.RemoveFiles(filesToRemove)
+			return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+		}
+		//
+	}
+
+	// update stream
+	if err := h.srv.Stream.UpdateScheduledStreamByAdmin(id, &req); err != nil {
+		go utils.RemoveFiles(filesToRemove)
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
-	currentUser := c.Get("user").(*utils.Claims)
-	adminLog := h.srv.Admin.MakeAdminLogModel(currentUser.ID, model.UpdateStreamByAdmin, fmt.Sprintf(" %s update_live_stream_by_admin request", currentUser.Email))
+	if video != nil {
+		go utils.RemoveFiles([]string{oldScheduledVideoPath})
+	}
 
+	adminLog := h.srv.Admin.MakeAdminLogModel(currentUser.ID, model.UpdateScheduledStreamByAdmin, fmt.Sprintf("%s updated a scheduled stream with id %d.", currentUser.Username, scheduleStream.StreamID))
 	err = h.srv.Admin.CreateLog(adminLog)
-
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
 	}
 
-	return utils.BuildSuccessResponse(c, http.StatusOK, "Successfully", map[string]any{
-		"id":            stream.ID,
-		"title":         stream.Title,
-		"description":   stream.Description,
-		"thumbnail_url": utils.MakeThumbnailURL(h.ApiURL, stream.ThumbnailFileName),
-	})
+	return utils.BuildSuccessResponse(c, http.StatusOK, "Successfully", nil)
+}
+func (h *streamHandler) updateThumbnailByAdmin(c echo.Context) error {
+	var req dto.UpdateStreamThumbnailRequest
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("invalid id parameter"), nil)
+	}
+
+	file, err := c.FormFile("thumbnail")
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, fmt.Sprintf("thumbnail field is required: %s", err.Error()))
+	}
+
+	stream, err := h.srv.Stream.GetStreamByID(uint(id))
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+	}
+
+	claims := c.Get("user").(*utils.Claims)
+	req.UpdatedByID = claims.ID
+
+	isImage, err := utils.IsImage(file)
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+	}
+
+	if !isImage {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("file is not an image"), nil)
+	}
+
+	if file.Size > utils.MAX_IMAGE_SIZE {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, nil, "Image size exceeds the 1MB limit")
+	}
+
+	// save thumbnail
+	fileExt := utils.GetFileExtension(file)
+	req.ThumbnailFileName = fmt.Sprintf("%d_%s%s", req.UpdatedByID, utils.MakeUniqueIDWithTime(), fileExt)
+	thumbnailPath := fmt.Sprintf("%s%s", h.thumbnailFolder, req.ThumbnailFileName)
+
+	filesToRemove := []string{thumbnailPath}
+
+	src, err := file.Open()
+	if err != nil {
+		go utils.RemoveFiles(filesToRemove)
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+	}
+
+	defer src.Close()
+
+	dst, err := os.Create(thumbnailPath)
+	if err != nil {
+		go utils.RemoveFiles(filesToRemove)
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+	}
+	defer dst.Close()
+
+	if _, err = io.Copy(dst, src); err != nil {
+		go utils.RemoveFiles(filesToRemove)
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+	}
+
+	//delete the old thumbnail
+	oldThumbnailPath := fmt.Sprintf("%s%s", h.thumbnailFolder, stream.ThumbnailFileName)
+	oldThumbnailsToRemove := []string{oldThumbnailPath}
+
+	err = h.srv.Stream.UpdateThumbnailStreamByAdmin(id, &req)
+	if err != nil {
+		// if update fails, remove newly created one
+		go utils.RemoveFiles(filesToRemove)
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+	// if update success, remove old one
+	go utils.RemoveFiles(oldThumbnailsToRemove)
+
+	adminLog := h.srv.Admin.MakeAdminLogModel(claims.ID, model.UpdateThumbnailByAdmin, fmt.Sprintf("%s updated thumbnail of a stream %d.", claims.Username, stream.ID))
+	err = h.srv.Admin.CreateLog(adminLog)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
+	}
+
+	return utils.BuildSuccessResponse(c, http.StatusOK, "Successfully", nil)
 }
 
 func (h *streamHandler) createLiveStreamByAdmin(c echo.Context) error {
@@ -350,10 +480,8 @@ func (h *streamHandler) createLiveStreamByAdmin(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
-	adminLog := h.srv.Admin.MakeAdminLogModel(req.UserID, model.LiveStreamByAdmin, fmt.Sprintf(" %s create_live_stream_by_admin request", claims.Email))
-
+	adminLog := h.srv.Admin.MakeAdminLogModel(req.UserID, model.ScheduledLiveStreamByAdmin, fmt.Sprintf("%s scheduled a live stream %d", claims.Username, stream.ID))
 	err = h.srv.Admin.CreateLog(adminLog)
-
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
 	}
@@ -452,6 +580,13 @@ func (h *streamHandler) endLiveStream(c echo.Context) error {
 	}
 	if err := h.srv.Stream.EndLivByRedis(c.Request().Context(), stream.ID); err != nil {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	currentUser := c.Get("user").(*utils.Claims)
+	adminLog := h.srv.Admin.MakeAdminLogModel(currentUser.ID, model.EndLiveStreamByAdmin, fmt.Sprintf("%s ended a live stream %d.", currentUser.Username, stream.ID))
+	err = h.srv.Admin.CreateLog(adminLog)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
 	}
 
 	return utils.BuildSuccessResponse(c, http.StatusOK, "Stream is ending. Wait for a few minutes", nil)

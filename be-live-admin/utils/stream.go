@@ -22,7 +22,7 @@ func MakeAvatarURL(apiURL, fileName string) string {
 }
 
 func MakeScheduleVideoURL(apiURL, fileName string) string {
-	return fmt.Sprintf("%s/api/file/scheduled-video/%s", apiURL, fileName)
+	return fmt.Sprintf("%s/api/file/scheduled_videos/%s", apiURL, fileName)
 }
 
 // will be used by scheduled and ended videos

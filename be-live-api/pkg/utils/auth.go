@@ -3,7 +3,6 @@ package utils
 import (
 	"errors"
 	"gitlab/live/be-live-api/model"
-	"log"
 	"net/http"
 	"strings"
 
@@ -12,10 +11,8 @@ import (
 
 func SkipMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		excludedPaths := []string{"/api/auth/", "/ws/", "/html/", "/api/file/avatar/"}
+		excludedPaths := []string{"/api/auth/", "/ws/", "/html/", "/api/file/avatar/", "/swagger/"}
 		requestPath := c.Request().URL.Path
-
-		log.Println(requestPath)
 
 		// Check if the request path matches any excluded path
 		for _, prefix := range excludedPaths {
@@ -41,6 +38,10 @@ func SkipMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		claims, err := ValidateAccessToken(tokenString)
 		if err != nil {
 			return BuildErrorResponse(c, http.StatusUnauthorized, errors.New("invalid or expired token"), nil)
+		}
+
+		if claims.Status == model.BLOCKED {
+			return BuildErrorResponse(c, http.StatusUnauthorized, errors.New("account is locked and can't be used"), nil)
 		}
 
 		// Attach claims to the context

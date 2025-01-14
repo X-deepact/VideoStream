@@ -13,10 +13,11 @@ import (
 // Create a struct that will be encoded to a JWT.
 // We add jwt.RegisteredClaims as an embedded type, to provide fields like expiry time
 type Claims struct {
-	ID       uint           `json:"id"`
-	Username string         `json:"username"`
-	Email    string         `json:"email"`
-	RoleType model.RoleType `json:"role_type"`
+	ID       uint                 `json:"id"`
+	Username string               `json:"username"`
+	Email    string               `json:"email"`
+	RoleType model.RoleType       `json:"role_type"`
+	Status   model.UserStatusType `json:"status"`
 	jwt.RegisteredClaims
 }
 

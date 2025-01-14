@@ -28,9 +28,8 @@ export const modalTexts = {
   },
   updateInfo: {
     success: {
-      title: 'Successful updating infos',
-      description:
-        'You have successfully updated your information. Please login again to affect through the app.', // TODO: to fix this
+      title: 'Successful updating profile',
+      description: 'You have successfully updated your information.',
     },
   },
 };

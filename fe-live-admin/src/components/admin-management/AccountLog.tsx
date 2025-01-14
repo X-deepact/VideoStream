@@ -17,7 +17,7 @@ import {
 } from "../ui/table";
 import { Label } from "../ui/label";
 import { useEffect, useState } from "react";
-import { getAccountLog, getUsernames } from "@/services/user.service";
+import { getAccountLog } from "@/services/user.service";
 import { toast } from "@/hooks/use-toast";
 import {
   Select,
@@ -29,6 +29,7 @@ import {
 import { Button } from "../ui/button";
 import { formatDate } from "@/lib/date-formated";
 import DataCombobox from "../ui/data-combobox";
+import { useAccounts } from "@/hooks/useAccounts";
 
 const AccountLog = () => {
   const [logData, setlogData] = useState([]);
@@ -39,16 +40,11 @@ const AccountLog = () => {
   const [keyword, setKeyword] = useState("");
   const [filter_by, setFilter_by] = useState("username");
   const [totalPages, setTotalPages] = useState(1);
-  const [usernames, setUsernames] = useState([]);
+  const { accounts } = useAccounts();
   useEffect(() => {
     fetchData();
-    fetchUsernames();
   }, [pageSize, currentPage, sort, sort_by, keyword]);
 
-  const fetchUsernames = async () => {
-    const response = await getUsernames();
-    setUsernames(response);
-  };
   const fetchData = async () => {
     try {
       const response = await getAccountLog(
@@ -92,10 +88,7 @@ const AccountLog = () => {
           placeholder="Select User"
           label=""
           emptyMsg="No user found"
-          data={usernames.map((username) => ({
-            label: username,
-            value: username,
-          }))}
+          data={accounts}
           onDataChange={setKeyword}
           disabled={false}
           popOverClass={"w-auto xl:w-[22rem] p-0"}

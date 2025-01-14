@@ -1,12 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { capitalizeFirstLetter, cn } from '@/lib/utils';
-import { ChangePasswordRules, ChangePasswordSchema } from '@/data/validations';
+import { capitalizeFirstLetter } from '@/lib/utils';
+import { ChangePasswordSchema } from '@/data/validations';
 import { Icons } from '@/components/Icons';
 import { changePassword, ChangePasswordError } from '@/services/user';
 import { z } from 'zod';
@@ -21,6 +21,7 @@ import {
 import { NotifyModalType } from '@/components/UITypes';
 import { modalTexts } from '@/data/user';
 import RequiredInput from '@/components/RequiredInput';
+import AppAlert from '@/components/AppAlert';
 
 type ChangePasswordFormData = z.infer<typeof ChangePasswordSchema>;
 
@@ -48,14 +49,11 @@ const ChangePassword = () => {
     register,
     handleSubmit,
     formState: { errors },
-    control,
     setError,
     reset,
   } = useForm<ChangePasswordFormData>({
     resolver: zodResolver(ChangePasswordSchema),
   });
-
-  const newPassword = useWatch({ control, name: 'newPassword' }) || '';
 
   const onSubmit = async (formData: {
     currentPassword: string;
@@ -76,7 +74,7 @@ const ChangePassword = () => {
 
     setIsLoading(false);
 
-    if (data && data?.username) {
+    if (data && data?.username && !_errors) {
       reset();
       handleToggleChangePasswordForm();
 
@@ -157,6 +155,13 @@ const ChangePassword = () => {
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="w-full lg:w-1/3 md:w-1/2">
+              {errors.root && (
+                <AppAlert
+                  variant="destructive"
+                  title="Error"
+                  description={errors?.root?.toString()}
+                />
+              )}
               <div className="flex gap-1 items-center">
                 <Label htmlFor="currentPassword">Current Password</Label>
                 <RequiredInput />
@@ -196,29 +201,12 @@ const ChangePassword = () => {
                 type="password"
                 {...register('newPassword')}
               />
-              {/* {errors.newPassword && (
+              {errors.newPassword && (
                 <p className="text-sm text-red-500 mt-1">
                   {errors.newPassword.message &&
                     String(errors.newPassword.message)}
                 </p>
-              )} */}
-              <ul className="mt-2 space-y-1 list-disc pl-4">
-                {ChangePasswordRules.map((req, index) => (
-                  <li
-                    key={index}
-                    className={cn(
-                      'text-xs',
-                      newPassword.length === 0
-                        ? 'text-gray-500'
-                        : req.regex.test(newPassword)
-                        ? 'text-green-500'
-                        : 'text-red-500'
-                    )}
-                  >
-                    {req.text}
-                  </li>
-                ))}
-              </ul>
+              )}
             </div>
 
             <div className="w-full lg:w-1/3 md:w-1/2">

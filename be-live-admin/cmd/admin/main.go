@@ -17,9 +17,12 @@ import (
 	"syscall"
 	"time"
 
+	_ "gitlab/live/be-live-admin/docs"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 type CustomValidator struct {
@@ -34,6 +37,14 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 	return nil
 }
 
+// @title          			   Admin API Live Stream
+// @version         		   1.0
+// @description     		   Swagger API Admin Live Stream.
+// @host            		   localhost:8686
+// @BasePath       			   /
+// @securityDefinitions.apikey Bearer
+// @in                         header
+// @name                       Authorization
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
@@ -54,6 +65,10 @@ func main() {
 	conf.SeedRoles(srv.Role)
 	conf.SeedSuperAdminUser(srv.User, srv.Role)
 
+	if err := repo.User.SetRoleMap(); err != nil {
+		log.Fatalf("Failed to set role map: %v", err)
+	}
+
 	log.Println("Seeding completed successfully")
 
 	// conf.SeedRoles(srv.Role)
@@ -69,14 +84,14 @@ func main() {
 	e.Use(middleware.Recover())
 
 	// it would be messed up if config change to other paths
-	e.Use(cmiddleware.ExcludePathMiddleware("/api/file/recordings/", "/api/file/scheduled_videos/"))
+	e.Use(cmiddleware.ExcludePathMiddleware("/api/file/recordings/"))
 
 	// Use CORS middleware, for local run
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     conf.GetApplicationConfig().AllowedOrigins,                                                       // Allow all origins (use specific origins for production)
+		AllowOrigins:     conf.GetApplicationConfig().AllowedOrigins,                                                                         // Allow all origins (use specific origins for production)
 		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions}, // Allowed HTTP methods
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Access-Token"},                  // Allowed headers
-		AllowCredentials: true,                                                                                             // Allow credentials like cookies
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Access-Token"},                                    // Allowed headers
+		AllowCredentials: true,                                                                                                               // Allow credentials like cookies
 	}))
 
 	v := validator.New()
@@ -96,6 +111,8 @@ func main() {
 
 	fileH.Use(handler.JWTMiddleware())
 	fileH.Static("/", conf.GetFileStorageConfig().RootFolder)
+
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	handler.Register()
 

@@ -29,11 +29,13 @@ import {
   APP_LOGIN_PATH,
   APP_PREFIX_PATH,
   APP_PROFILE_PATH,
+  APP_USER_STATISTICS_PATH,
   APP_VIDEO_LIBRARY_PATH,
   APP_VIDEO_STATISTIC_PATH,
 } from "@/router";
 import AccountLog from "./components/admin-management/AccountLog";
 import LiveCategory from "./components/livestream-management/LiveCategory";
+import UserStatistic from "./components/admin-management/UserStatistic";
 
 function RedirectHome() {
   const { isAuthenticated } = useAuth();
@@ -73,6 +75,7 @@ function App() {
                 path={APP_VIDEO_STATISTIC_PATH}
                 element={<VideoStatistics />}
               />
+            <Route path={APP_USER_STATISTICS_PATH} element={<UserStatistic />} />
             </Route>
           </Route>
         </Routes>

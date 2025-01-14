@@ -57,7 +57,7 @@ type StatisticsQuery struct {
 }
 
 type LiveStreamBroadCastQueryDTO struct {
-	SortBy          string               `query:"sort_by" validate:"omitempty,oneof=title started_at ended_at views likes comments video_size duration"`
+	SortBy          string               `query:"sort_by" validate:"omitempty,oneof=title started_at ended_at views likes comments video_size duration created_at"`
 	Sort            string               `query:"sort" validate:"omitempty,oneof=DESC ASC"`
 	Status          []model.StreamStatus `query:"status" validate:"omitempty"`
 	Type            model.StreamType     `query:"type" validate:"omitempty,oneof=camera software"`
@@ -83,12 +83,19 @@ type LiveStreamBroadCastDTO struct {
 	StartedAt          *time.Time         `json:"started_at,omitempty"`
 	EndedAt            *time.Time         `json:"ended_at,omitempty"`
 	User               *UserResponseDTO   `json:"user,omitempty"`
-	Categories         []string           `json:"categories,omitempty"`
+	Categories         []CategoryDTO      `json:"categories,omitempty"`
 	LiveStreamAnalytic *LiveStreamRespDTO `json:"live_stream_analytic"`
 	ScheduleStream     *ScheduleStreamDTO `json:"schedule_stream"`
 }
 
 type ScheduleStreamDTO struct {
 	ScheduledAt time.Time `json:"scheduled_at"`
+	VideoURL    string    `json:"video_url"`
 	VideoName   string    `json:"video_name"`
+}
+
+type CategoryDTO struct {
+	ID        uint      `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
 }

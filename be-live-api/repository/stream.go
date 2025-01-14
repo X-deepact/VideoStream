@@ -97,6 +97,15 @@ func (r *StreamRepository) Update(stream *model.Stream) error {
 	return r.db.Save(stream).Error
 }
 
+func (r *StreamRepository) EndStreamByID(id uint) error {
+	updatedStream := map[string]interface{}{
+		"ended_at": time.Now(),
+		"status":   model.ENDED,
+	}
+
+	return r.db.Debug().Model(&model.Stream{}).Where("id = ?", id).Updates(updatedStream).Error
+}
+
 func (r *StreamRepository) GetStreamAnalyticsByStreamID(streamID uint) (*model.StreamAnalytics, error) {
 	var streamAnalytics model.StreamAnalytics
 	if err := r.db.Where("stream_id = ?", streamID).First(&streamAnalytics).Error; err != nil {
@@ -138,7 +147,7 @@ func (r *StreamRepository) GetStreams(filter *dto.StreamQuery) (*utils.Paginatio
 
 	if filter != nil {
 		if filter.Title != "" {
-			query = query.Where("title ilike ?", "%"+filter.Title+"%")
+			query = query.Where("streams.title ilike ?", "%"+filter.Title+"%")
 		}
 
 		if filter.Status != "" {
@@ -148,14 +157,14 @@ func (r *StreamRepository) GetStreams(filter *dto.StreamQuery) (*utils.Paginatio
 				filter.Status = dto.StreamStatus(model.STARTED)
 			}
 
-			query = query.Where("status = ?", filter.Status)
+			query = query.Where("streams.status = ?", filter.Status)
 		}
 
 		if filter.IsMe != nil {
 			if *filter.IsMe {
-				query = query.Where("user_id = ?", filter.UserID)
+				query = query.Where("streams.user_id = ?", filter.UserID)
 			} else {
-				query = query.Where("user_id != ?", filter.UserID)
+				query = query.Where("streams.user_id != ?", filter.UserID)
 			}
 		}
 
@@ -163,13 +172,41 @@ func (r *StreamRepository) GetStreams(filter *dto.StreamQuery) (*utils.Paginatio
 			query = query.Where("streams.id IN (?)", r.db.Table("stream_categories").
 				Select("stream_id").Where("category_id IN ?", filter.CategoryIDs))
 		}
+
+		if filter.IsLiked != nil && *filter.IsLiked {
+			query = query.Joins("INNER JOIN likes l on l.stream_id = streams.id").
+				Where("streams.status = ? and l.user_id = ?", model.ENDED, filter.UserID).
+				Order("l.created_at DESC")
+		}
+
+		if filter.IsHistory != nil && *filter.IsHistory {
+			query = query.Joins("INNER JOIN views v on v.stream_id = streams.id").
+				Where("v.user_id = ?", filter.UserID).
+				Order("v.updated_at DESC")
+		}
+
+		if filter.IsSaved != nil && *filter.IsSaved {
+			query = query.Joins("INNER JOIN bookmarks b on b.stream_id = streams.id").
+				Where("b.user_id = ?", filter.UserID).
+				Order("b.created_at DESC")
+		}
+
+		if !((filter.IsMe != nil && *filter.IsMe) ||
+			(filter.IsLiked != nil && *filter.IsLiked) ||
+			(filter.IsHistory != nil && *filter.IsHistory) ||
+			(filter.IsSaved != nil && *filter.IsSaved)) {
+			query = query.Joins("LEFT JOIN subscriptions sub on sub.streamer_id = streams.user_id and sub.subscriber_id = ?", filter.UserID).
+				Order("sub.streamer_id is null")
+		}
 	}
 
-	query = query.Where("status IN (?)", []model.StreamStatus{model.STARTED, model.ENDED, model.UPCOMING})
+	query = query.Select("streams.*, ss.scheduled_at, bm.stream_id is not null is_saved").
+		Joins("LEFT JOIN schedule_streams ss on ss.stream_id = streams.id").
+		Joins("LEFT JOIN bookmarks bm on bm.stream_id = streams.id and bm.user_id = ?", filter.UserID).
+		Where("streams.status IN (?)", []model.StreamStatus{model.STARTED, model.ENDED, model.UPCOMING}).
+		Preload("User").Preload("StreamAnalytics")
 
-	query = query.Order(fmt.Sprintf("%s %s", "created_at", "DESC"))
-
-	query = query.Preload("User").Preload("StreamAnalytics")
+	query = query.Order(fmt.Sprintf("%s %s", "streams.created_at", "DESC"))
 
 	pagination, err := utils.CreatePage[dto.Stream](query, filter.Page, filter.Limit)
 	if err != nil {
@@ -178,9 +215,13 @@ func (r *StreamRepository) GetStreams(filter *dto.StreamQuery) (*utils.Paginatio
 	return utils.Create(pagination, filter.Page, filter.Limit)
 }
 
-func (r *StreamRepository) GetStream(id uint) (*dto.Stream, error) {
+func (r *StreamRepository) GetStream(id uint, userId uint) (*dto.Stream, error) {
 	var stream dto.Stream
-	if err := r.db.Preload("User").Preload("Categories").Preload("StreamAnalytics").First(&stream, id).Error; err != nil {
+	if err := r.db.Select("streams.*, ss.scheduled_at, b.stream_id is not null is_saved").
+		Joins("LEFT JOIN schedule_streams ss on ss.stream_id = streams.id").
+		Joins("LEFT JOIN bookmarks b on b.stream_id = streams.id and b.user_id = ?", userId).
+		Preload("User").Preload("Categories").Preload("StreamAnalytics").
+		First(&stream, id).Error; err != nil {
 		return nil, err
 	}
 	return &stream, nil

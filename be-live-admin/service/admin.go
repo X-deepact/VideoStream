@@ -1,7 +1,6 @@
 package service
 
 import (
-	"database/sql"
 	"gitlab/live/be-live-admin/dto"
 	"gitlab/live/be-live-admin/model"
 	"gitlab/live/be-live-admin/repository"
@@ -15,18 +14,6 @@ type AdminService struct {
 func newAdminService(repo *repository.Repository) *AdminService {
 	return &AdminService{
 		repo: repo,
-	}
-}
-
-func (s *AdminService) toCreateAdminDto(user *model.User) *dto.CreateAdminResp {
-	return &dto.CreateAdminResp{
-		ID:             user.ID,
-		UserName:       user.Username,
-		Email:          user.Email,
-		DisplayName:    user.DisplayName,
-		CreatedAt:      user.CreatedAt,
-		AvatarFileName: user.AvatarFileName.String,
-		Role:           user.Role.Type,
 	}
 }
 
@@ -77,27 +64,6 @@ func (s *AdminService) toAdminResponseDTO(user *model.User, apiURL string) dto.U
 	userResp.Role.UpdatedAt = user.UpdatedAt
 
 	return *userResp
-}
-
-func (s *AdminService) CreateAdmin(request *dto.CreateAdminRequest) (*dto.CreateAdminResp, error) {
-	var newUser = new(model.User)
-	newUser.Username = request.UserName
-	newUser.PasswordHash, _ = utils.HashPassword(request.Password)
-	newUser.DisplayName = request.DisplayName
-	newUser.Email = request.Email
-	newUser.CreatedByID = request.CreatedByID
-	newUser.UpdatedByID = request.CreatedByID
-	newUser.Role.Type = request.RoleType
-	if request.AvatarFileName != "" {
-		newUser.AvatarFileName = sql.NullString{String: request.AvatarFileName, Valid: true}
-	}
-
-	err := s.repo.Admin.CreateAdmin(newUser)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.toCreateAdminDto(newUser), err
 }
 
 func (s *AdminService) ById(id uint, apiURL string) (*dto.UserResponseDTO, error) {

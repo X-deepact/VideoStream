@@ -86,10 +86,10 @@ const User2FASetupModal = (props: ComponentProps) => {
     if (twoFAData && twoFAData.secret) {
       try {
         await navigator.clipboard.writeText(twoFAData.secret);
-        toast('Copied setup key to your clipboard.');
+        toast.success('Copied setup key to your clipboard.');
       } catch (error) {
         logger.error('Failed to copy:', error);
-        toast("Can't copy setup key.");
+        toast.error("Can't copy setup key.");
       }
     }
   };

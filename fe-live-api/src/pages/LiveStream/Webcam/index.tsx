@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout';
 import { LetterText, MessageSquare } from 'lucide-react';
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import DetailsForm from './DetailsForm';
 import { useNavigate } from 'react-router-dom';
 import { LIVE_STREAM_PATH, WATCH_VIDEO_PATH } from '@/data/route';
@@ -18,26 +18,20 @@ import { modalTexts } from '@/data/stream';
 import LiveIndicator from './LiveIndicator';
 import ResourcePermissionDeniedOverlay from './ResourcePermissionDeniedOverlay';
 import { StreamDetailsResponse } from '@/data/dto/stream';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import StreamDetailsCard from './StreamDetailsCard';
 import useUserAccount from '@/hooks/useUserAccount';
 import ControlButtons from './ControlButtons';
 import StreamerAvatar from '@/components/StreamerAvatar';
-import { getFormattedDate } from '@/lib/date-time';
 import Chat from '@/components/Chat';
 import { useIsMobile } from '@/hooks/useMobile';
 import { fetchCategories } from '@/services/category';
 import { CategoryResponse } from '@/data/dto/category';
-import { getObjectsByIds, convertToHashtagStyle } from '@/lib/utils';
+import { getObjectsByIds } from '@/lib/utils';
 import { EVENT_EMITTER_NAME, EventEmitter } from '@/lib/event-emitter';
-import VideoCategory from '@/components/VideoCategory';
 import { useLiveChatWebSocket } from '@/hooks/webSocket/useLiveChatWebSocket';
 import { useLiveStreamWebSocket } from '@/hooks/webSocket/useLiveStreamWebSocket';
 import logger from '@/lib/logger';
+import { FORM_MODE } from '@/data/types/ui/form';
+import VideoDescriptionBox from '@/components/VideoDescriptionBox';
 
 const LiveStreamWebcam = () => {
   const navigate = useNavigate();
@@ -67,7 +61,7 @@ const LiveStreamWebcam = () => {
     category_ids: [],
     started_at: null,
   });
-  const [isStreamInitializeModelOpen, setIsStreamInitializeModalOpen] =
+  const [isStreamDetailsModalOpen, setIsStreamDetailsModalOpen] =
     useState(false);
   const [notifyModal, setNotifyModal] = useState<NotificationModalProps>({
     type: NotifyModalType.SUCCESS,
@@ -108,16 +102,16 @@ const LiveStreamWebcam = () => {
   });
 
   // toggle stream initialize modal to start a stream. Without this step, can't stream.
-  const handleInitializeStreamModalToggle = (): void =>
-    setIsStreamInitializeModalOpen(!isStreamInitializeModelOpen);
+  const handleStreamDetailsModalToggle = (): void =>
+    setIsStreamDetailsModalOpen(!isStreamDetailsModalOpen);
 
   // show success modal and start streaming after submitting stream initialization steps
-  const handleInitializeStreamSuccess = (data: StreamDetailsResponse): void => {
+  const handleStreamSaveSuccess = (
+    data: StreamDetailsResponse,
+    mode: FORM_MODE
+  ): void => {
     if (data.id) {
-      setIsStreamInitializeModalOpen(false);
-
-      setIsStreamStarted(true);
-      if (!isMobile) openChat();
+      setIsStreamDetailsModalOpen(false);
 
       const {
         id,
@@ -139,19 +133,30 @@ const LiveStreamWebcam = () => {
         started_at: null,
       });
 
-      openNotifyModal(
-        NotifyModalType.SUCCESS,
-        modalTexts.stream.successStart.title,
-        modalTexts.stream.successStart.description
-      );
+      if (mode === FORM_MODE.CREATE) {
+        setIsStreamStarted(true);
+        if (!isMobile) openChat();
 
-      startStream(data.id);
+        openNotifyModal(
+          NotifyModalType.SUCCESS,
+          modalTexts.stream.successStart.title,
+          modalTexts.stream.successStart.description
+        );
+
+        startStream(data.id);
+      } else if (mode === FORM_MODE.EDIT)
+        openNotifyModal(
+          NotifyModalType.SUCCESS,
+          modalTexts.stream.successUpdate.title,
+          modalTexts.stream.successUpdate.description
+        );
     }
   };
 
   // cancel streaming. stop using webcam and audio.
   const handleInitializeStreamCancel = (): void => {
     stopWebcamAndAudio();
+    setIsStreamDetailsModalOpen(false);
     navigate(LIVE_STREAM_PATH);
   };
 
@@ -380,15 +385,20 @@ const LiveStreamWebcam = () => {
         />
       ) : (
         <>
-          <DetailsForm
-            categories={streamCategories?.map((cat) => ({
-              id: cat.id.toString(),
-              name: cat.name,
-            }))}
-            isOpen={isStreamInitializeModelOpen}
-            onSuccess={handleInitializeStreamSuccess}
-            onClose={handleInitializeStreamModalToggle}
-          />
+          {!isStreamStarted && (
+            <DetailsForm
+              mode={FORM_MODE.CREATE}
+              isOpen={isStreamDetailsModalOpen}
+              categories={streamCategories?.map((cat) => ({
+                id: cat.id.toString(),
+                name: cat.name,
+              }))}
+              onSuccess={(data: StreamDetailsResponse) =>
+                handleStreamSaveSuccess(data, FORM_MODE.CREATE)
+              }
+              onClose={handleStreamDetailsModalToggle}
+            />
+          )}
 
           <div className="flex flex-col w-full h-full gap-3 overflow-hidden box-border">
             <div className="flex w-full lg:h-full items-center justify-center overflow-hidden">
@@ -415,7 +425,7 @@ const LiveStreamWebcam = () => {
                       onToggleMic={handleToggleMic}
                       onEndStream={handleEndStream}
                       onInitializeStreamModalToggle={
-                        handleInitializeStreamModalToggle
+                        handleStreamDetailsModalToggle
                       }
                       onInitializeStreamCancel={handleInitializeStreamCancel}
                     />
@@ -454,20 +464,29 @@ const LiveStreamWebcam = () => {
               {streamDetails && streamDetails?.id && (
                 <>
                   <div className="hidden md:inline-block absolute left-5">
-                    <Popover>
-                      <PopoverTrigger>
-                        <Button variant="ghost" size="sm">
-                          <LetterText />
-                          Details
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent side="bottom">
-                        <StreamDetailsCard
-                          data={streamDetails}
-                          categories={streamCategories}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleStreamDetailsModalToggle}
+                    >
+                      <LetterText />
+                      Details
+                    </Button>
+                    {isStreamStarted && (
+                      <DetailsForm
+                        mode={FORM_MODE.VIEW}
+                        isOpen={isStreamDetailsModalOpen}
+                        data={streamDetails}
+                        categories={streamCategories?.map((cat) => ({
+                          id: cat.id.toString(),
+                          name: cat.name,
+                        }))}
+                        onSuccess={(data: StreamDetailsResponse) =>
+                          handleStreamSaveSuccess(data, FORM_MODE.EDIT)
+                        }
+                        onClose={handleStreamDetailsModalToggle}
+                      />
+                    )}
                   </div>
                   {/* Start - Mobile stream details card */}
                   {!isChatVisible && isStreamStarted && (
@@ -482,38 +501,23 @@ const LiveStreamWebcam = () => {
                           <MessageSquare /> Show Chat
                         </Button>
                       </div>
-                      <div className="mt-3 bg-muted p-4 rounded-lg">
-                        <p className="text-xl font-semibold">
-                          {streamDetails?.title || ''}
+                      <div className="flex flex-col gap-3 mt-3">
+                        <p className="bg-secondary/40 p-4 rounded-lg text-xl font-semibold">
+                          {streamDetails?.title || '—'}
                         </p>
-                        <p className="text-xs">
-                          <span className="text-muted-foreground">
-                            Streamed live at
-                          </span>{' '}
-                          {getFormattedDate(
-                            new Date(streamDetails?.started_at || new Date()),
-                            true
-                          )}
-                        </p>
-
-                        <div className="flex gap-2">
-                          {getObjectsByIds(
+                        <VideoDescriptionBox
+                          totalViews={liveViewersCount}
+                          description={streamDetails?.description || '—'}
+                          createdAt={
+                            streamDetails?.started_at ||
+                            new Date()?.toDateString()
+                          }
+                          categories={getObjectsByIds(
                             streamCategories,
                             streamDetails?.category_ids || [],
                             'id'
-                          ).map((category) => (
-                            <Fragment key={category.id}>
-                              <VideoCategory
-                                id={category.id}
-                                label={convertToHashtagStyle(category.name)}
-                              />
-                            </Fragment>
-                          ))}
-                        </div>
-
-                        <p className="mt-2">
-                          {streamDetails?.description || ''}
-                        </p>
+                          )}
+                        />
                       </div>
                     </div>
                   )}
@@ -528,9 +532,7 @@ const LiveStreamWebcam = () => {
                   isStreamStarted={isStreamStarted}
                   onToggleMic={handleToggleMic}
                   onEndStream={handleEndStream}
-                  onInitializeStreamModalToggle={
-                    handleInitializeStreamModalToggle
-                  }
+                  onInitializeStreamModalToggle={handleStreamDetailsModalToggle}
                   onInitializeStreamCancel={handleInitializeStreamCancel}
                 />
               </div>

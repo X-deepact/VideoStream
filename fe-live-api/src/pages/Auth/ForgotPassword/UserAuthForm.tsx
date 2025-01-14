@@ -19,16 +19,15 @@ import {
 import { Label } from '@/components/ui/label';
 import { LOGIN_PATH } from '@/data/route';
 import {
-  ChangePasswordRules,
   FORGOT_PASSWORD_OTP_LENGTH,
   ForgotPasswordSchema,
 } from '@/data/validations';
-import { capitalizeFirstLetter, cn } from '@/lib/utils';
+import { capitalizeFirstLetter } from '@/lib/utils';
 import { forgotPassword } from '@/services/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { useState } from 'react';
-import { Controller, useForm, useWatch } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
@@ -50,8 +49,6 @@ const UserAuthForm = () => {
   } = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(ForgotPasswordSchema),
   });
-
-  const newPassword = useWatch({ control, name: 'newPassword' }) || '';
 
   const onSubmit = async (formData: {
     usernameOrEmail: string;
@@ -189,23 +186,12 @@ const UserAuthForm = () => {
                 errors.newPassword ? 'ring-red-500 border border-red-500' : ''
               }`}
             />
-            <ul className="mt-2 space-y-1 list-disc pl-4">
-              {ChangePasswordRules.map((req, index) => (
-                <li
-                  key={index}
-                  className={cn(
-                    'text-xs',
-                    newPassword.length === 0
-                      ? 'text-gray-500'
-                      : req.regex.test(newPassword)
-                      ? 'text-green-500'
-                      : 'text-red-500'
-                  )}
-                >
-                  {req.text}
-                </li>
-              ))}
-            </ul>
+            {errors.newPassword && (
+              <p className="text-sm text-red-500 mt-1">
+                {errors.newPassword.message &&
+                  String(errors.newPassword.message)}
+              </p>
+            )}
           </div>
 
           <div className="grid gap-1 mt-2">

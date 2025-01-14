@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./select";
+import { Input } from "../ui/input";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -31,8 +32,10 @@ interface DataTableProps<TData, TValue> {
   setCurrentPage: (page: number) => void;
   totalPages: number;
   pageSize: number;
-  setPageSize: (pageSize: number) => void;
-  onSortChange: (columnId: string) => void;
+  setPageSize: (size: number) => void;
+  meta?: {
+    onSortChange?: (columnId: string) => void;
+  };
 }
 
 export function DataTable<TData, TValue>({
@@ -43,15 +46,14 @@ export function DataTable<TData, TValue>({
   totalPages,
   pageSize,
   setPageSize,
-  onSortChange,
+  meta,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    meta: {
-      onSortChange,
-    },
+    meta,
+    manualSorting: true,
   });
 
   return (
@@ -134,8 +136,7 @@ export function DataTable<TData, TValue>({
           <label htmlFor="page-input" className="mr-2">
             Page
           </label>
-          <input
-            id="page-input"
+           <Input
             type="number"
             min="1"
             max={totalPages}
@@ -147,8 +148,9 @@ export function DataTable<TData, TValue>({
               );
               setCurrentPage(page);
             }}
-            className="text-center border rounded"
+            className="max-w-[80px]"
           />
+          
           <span className="ml-2">of {totalPages}</span>
           <Button
             variant="outline"

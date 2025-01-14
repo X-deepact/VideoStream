@@ -29,9 +29,10 @@ import LivestreamCreateNew
 import { getLivestreamSessionList } from "@/services/livestream-session.service.ts";
 import { toast } from "@/hooks/use-toast.ts";
 import { AccountProps, Catalogue, LIVESTREAM_STATUS, LivestreamSession } from "@/lib/interface.tsx";
-import { getCategories } from "@/services/category.service.ts";
 import { getAccountListWithRole } from "@/services/user.service.ts";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area.tsx";
+import { useCategories } from "@/hooks/useCategories.ts";
+import { useFetchAccount } from "@/hooks/useFetchAccount.ts";
 
 const LivestreamSessions = () => {
 	const [openFilterDialog, setOpenFilterDialog] = useState(false);
@@ -41,14 +42,8 @@ const LivestreamSessions = () => {
 	const [status, setStatus] = useState<string[]>(["started", "upcoming"]);
 	const [startDate, setStartDate] = useState<Date | undefined>(undefined);
 	const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-	const [categories, setCategories] = useState<{
-		label: string,
-		value: string
-	}[]>([]);
-	const [users, setUsers] = useState<{
-		label: string,
-		value: string
-	}[]>([]);
+	const { categories } = useCategories();
+	const { accounts } = useFetchAccount("streamer");
 
 	//Livestream Data
 	const [isLoading, setIsLoading] = useState(false);
@@ -67,10 +62,6 @@ const LivestreamSessions = () => {
 		fetchLivestream();
 	}, [currentPage, streamType, status, startDate, endDate]);
 
-	useEffect(() => {
-		fetchCategories();
-		fetchUsers();
-	}, []);
 
 	const fetchLivestream = async () => {
 		if (isLoading) {
@@ -99,46 +90,6 @@ const LivestreamSessions = () => {
 		}
 	}
 
-	const fetchCategories = async () => {
-		try {
-			const response = await getCategories();
-			const { data } = response.data;
-			const transformData = data.map((category: Catalogue) => {
-				return {
-					label: category.name,
-					value: String(category.id)
-				}
-			});
-
-			setCategories(transformData);
-		} catch (e) {
-			toast({
-				description: e.message,
-				variant: "destructive"
-			})
-		}
-	}
-
-	const fetchUsers = async () => {
-		try {
-			const response = await getAccountListWithRole("streamer");
-			const { data } = response.data;
-			const transformData = data.page.map((user: AccountProps) => {
-				return {
-					label: user.username,
-					value: String(user.id)
-				}
-			})
-
-			setUsers(transformData);
-		} catch (e) {
-			toast({
-				description: e.message,
-				variant: "destructive"
-			})
-		}
-	}
-	
 	const handleSearchStream = async (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === "Enter") {
 			e.preventDefault();
@@ -173,7 +124,7 @@ const LivestreamSessions = () => {
 					{/*New Stream Dialog*/}
 					<LivestreamCreateNew
 						categories={categories}
-						users={users}
+						users={accounts}
 						onReset={fetchLivestream}
 					/>
 
@@ -303,7 +254,7 @@ const LivestreamSessions = () => {
 			</div>
 
 			{/*livestream session list*/}
-			<ScrollArea className="w-auto h-[60rem]">
+			<ScrollArea className="w-auto">
 				{
 					data.length > 0
 						?

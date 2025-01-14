@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { Button } from './ui/button';
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_IN_MB } from '@/data/validations';
+import DefaultImg from '@/assets/images/video-thumbnail.jpg';
 
 interface ComponentProps {
   isCircle?: boolean;
@@ -95,8 +96,9 @@ const ImageUpload = (props: ComponentProps): JSX.Element => {
         {imagePreview ? (
           <>
             <img
-              src={imagePreview}
+              src={imagePreview || DefaultImg}
               alt="Preview"
+              onError={(e) => (e.currentTarget.src = DefaultImg)}
               className={`w-full h-full object-cover ${
                 isCircle ? 'rounded-full' : ''
               }`}

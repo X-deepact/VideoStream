@@ -43,6 +43,7 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import ImageWithAuth from "../ui/imagewithauth";
+import avatar from "@/assets/avatar.svg";
 
 const AccountList = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -287,10 +288,7 @@ const AccountList = () => {
                         className="h-12 w-12 rounded-full"
                       />
                     ) : (
-                      <img
-                        src="https://img.freepik.com/free-psd/3d-illustration-person-with-punk-hair-jacket_23-2149436198.jpg?semt=ais_hybrid"
-                        className="h-12 w-12 rounded-full"
-                      />
+                      <img src={avatar} className="h-12 w-12 rounded-full" />
                     )}
                   </TableCell>
                   <TableCell>{account.username}</TableCell>

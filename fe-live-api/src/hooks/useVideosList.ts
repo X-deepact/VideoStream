@@ -1,126 +1,117 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchVideosList } from '@/services/stream';
 import { StreamsResponse, VideosListRequest } from '@/data/dto/stream';
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '@/data/validations';
 
-// TODO: check for on scroll
 const useVideosList = (payload: VideosListRequest = {}) => {
   const {
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_SIZE,
-    status,
-    categoryId1 = 0,
-    categoryId2 = 0,
-    categoryId3 = 0,
-    title = '',
-    isMe = false,
-  } = payload;
-
-  const [contents, setContents] = useState<StreamsResponse[]>([]);
-  const [totalItems, setTotalItems] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(page);
-
-  // ref to store previous dependencies to compare with current ones
-  const prevDepsRef = useRef({
-    status,
     categoryId1,
     categoryId2,
     categoryId3,
-    title,
-  });
+    status,
+    title = undefined,
+    is_me = undefined,
+    is_liked = undefined,
+    is_history = undefined,
+    is_saved = undefined,
+  } = payload;
 
-  // function to refetch the contents (triggered manually)
-  const refetchContents = () => {
-    setContents([]);
-    setCurrentPage(1);
+  const [videos, setVideos] = useState<StreamsResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+  const [refetchKey, setRefetchKey] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [totalItems, setTotalItems] = useState(0);
+
+  const refetchVideos = () => {
+    setRefetchKey((prevKey) => prevKey + 1);
   };
 
-  // function to fetch the content data
-  const fetchContentsData = async (page: number) => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  useEffect(() => {
+    const fetchContentsData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      const params: Record<string, unknown> = {
-        page,
-        limit,
-        status: status || undefined,
-        title,
-        isMe,
-        categoryId1: categoryId1 || undefined,
-        categoryId2: categoryId2 || undefined,
-        categoryId3: categoryId3 || undefined,
-      };
+        const params: Record<string, unknown> = {
+          page,
+          limit,
+          title,
+          is_me,
+          is_liked,
+          is_history,
+          is_saved,
+          status,
+          categoryId1,
+          categoryId2,
+          categoryId3,
+        };
 
-      const response = await fetchVideosList(params);
+        const response = await fetchVideosList(params);
 
-      if (!response?.page) {
-        throw new Error('Failed to fetch contents!');
+        if (!response?.page) throw new Error('Failed to fetch contents!');
+
+        setVideos((prev) => {
+          const newVideos = response.page || [];
+          const uniqueVideos = [
+            ...prev,
+            ...newVideos.filter(
+              (video) => !prev.some((v) => v.id === video.id)
+            ),
+          ];
+          return uniqueVideos;
+        });
+        if (response.next) setHasMore(response.next > 0);
+        if (response.total_items) setTotalItems(response.total_items);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'An unknown error occurred.'
+        );
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      setContents((prev) => [...prev, ...(response.page || [])]);
-      setTotalItems(response.total_items || 0);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'An unknown error occurred.'
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // handle page change for infinite scroll
-  const fetchNextPage = () => {
-    if (!isLoading && contents.length < totalItems) {
-      setCurrentPage((prev) => prev + 1);
-    }
-  };
+    fetchContentsData();
+  }, [
+    title,
+    categoryId1,
+    categoryId2,
+    categoryId3,
+    status,
+    page,
+    limit,
+    is_me,
+    is_liked,
+    is_history,
+    is_saved,
+    refetchKey,
+  ]);
 
   useEffect(() => {
-    const prevDeps = prevDepsRef.current;
-
-    // check if any of the tracked dependencies have changed
-    const isChanged =
-      prevDeps.status !== status ||
-      prevDeps.categoryId1 !== categoryId1 ||
-      prevDeps.categoryId2 !== categoryId2 ||
-      prevDeps.categoryId3 !== categoryId3 ||
-      prevDeps.title !== title;
-
-    if (isChanged) {
-      setContents([]);
-      setCurrentPage(1);
-      fetchContentsData(1);
-
-      // Update previous dependencies
-      prevDepsRef.current = {
-        status,
-        categoryId1,
-        categoryId2,
-        categoryId3,
-        title,
-      };
-    }
-  }, [status, categoryId1, categoryId2, categoryId3, title]);
-
-  // fetch contents on initial load or when the page number changes
-  useEffect(() => {
-    if (currentPage === 1) {
-      fetchContentsData(1);
-    } else {
-      fetchContentsData(currentPage);
-    }
-  }, [currentPage]);
+    setVideos([]);
+  }, [
+    title,
+    categoryId1,
+    categoryId2,
+    categoryId3,
+    is_me,
+    is_liked,
+    is_history,
+    is_saved,
+  ]);
 
   return {
-    contents,
+    videos,
     isLoading,
+    hasMore,
     totalItems,
     error,
-    refetchContents,
-    fetchNextPage,
+    setVideos,
+    refetchVideos,
+    setTotalItems,
   };
 };
 

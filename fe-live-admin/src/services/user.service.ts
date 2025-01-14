@@ -104,18 +104,9 @@ export const getAccountLog = async (
 };
 
 export const getUsernames = async () => {
-  try {
-    const response = await axios.get(`${API_URL}/users/list-username`, {
-      headers: authHeader(),
-    });
-    return response.data.data;
-  } catch (error: any) {
-    toast({
-      description: error.message,
-      className: TOAST_STYLES.ERROR,
-    });
-    return [];
-  }
+  return await axios.get(`${API_URL}/users/list-username`, {
+    headers: authHeader(),
+  });
 };
 
 export const updateAccount = async (id: string, data: any) => {
@@ -126,7 +117,7 @@ export const updateAccount = async (id: string, data: any) => {
         username: data.username,
         display_name: data.display_name,
         email: data.email,
-        role_type: data.role_type,
+        role_type: data.role,
       },
       { headers: authHeader() }
     );
@@ -134,6 +125,7 @@ export const updateAccount = async (id: string, data: any) => {
       description: response.data.message,
       className: TOAST_STYLES.SUCCESS,
     });
+    return response.data.data;
   } catch (error: any) {
     toast({
       description: error.message,

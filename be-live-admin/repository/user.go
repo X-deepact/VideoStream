@@ -6,13 +6,37 @@ import (
 	"gitlab/live/be-live-admin/dto"
 	"gitlab/live/be-live-admin/model"
 	"gitlab/live/be-live-admin/utils"
+	"log"
 	"time"
 
 	"gorm.io/gorm"
 )
 
 type UserRepository struct {
-	db *gorm.DB
+	db      *gorm.DB
+	roleMap map[model.RoleType]uint
+}
+
+func newUserRepository(db *gorm.DB) *UserRepository {
+	return &UserRepository{
+		db:      db,
+		roleMap: map[model.RoleType]uint{},
+	}
+}
+
+func (s *UserRepository) SetRoleMap() error {
+	var roles []model.Role
+	if err := s.db.Find(&roles).Error; err != nil {
+		return fmt.Errorf("failed to fetch roles: %w", err)
+	}
+
+	for _, role := range roles {
+		s.roleMap[role.Type] = role.ID
+	}
+
+	log.Printf("Role map set: %v\n", s.roleMap)
+
+	return nil
 }
 
 func (s *UserRepository) Page(filter *dto.UserQuery, page, limit uint) (*utils.PaginationModel[model.User], error) {
@@ -28,6 +52,12 @@ func (s *UserRepository) Page(filter *dto.UserQuery, page, limit uint) (*utils.P
 		query = query.Or("users.email ILIKE ? AND users.email != ?", "%"+filter.Keyword+"%", model.SUPER_ADMIN_EMAIL)
 		query = query.Or("cr.username ILIKE ?", "%"+filter.Keyword+"%")
 		query = query.Or("ur.username ILIKE ?", "%"+filter.Keyword+"%")
+	}
+
+	if filter.FilterBy != "" {
+		if filter.FilterBy == "status" {
+			query = query.Where("users.status = ?", model.UserStatusType(filter.Keyword))
+		}
 	}
 
 	if filter != nil && filter.Role != "" {
@@ -74,12 +104,6 @@ func (r *UserRepository) Delete(id, deletedByID uint) error {
 		return err
 	}
 	return nil
-}
-
-func newUserRepository(db *gorm.DB) *UserRepository {
-	return &UserRepository{
-		db: db,
-	}
 }
 
 func (r *UserRepository) Create(user *model.User) error {
@@ -160,4 +184,61 @@ func (r *UserRepository) CheckUserTypeByID(id int) (*model.User, error) {
 		return nil, err
 	}
 	return &user, nil
+}
+
+// need to cache this query.
+// beaware views, likes and comments are handled by be-api.
+// so it will be hard to cache.
+func (r *UserRepository) GetUserStatistics(req *dto.UserStatisticsRequest) (*utils.PaginationModel[dto.UserStatisticsResponse], error) {
+	query := r.db.Model(model.User{}).Joins("INNER JOIN roles ON users.role_id = roles.id").Select("users.id as user_id, roles.type as role_type, users.username, users.display_name").Where("roles.type NOT IN ?", []model.RoleType{model.SUPPERADMINROLE, model.ADMINROLE})
+	if req.Keyword != "" {
+		query = query.Where("users.username ILIKE ? OR users.display_name ILIKE ?", "%"+req.Keyword+"%", "%"+req.Keyword+"%")
+	}
+	if req.RoleType != "" {
+		query = query.Where("roles.type = ?", req.RoleType)
+	}
+
+	if req.SortBy != "" && req.Sort != "" {
+		if req.SortBy == "username" || req.SortBy == "display_name" {
+			query = query.Order(fmt.Sprintf("users.%s %s", req.SortBy, req.Sort))
+		}
+	}
+	pagination, err := utils.CreatePage[dto.UserStatisticsResponse](query, int(req.Page), int(req.Limit))
+	if err != nil {
+		return nil, err
+	}
+
+	return utils.Create(pagination, int(req.Page), int(req.Limit))
+}
+
+func (r *UserRepository) GetLikesByUserID(id uint) (int64, error) {
+	var count int64
+	if err := r.db.Model(model.Like{}).Where("user_id = ?", id).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (r *UserRepository) GetCommentsByUserID(id uint) (int64, error) {
+	var count int64
+	if err := r.db.Model(model.Comment{}).Where("user_id = ?", id).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (r *UserRepository) GetViewsByUserID(id uint) (int64, error) {
+	var count int64
+	if err := r.db.Model(model.View{}).Where("user_id = ?", id).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (r *UserRepository) GetStreamsByUserID(id uint) (int64, error) {
+	var count int64
+	if err := r.db.Model(model.Stream{}).Where("user_id = ?", id).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
 }

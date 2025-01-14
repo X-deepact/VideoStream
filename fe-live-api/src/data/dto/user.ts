@@ -16,6 +16,7 @@ export interface ChangePasswordRequest {
 export interface UserProfileInfoUpdateRequest {
   displayName: string;
   avatarFile?: File | null | string;
+  avatarPreview?: string | null;
 }
 
 export interface UserProfileInfoUpdateResponse {

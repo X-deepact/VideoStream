@@ -59,13 +59,15 @@ type Stream struct {
 }
 
 type Notification struct {
-	ID        uint      `gorm:"primaryKey"`
-	UserID    uint      `gorm:"not null"`
-	StreamID  uint      `gorm:"not null"`
-	Content   string    `gorm:"type:text;not null"`
-	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP;not null"`
-	Stream    Stream    `gorm:"foreignKey:StreamID;constraint:OnDelete:CASCADE"`
-	User      User      `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	ID        uint         `gorm:"primaryKey"`
+	UserID    uint         `gorm:"column:user_id;not null"`
+	StreamID  uint         `gorm:"column:stream_id"`
+	Type      string       `gorm:"type:varchar(50);not null"`
+	Content   string       `gorm:"type:text;not null"`
+	CreatedAt time.Time    `gorm:"default:CURRENT_TIMESTAMP;not null"`
+	ReadAt    sql.NullTime `gorm:"column:read_at"`
+	Stream    Stream       `gorm:"foreignKey:StreamID;constraint:OnDelete:CASCADE"`
+	User      User         `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
 // type Chat struct {
@@ -170,4 +172,14 @@ type ScheduleStream struct {
 	CreatedAt   time.Time `gorm:"default:CURRENT_TIMESTAMP;not null"`
 	UpdatedAt   time.Time `gorm:"default:CURRENT_TIMESTAMP;autoUpdateTime;not null"`
 	Stream      Stream    `gorm:"foreignKey:StreamID;constraint:OnDelete:CASCADE"`
+}
+
+type Bookmark struct {
+	ID        uint      `gorm:"primaryKey"`
+	UserID    uint      `gorm:"not null;uniqueIndex:idx_bookmark_user_stream"`
+	StreamID  uint      `gorm:"not null;uniqueIndex:idx_bookmark_user_stream"`
+	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP;not null"`
+	Stream    Stream    `gorm:"foreignKey:StreamID;constraint:OnDelete:CASCADE"`
+	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP;autoUpdateTime;not null"`
+	User      User      `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }

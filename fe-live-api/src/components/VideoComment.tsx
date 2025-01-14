@@ -23,6 +23,7 @@ import {
 import { ConfirmationModalProps, ConfirmModal } from './ConfirmationModal';
 import { modalTexts } from '@/data/comment';
 import { showToastMessage } from '@/lib/toast';
+import { DEFAULT_PAGE_SIZE } from '@/data/validations';
 
 interface ComponentProps {
   videoId: number;
@@ -55,7 +56,7 @@ const VideoComment = ({ videoId }: ComponentProps) => {
     setTotalItems,
   } = useComments({
     videoId,
-    limit: 1,
+    limit: DEFAULT_PAGE_SIZE,
   });
 
   // Create comment

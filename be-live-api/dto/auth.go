@@ -14,7 +14,7 @@ type RegisterRequest struct {
 	Username    string `json:"username" form:"username" validate:"required,min=4"`
 	DisplayName string `json:"display_name" form:"display_name"`
 	Email       string `json:"email" form:"email" validate:"required,min=4"`
-	Password    string `json:"password" form:"password" validate:"required,min=4"`
+	Password    string `json:"password" form:"password" validate:"required,min=8"`
 }
 
 type LoginResponse struct {
@@ -29,9 +29,9 @@ type LoginResponse struct {
 }
 
 type ForgotPasswordRequest struct {
-	Username string `json:"username"`
-	Otp      string `json:"otp"`
-	Password string `json:"password"`
+	Username string `json:"username" validate:"required"`
+	Otp      string `json:"otp" validate:"required"`
+	Password string `json:"password" validate:"required,min=8"`
 }
 
 type GenerateTotpRequest struct {

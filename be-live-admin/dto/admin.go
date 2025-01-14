@@ -5,16 +5,6 @@ import (
 	"time"
 )
 
-type CreateAdminRequest struct {
-	UserName       string         `json:"username" validate:"required,min=3,max=50"`
-	Email          string         `json:"email" validate:"required,email,max=100"`
-	DisplayName    string         `json:"display_name" validate:"required,min=3,max=100"`
-	Password       string         `json:"password" validate:"required,min=6,max=255"`
-	RoleType       model.RoleType `json:"role_type" validate:"required,oneof=admin streamer user"`
-	AvatarFileName string         `json:"avatar_file_name" validate:"omitempty,min=3,max=200"`
-	CreatedByID    *uint          `json:"created_by_id"`
-}
-
 type CreateAdminResp struct {
 	ID             uint           `json:"id,omitempty"`
 	UserName       string         `json:"username,omitempty"`
@@ -26,11 +16,14 @@ type CreateAdminResp struct {
 }
 
 type AdminLogQuery struct {
-	SortBy   string `query:"sort_by" validate:"omitempty,oneof=performed_at"`
-	Sort     string `query:"sort" validate:"omitempty,oneof=DESC ASC"`
-	FilterBy string `query:"filter_by" validate:"omitempty,oneof=action details id username email"`
-	Keyword  string `query:"keyword" validate:"omitempty,max=255"`
-	UserIDs  []uint `query:"user_ids" validate:"omitempty"`
+	SortBy   string `json:"sort_by" query:"sort_by" validate:"omitempty,oneof=performed_at"`
+	Sort     string `json:"sort" query:"sort" validate:"omitempty,oneof=DESC ASC"`
+	FilterBy string `json:"filter_by" query:"filter_by" validate:"omitempty,oneof=details username email"`
+	Action   string `json:"action" query:"action" validate:"omitempty,max=255"`
+	Keyword  string `json:"keyword" query:"keyword" validate:"omitempty,max=255"`
+	UserID   uint   `json:"-"`
+	IsAdmin  bool   `json:"-"`
+	IsMe     bool   `json:"is_me" query:"is_me" validate:"omitempty"`
 	Page     uint   `query:"page" validate:"omitempty,min=1"`
 	Limit    uint   `query:"limit" validate:"omitempty,min=1,max=20"`
 }

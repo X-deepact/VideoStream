@@ -116,7 +116,7 @@ export const useLiveStreamWebSocket = ({
 const getWsURL = (streamId: number): string | null => {
   const token = retrieveAuthToken();
   if (!token) {
-    toast('Please reload the page');
+    toast.error('Please reload the page');
     return null;
   }
 

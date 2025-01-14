@@ -93,6 +93,15 @@ func (h *authHandler) Register(c echo.Context) error {
 	return utils.BuildSuccessResponse(c, http.StatusOK, resp)
 }
 
+// @Summary Login a user
+// @Description Authenticates the user and returns a JWT token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param login body dto.LoginRequest true "User Login Data"
+// @Success 200 {object} dto.LoginResponse "Login successful"
+// @Failure 400  "Invalid request"
+// @Router /api/auth/login [post]
 func (h *authHandler) Login(c echo.Context) error {
 	var req dto.LoginRequest
 	if err := utils.BindAndValidate(c, &req); err != nil {
@@ -108,6 +117,10 @@ func (h *authHandler) Login(c echo.Context) error {
 	//Check username
 	if user == nil {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, errors.New("username or password is incorrect"), nil)
+	}
+
+	if user.Status == model.BLOCKED {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, errors.New("account is blocked, can't login"), nil)
 	}
 
 	//Check password

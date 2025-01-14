@@ -31,12 +31,13 @@ type wsHandler struct {
 	rtmpURL string
 	hlsURL  string
 
-	wsWG    *sync.WaitGroup
-	mCtx    context.Context
-	viewMap *ViewCache
+	wsWG               *sync.WaitGroup
+	mCtx               context.Context
+	viewMap            *ViewCache
+	wsNotificationPool *wsNotificationPool
 }
 
-func newWsHandler(r *echo.Group, srv *service.Service, ctx context.Context, wg *sync.WaitGroup) *wsHandler {
+func newWsHandler(r *echo.Group, srv *service.Service, ctx context.Context, wg *sync.WaitGroup, wsNotificationPool *wsNotificationPool) *wsHandler {
 	streamConfig := conf.GetStreamServerConfig()
 
 	wsH := &wsHandler{
@@ -49,7 +50,8 @@ func newWsHandler(r *echo.Group, srv *service.Service, ctx context.Context, wg *
 		mCtx: ctx,
 		wsWG: wg,
 
-		viewMap: newViewCache(),
+		viewMap:            newViewCache(),
+		wsNotificationPool: wsNotificationPool,
 	}
 
 	wsH.register()
@@ -62,6 +64,7 @@ func (h *wsHandler) register() {
 
 	group.GET("/stream_live/:id", h.StreamLive)
 	group.GET("/stream_live/:id/interaction", h.handleUserInteraction)
+	group.GET("/notification", h.handleNotification)
 
 }
 
@@ -158,6 +161,12 @@ func (h *wsHandler) StreamLive(c echo.Context) error {
 		log.Println("Send close message to wsCloseChan")
 	}()
 
+	isEndByAdmin := make(chan bool)
+
+	go func() {
+		h.srv.Stream.IsEndByAdmin(stream.ID, c.Request().Context(), isEndByAdmin)
+	}()
+
 	if err := conn.WriteJSON(map[string]interface{}{
 		"status":        200,
 		"broadcast_url": broadCastURL,
@@ -199,18 +208,26 @@ func (h *wsHandler) StreamLive(c echo.Context) error {
 	}()
 
 	// Read data from WebSocket and write to FFmpeg's stdin
+mainLoop:
 	for {
+		select {
+		case end := <-isEndByAdmin:
+			if end {
+				log.Println("Stream ended by admin.")
+				break mainLoop // Breaks out of the for loop
+			}
+		default:
+			_, msg, err := conn.ReadMessage()
+			if err != nil {
+				log.Println("WebSocket connection error:", err)
+				break mainLoop // Breaks out of the for loop
+			}
 
-		_, msg, err := conn.ReadMessage()
-		if err != nil {
-			log.Println("WebSocket connection error:", err)
-			break
-		}
-
-		_, writeErr := ffmpegStdin.Write(msg)
-		if writeErr != nil {
-			log.Println("Failed to write to FFmpeg stdin:", writeErr)
-			break
+			_, writeErr := ffmpegStdin.Write(msg)
+			if writeErr != nil {
+				log.Println("Failed to write to FFmpeg stdin:", writeErr)
+				break mainLoop // Breaks out of the for loop
+			}
 		}
 	}
 
@@ -322,7 +339,7 @@ func (h *wsHandler) handleUserInteraction(c echo.Context) error {
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			log.Printf("WebSocket read error: %v", err)
+			log.Printf("Interaction WebSocket read error: %v", err)
 			break
 		}
 
@@ -455,7 +472,7 @@ func (h *wsHandler) handlUserInteractioneMessage(c echo.Context, message []byte,
 			return
 		}
 
-		likeInfo, err := h.srv.Interaction.GetLikeInfo(streamID, userID)
+		likeInfo, err := h.srv.Interaction.GetLikeInfo(streamID)
 		if err != nil {
 			log.Printf("Error getting like info: %v", err)
 			return
@@ -497,4 +514,105 @@ func (h *wsHandler) sendViewInfoForInteractionWS(streamID uint) {
 		},
 	})
 
+}
+
+func (h *wsHandler) handleNotification(c echo.Context) error {
+	jwtToken := c.QueryParam("token")
+
+	claims, err := utils.ValidateAccessToken(jwtToken)
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusUnauthorized, err, nil)
+	}
+
+	if claims.Status == model.BLOCKED {
+		return utils.BuildErrorResponse(c, http.StatusUnauthorized, errors.New("account is locked and can't be used"), nil)
+	}
+
+	conn, err := notificationUpgradeConnection.Upgrade(c.Response().Writer, c.Request(), nil)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	h.wsNotificationPool.Add(conn, claims.ID)
+	defer h.wsNotificationPool.Remove(conn, claims.ID)
+
+	// send Initital Message
+	initialMessage := &dto.InitialLiveMessage{
+		LikeCount: 11,
+	}
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	if err = conn.WriteJSON(initialMessage); err != nil {
+		log.Printf("Error writing to WebSocket: %v", err)
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	wsCloseChan := make(chan bool)
+
+	defer func() {
+		wsCloseChan <- true
+		log.Println("Send close message to wsCloseChan in notification ws")
+	}()
+
+	h.wsWG.Add(1)
+	go func() {
+		defer func() {
+			h.wsWG.Done()
+
+			log.Println("Notification ended")
+		}()
+
+		user, err := h.srv.User.GetUserLogin(claims.Username)
+		if err != nil {
+			return
+		}
+
+		user.Status = model.ONLINE
+		if err := h.srv.User.UpdateUser(user); err != nil {
+			return
+		}
+
+		for {
+			select {
+			case <-h.mCtx.Done():
+				user, err := h.srv.User.GetUserLogin(claims.Username)
+				if err != nil {
+					return
+				}
+
+				user.Status = model.OFFLINE
+				if err := h.srv.User.UpdateUser(user); err != nil {
+					return
+				}
+			case <-wsCloseChan:
+				log.Println("Notification ending by websocket")
+				user, err := h.srv.User.GetUserLogin(claims.Username)
+				if err != nil {
+					return
+				}
+
+				user.Status = model.OFFLINE
+				if err := h.srv.User.UpdateUser(user); err != nil {
+					return
+				}
+			}
+		}
+	}()
+
+	for {
+		_, msg, err := conn.ReadMessage()
+		if err != nil {
+			log.Printf("Notification WebSocket read error: %v", err)
+			break
+		}
+
+		log.Println("Notification WebSocket received: ", string(msg))
+
+		// Handle the received message
+	}
+
+	return nil
 }

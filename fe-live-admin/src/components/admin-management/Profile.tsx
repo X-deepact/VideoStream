@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Edit, KeyRound } from "lucide-react";
 import { formatDate } from "@/lib/date-formated";
 import {
   changePassword,
@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import Avatar from "@/assets/avatar.svg";
 
 const Profile = () => {
   const [profileData, setProfileData] = useState(
@@ -87,7 +88,7 @@ const Profile = () => {
     });
   };
   const handleEditInfo = async () => {
-    await updateAccount(profileData.id, formData);
+    const res = await updateAccount(profileData.id, formData);
     setFormData({
       id: "",
       username: "",
@@ -99,7 +100,11 @@ const Profile = () => {
     });
     setIsEditing(false);
     fetchData();
-    localStorage.setItem("user", JSON.stringify(profileData));
+    const user = {
+      ...res,
+      token: profileData.token,
+    };
+    localStorage.setItem("user", JSON.stringify(user));
   };
   const handelChangePassword = async () => {
     try {
@@ -146,11 +151,7 @@ const Profile = () => {
           <Label className="text-left text-lg">My Info</Label>
           <div className="flex flex-col space-y-4 items-center">
             <img
-              src={
-                profileData.avatar
-                  ? profileData.avatar
-                  : "https://img.freepik.com/free-psd/3d-illustration-person-with-punk-hair-jacket_23-2149436198.jpg?semt=ais_hybrid"
-              }
+              src={profileData.avatar ? profileData.avatar : Avatar}
               alt="Avatar"
               className="w-32 h-32 rounded-full"
             />
@@ -159,113 +160,25 @@ const Profile = () => {
                 Username: {profileData.username}
               </Label>
               <Label className="text-sm">
-                Display Name: {profileData.displayname}
+                Display Name: {profileData.display_name}
               </Label>
               <Label className="text-sm">Email: {profileData.email}</Label>
               <Label className="text-sm">Role: {profileData.role}</Label>
             </div>
             <div className="flex justify-end gap-2 w-full">
               {profileData.role == "super_admin" ? null : (
-                <Dialog open={isEditing} onOpenChange={setIsEditing}>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add Account</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-3 items-center gap-4">
-                        <Label htmlFor="username" className="text-right">
-                          Username
-                        </Label>
-                        <Input
-                          id="username"
-                          value={formData.username}
-                          onChange={handleInputChange}
-                          className="col-span-2"
-                        />
-                      </div>
-                      <div className="grid grid-cols-3 items-center gap-4">
-                        <Label htmlFor="display_name" className="text-right">
-                          Display Name
-                        </Label>
-                        <Input
-                          id="display_name"
-                          value={formData.display_name}
-                          onChange={handleInputChange}
-                          className="col-span-2"
-                        />
-                      </div>
-                      <div className="grid grid-cols-3 items-center gap-4">
-                        <Label htmlFor="email" className="text-right">
-                          Email
-                        </Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          className="col-span-2"
-                        />
-                      </div>
-                      <div className="grid grid-cols-3 items-center gap-4">
-                        <Label htmlFor="role" className="text-right">
-                          Role
-                        </Label>
-                        <Select
-                          value={formData.role}
-                          onValueChange={(value) =>
-                            setFormData({ ...formData, role: value })
-                          }
-                        >
-                          <SelectTrigger className="col-span-2">
-                            <SelectValue placeholder="Select a role" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="streamer">Streamer</SelectItem>
-                            <SelectItem value="user">User</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid grid-cols-3 items-center gap-4">
-                        <Label htmlFor="password" className="text-right">
-                          Password
-                        </Label>
-                        <Input
-                          id="password"
-                          type="password"
-                          value={formData.password}
-                          onChange={handleInputChange}
-                          className="col-span-2"
-                        />
-                      </div>
-                      <div className="grid grid-cols-3 items-center gap-4">
-                        <Label htmlFor="confirmpassword" className="text-right">
-                          Confirm Password
-                        </Label>
-                        <Input
-                          id="confirmPassword"
-                          type="password"
-                          value={formData.confirmPassword}
-                          onChange={handleInputChange}
-                          className="col-span-2"
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <DialogClose asChild>
-                        <Button type="button" variant="secondary">
-                          Close
-                        </Button>
-                      </DialogClose>
-                      <Button onClick={handleEditInfo} type="submit">
-                        Create
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditing(true);
+                    setFormData(profileData);
+                  }}
+                >
+                  <Edit />
+                </Button>
               )}
               <Button variant="outline" onClick={() => setIsResetPass(true)}>
-                Reset Password
+                <KeyRound />
               </Button>
               <Dialog open={isResetPass} onOpenChange={setIsResetPass}>
                 <DialogContent className="sm:max-w-md">
@@ -391,6 +304,103 @@ const Profile = () => {
           </div>
         </Card>
       </div>
+      <Dialog open={isEditing} onOpenChange={setIsEditing}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Info</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="username" className="text-right">
+                Username
+              </Label>
+              <Input
+                id="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                className="col-span-2"
+              />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="display_name" className="text-right">
+                Display Name
+              </Label>
+              <Input
+                id="display_name"
+                value={formData.display_name}
+                onChange={handleInputChange}
+                className="col-span-2"
+              />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="email" className="text-right">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="col-span-2"
+              />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="role" className="text-right">
+                Role
+              </Label>
+              <Select
+                value={formData.role}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, role: value })
+                }
+              >
+                <SelectTrigger className="col-span-2">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="streamer">Streamer</SelectItem>
+                  <SelectItem value="user">User</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="password" className="text-right">
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className="col-span-2"
+              />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="confirmpassword" className="text-right">
+                Confirm Password
+              </Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                className="col-span-2"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Close
+              </Button>
+            </DialogClose>
+            <Button onClick={handleEditInfo} type="submit">
+              Update
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

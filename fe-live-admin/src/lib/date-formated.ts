@@ -75,3 +75,8 @@ export function validateTimestampWithinThreeDays(input: Date): boolean {
 
   return inputDate > lowerBound && inputDate < upperBound;
 }
+
+export function formatTimestampToUnixTime(input: Date): number  {
+  return Math.floor(new Date(input).getTime() / 1000);
+}
+

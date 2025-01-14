@@ -120,12 +120,7 @@ export const register = async ({
   if (!email) emailFailure = true;
   if (!username) usernameFailure = true;
   if (!displayName || displayName?.includes('-')) displayNameFailure = true;
-  if (
-    !password ||
-    password.length < PasswordRules.min ||
-    password.length > PasswordRules.max
-  )
-    passwordFailure = true;
+  if (!password || password.length < PasswordRules.min) passwordFailure = true;
   if (!confirmPassword || password !== confirmPassword)
     confirmPasswordFailure = true;
 

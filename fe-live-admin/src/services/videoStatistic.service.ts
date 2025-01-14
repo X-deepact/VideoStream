@@ -7,17 +7,17 @@ const API_URL = import.meta.env.VITE_API_BASE_URL;
 export const getVideoStatistics = async (
   page: number = 1,
   pageSize: number = 20,
-  sort_by: string = "started_at",
+  sort_by: string = "created_at",
   sort: string = "DESC",
   keyword?: string,
-  id?: string
+  from?: number,
+  to?: number
 ) => {
   try {
-    const url = `${API_URL}/api/streams`;
+    const url = `${API_URL}/api/streams/statistics`;
     const params: any = {
       page,
       limit: pageSize,
-      status: ["started", "ended"],
       sort_by,
       sort,
     };
@@ -26,15 +26,18 @@ export const getVideoStatistics = async (
       params.keyword = keyword;
     }
 
-    if (id) {
-      params.id = id;
+    if (from) {
+      params.from = from;
     }
 
-    // Add timeout to the request
+    if (to) {
+      params.to = to;
+    }
+
     const response = await axios.get(url, {
       params,
       headers: authHeader(),
-      timeout: 5000, // 5 seconds timeout
+      timeout: 5000,
     });
 
     return response.data;

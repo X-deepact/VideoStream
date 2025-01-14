@@ -16,17 +16,12 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { NotifyModalType } from '@/components/UITypes';
 import { UserProfileInfoUpdateRequest } from '@/data/dto/user';
-import {
-  invalidateAccount,
-  updateUserProfileInfoLS,
-} from '@/data/model/userAccount';
-import { LOGOUT_PATH } from '@/data/route';
+import { updateAccountProfile } from '@/data/model/userAccount';
 import { modalTexts } from '@/data/user';
 import useUserAccount from '@/hooks/useUserAccount';
 import { EVENT_EMITTER_NAME, EventEmitter } from '@/lib/event-emitter';
 import { updateUserProfileInfo, UserInfoUpdateError } from '@/services/user';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 const validationRules = {
   displayName: 'Required, max 50 characters.',
@@ -41,8 +36,6 @@ type UserInfoUpdateFormError = {
 };
 
 const AccountInformation = () => {
-  const navigate = useNavigate();
-
   const currentUser = useUserAccount();
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -121,18 +114,13 @@ const AccountInformation = () => {
     setIsLoading(true);
     const { data, errors: _errors } = await updateUserProfileInfo({
       displayName,
-      avatarFile: avatarImage?.file,
+      avatarFile: avatarImage.file || null,
+      avatarPreview: avatarImage.preview || null,
     });
 
     if (!!data && !_errors) {
       // set ui according to response
       setDisplayName(data?.display_name);
-      if (data?.avatar_file_url) {
-        setAvatarImage((prevData) => ({
-          ...prevData,
-          preview: data.avatar_file_url,
-        }));
-      }
 
       // clear errors
       setFormError({
@@ -142,7 +130,7 @@ const AccountInformation = () => {
       });
 
       // update ls to reflect across the app
-      updateUserProfileInfoLS(data?.display_name, data?.avatar_file_url);
+      updateAccountProfile(data?.display_name, data?.avatar_file_url);
 
       // emit an event so that header profile can update
       EventEmitter.emit(EVENT_EMITTER_NAME.USER_PROFILE_UPDATE, {
@@ -153,11 +141,7 @@ const AccountInformation = () => {
       openNotifyModal(
         NotifyModalType.SUCCESS,
         modalTexts.updateInfo.success.title,
-        modalTexts.updateInfo.success.description,
-        () => {
-          invalidateAccount();
-          navigate(LOGOUT_PATH);
-        }
+        modalTexts.updateInfo.success.description
       );
     } else {
       if (_errors) {
@@ -187,12 +171,6 @@ const AccountInformation = () => {
       preview: currentUser?.avatar_file_name || '',
     }));
   }, [currentUser]);
-
-  useEffect(() => {
-    return () => {
-      setAvatarImage({ preview: null, file: null });
-    };
-  }, []);
 
   // Modal dialogs
   const closeConfirmationModal = (): void => {
@@ -335,6 +313,9 @@ const AccountInformation = () => {
                 <Label htmlFor="description">
                   Profile Photo <RequiredInput />
                 </Label>
+                <span className="text-xs text-muted-foreground -mt-1">
+                  The maximum file size allowed is 1 MB.
+                </span>
                 <ImageUpload
                   isError={avatarInputInvalid}
                   isDisabled={isLoading}

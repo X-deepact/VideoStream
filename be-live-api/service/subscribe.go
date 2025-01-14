@@ -1,7 +1,9 @@
 package service
 
 import (
+	"gitlab/live/be-live-api/dto"
 	"gitlab/live/be-live-api/model"
+	"gitlab/live/be-live-api/pkg/utils"
 	"gitlab/live/be-live-api/repository"
 )
 
@@ -29,4 +31,8 @@ func (s *SubscribeService) CheckSubscribed(streamerID, subscriberID uint) (bool,
 
 func (s *SubscribeService) GetSubscriptionCount(streamID uint) (int64, error) {
 	return s.repo.Subscribe.GetSubscriptionCount(streamID)
+}
+
+func (s *SubscribeService) GetSubscribes(filter *dto.SubscribeQuery) (*utils.PaginationModel[dto.Subscription], error) {
+	return s.repo.Subscribe.GetSubscribes(filter)
 }

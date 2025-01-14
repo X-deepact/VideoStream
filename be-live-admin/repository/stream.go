@@ -184,6 +184,16 @@ func (s *StreamRepository) GetByID(id uint) (*model.Stream, error) {
 	return &stream, nil
 }
 
+func (s *StreamRepository) GetScheduleStreamByID(id uint) (*model.ScheduleStream, error) {
+	var stream model.ScheduleStream
+
+	if err := s.db.Model(model.ScheduleStream{}).Where("stream_id = ?", id).First(&stream).Error; err != nil {
+		return nil, err
+	}
+
+	return &stream, nil
+}
+
 // func (s *StreamRepository) GetBy
 
 func (s *StreamRepository) GetScheduleStreamByStreamID(id int) (*model.ScheduleStream, error) {
@@ -265,14 +275,14 @@ func (r *StreamRepository) DeleteLiveStream(id int) error {
 	return tx.Commit().Error
 
 }
-func (r *StreamRepository) GetCategoriesByStreamID(id uint) ([]string, error) {
+func (r *StreamRepository) GetCategoriesByStreamID(id uint) ([]model.Category, error) {
 	var streamCategories []model.StreamCategory
 	if err := r.db.Model(model.StreamCategory{}).Where("stream_id = ?", id).Preload("Category").Find(&streamCategories).Error; err != nil {
 		return nil, err
 	}
-	var result []string
+	var result []model.Category
 	for _, v := range streamCategories {
-		result = append(result, v.Category.Name)
+		result = append(result, v.Category)
 	}
 
 	return result, nil
@@ -366,4 +376,22 @@ func (r *StreamRepository) UpdateStream(stream *model.Stream, scheduleStream *mo
 	}
 
 	return tx.Commit().Error
+}
+
+func (r *StreamRepository) UpdateScheduledStream(streamID int, req *dto.UpdateScheduledStreamRequest) error {
+	var scheduleStream model.ScheduleStream
+	if err := r.db.Model(model.ScheduleStream{}).Where("stream_id = ?", streamID).First(&scheduleStream).Error; err != nil {
+		return err
+	}
+	parsedTime, err := time.Parse(utils.DATETIME_LAYOUT, req.ScheduledAt)
+	if err != nil {
+		return nil
+	}
+	scheduleStream.ScheduledAt = parsedTime
+	scheduleStream.VideoName = req.VideoFileName
+	return r.db.Model(model.ScheduleStream{}).Where("stream_id = ?", streamID).Updates(scheduleStream).Error
+}
+
+func (r *StreamRepository) UpdateThumbnailStream(id int, thumbnail string) error {
+	return r.db.Model(model.Stream{}).Where("id=?", id).Update("thumbnail_file_name", thumbnail).Error
 }

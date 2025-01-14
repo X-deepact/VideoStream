@@ -44,7 +44,7 @@ const DATETIME_LAYOUT = "2006-01-02 15:04:05.999 -0700"
 func ConvertDatetimeToTimestamp(datetimeStr, layout string) (*time.Time, error) {
 	timestampTime, err := time.Parse(layout, datetimeStr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing datetime to timestamp: %v", err)
 	}
 	return &timestampTime, nil
 }

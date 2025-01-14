@@ -146,7 +146,7 @@ export function useLiveChatWebSocket(videoId: string | null) {
         }
       } catch (error) {
         logger.error('Error parsing WebSocket message:', error);
-        toast('Chat is unavailable!');
+        toast.error('Chat is unavailable!');
       }
     };
     chatWs.onmessage = handleMessage;
@@ -160,7 +160,7 @@ export function useLiveChatWebSocket(videoId: string | null) {
       setIsChatVisible(false);
       if (chatWs.readyState === WebSocket.OPEN) {
         chatWs.close();
-        toast('Chat is unavailable!');
+        toast.error('Chat is unavailable!');
       }
     };
 
@@ -191,7 +191,7 @@ export function useLiveChatWebSocket(videoId: string | null) {
 const getWsURL = (videoId: string): string | null => {
   const token = retrieveAuthToken();
   if (!token) {
-    toast('Please reload the page');
+    toast.error('Please reload the page');
     return null;
   }
 

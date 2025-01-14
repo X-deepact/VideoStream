@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"gitlab/live/be-live-api/dto"
 	"gitlab/live/be-live-api/model"
+	"gitlab/live/be-live-api/pkg/utils"
 	"gorm.io/gorm"
 )
 
@@ -39,4 +41,33 @@ func (r *SubscribeRepository) GetSubscriptionCount(streamerID uint) (int64, erro
 		return 0, err
 	}
 	return count, nil
+}
+
+func (r *SubscribeRepository) GetSubscribes(filter *dto.SubscribeQuery) (*utils.PaginationModel[dto.Subscription], error) {
+	var query = r.db.Model(dto.Subscription{}).
+		Select("subscriptions.*, sc.num_subscribed, vc.num_video").
+		Where("subscriptions.subscriber_id = ?", filter.UserID).
+		Order("subscriptions.created_at DESC").
+		Preload("Streamer")
+
+	query = query.Where("subscriptions.subscriber_id = ?", filter.UserID)
+
+	subscribeCounts := r.db.Model(&model.Subscription{}).
+		Select("streamer_id, COUNT(*) AS num_subscribed").
+		Group("streamer_id")
+
+	query = query.Joins("LEFT JOIN (?) AS sc ON sc.streamer_id = subscriptions.streamer_id", subscribeCounts)
+
+	videoCounts := r.db.Model(&model.Stream{}).
+		Select("user_id, COUNT(*) AS num_video").
+		Where("status = ?", model.ENDED).
+		Group("user_id")
+
+	query = query.Joins("LEFT JOIN (?) AS vc ON vc.user_id = subscriptions.streamer_id", videoCounts)
+
+	pagination, err := utils.CreatePage[dto.Subscription](query, filter.Page, filter.Limit)
+	if err != nil {
+		return nil, err
+	}
+	return utils.Create(pagination, filter.Page, filter.Limit)
 }

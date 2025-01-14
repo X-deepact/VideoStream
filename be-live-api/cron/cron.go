@@ -128,10 +128,18 @@ func (c *Cron) streamVideo(scheduledStream *model.ScheduleStream) {
 	}
 
 	pStreamCloseChan := make(chan bool)
+	closeChan := make(chan bool)
 
 	defer func() {
 		pStreamCloseChan <- true
+		closeChan <- true
 		log.Println("Send close message to wsCloseChan")
+	}()
+
+	isEndByAdmin := make(chan bool)
+
+	go func() {
+		c.srv.Stream.IsEndByAdminWithCloseChan(scheduledStream.Stream.ID, context.Background(), isEndByAdmin, closeChan)
 	}()
 
 	c.wsWG.Add(1)
@@ -158,6 +166,14 @@ func (c *Cron) streamVideo(scheduledStream *model.ScheduleStream) {
 					log.Println("Failed to finish live stream:", err)
 				}
 				return
+			case <-isEndByAdmin:
+				log.Println("Pre Record Live Stream ended by admin")
+				ffmpegCmd.Process.Kill() // Kill the FFmpeg process
+				if err := c.srv.Stream.FinishLiveStream(&scheduledStream.Stream, false); err != nil {
+					log.Println("Failed to finish live stream:", err)
+				}
+				return
+
 			}
 		}
 
