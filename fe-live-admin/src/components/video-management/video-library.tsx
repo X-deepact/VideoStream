@@ -45,7 +45,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import authHeader from "@/services/auth-header";
-import { formatDate } from "@/lib/date-formated";
+import { formatDate, getTimeAgo } from "@/lib/date-formated";
+import { Badge } from "../ui/badge";
 
 const VideoLibrary = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -56,6 +57,16 @@ const VideoLibrary = () => {
   const [sort_by, setSort_by] = useState("title");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const header = [
+    { label: "Video", position: "text-middle" },
+    { label: "Started At", position: "text-left" },
+    { label: "Ended At", position: "text-left" },
+    { label: "Creator", position: "text-left" },
+    { label: "Type", position: "text-left" },
+    { label: "Category", position: "text-left" },
+    { label: "Property", position: "text-left" },
+    { label: "Statistic", position: "text-left" },
+  ];
 
   const { toast } = useToast();
 
@@ -158,30 +169,11 @@ const VideoLibrary = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableCell>
-                <Label>Thumbnail</Label>
-              </TableCell>
-              <TableCell>
-                <Label>Title</Label>
-              </TableCell>
-              <TableCell>
-                <Label>Description</Label>
-              </TableCell>
-              <TableCell>
-                <Label>Started At</Label>
-              </TableCell>
-              <TableCell>
-                <Label>Ended At</Label>
-              </TableCell>
-              <TableCell>
-                <Label>Created By</Label>
-              </TableCell>
-              <TableCell>
-                <Label>Type</Label>
-              </TableCell>
-              <TableCell>
-                <Label>Category</Label>
-              </TableCell>
+              {header.map((cell: any) => (
+                <TableCell className={cell.position}>
+                  <Label>{cell.label}</Label>
+                </TableCell>
+              ))}
               <TableCell>
                 <Label>Action</Label>
               </TableCell>
@@ -194,87 +186,135 @@ const VideoLibrary = () => {
                   video: any // Map over videoData to display each video
                 ) => (
                   <TableRow key={video.id}>
-                    <TableCell className="flex justify-center">
-                      <div className="flex w-[100px] h-[100px] justify-center items-center">
-                        <ImageWithAuth url={video.thumbnail_file_name} />
+                    <TableCell className="text-left w-[30rem]">
+                      <div className="flex flex-rows gap-3">
+                        <div className="relative">
+                          <ImageWithAuth
+                            url={video.thumbnail_file_name}
+                            className="min-w-[150px] h-[100px] rounded-[5px]"
+                          />
+                          <Button
+                            className="bg-transparent absolute inset-0 w-[30px] h-[30px] self-center place-self-center"
+                            onClick={() =>
+                              handleplay(video.schedule_stream.video_url)
+                            }
+                          >
+                            <Play size={48} />
+                          </Button>
+                        </div>
+                        <div>
+                          <Label className="text-lg">
+                            {video.title || "—"}
+                          </Label>
+                          <p
+                            style={{
+                              overflow: "hidden",
+                              display: "-webkit-box",
+                              WebkitBoxOrient: "vertical",
+                              WebkitLineClamp: 3,
+                            }}
+                            className="text-xs text-muted-foreground"
+                          >
+                            {video.description || "—"}
+                          </p>
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell>{video.title}</TableCell>
-                    <TableCell>{video.description}</TableCell>
-                    <TableCell>
-                      {video.started_at
-                        ? formatDate(video.started_at, true)
-                        : ""}
+                    <TableCell className="text-left">
+                      <p>
+                        {video.started_at
+                          ? formatDate(video.started_at, true)
+                          : "—"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {getTimeAgo(video.started_at)}
+                      </p>
                     </TableCell>
-                    <TableCell>
-                      {video.ended_at ? formatDate(video.ended_at, true) : ""}
+                    <TableCell className="text-left">
+                      <p>
+                        {video.ended_at
+                          ? formatDate(video.ended_at, true)
+                          : "—"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {getTimeAgo(video.started_at)}
+                      </p>
                     </TableCell>
-                    <TableCell>{video.user.display_name}</TableCell>
-                    <TableCell>{video.stream_type}</TableCell>
-                    <TableCell>
-                      {video.categories && video.categories.length > 0
-                        ? video.categories
-                            .map((category: any) => category.name)
-                            .join(", ")
-                        : ""}
+                    <TableCell className="text-left">
+                      <div>
+                        <Label className="text-sm">
+                          {"@" + video.user.username || "—"}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          {video.user.email || "—"}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-left">
+                      <Badge variant="secondary">
+                        {video.stream_type || "—"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-left">
+                      <div className="flex flex-col gap-1">
+                        {video.categories && video.categories.length > 0
+                          ? video.categories.map((category: any) => (
+                              <p>
+                                <Badge variant="secondary">
+                                  {category.name}
+                                </Badge>
+                              </p>
+                            ))
+                          : "—"}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-left">
+                      <div>
+                        <p>Size:{video.live_stream_analytic?.video_size}</p>
+                        <p>Duration:{video.live_stream_analytic?.duration}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-left">
+                      <div className="flex flex-col gap-1">
+                        <p>
+                          <Badge className="p-0.5 bg-blue-500 text-white">
+                            Like: {video.live_stream_analytic?.likes}
+                          </Badge>
+                        </p>
+                        <p>
+                          <Badge className="p-0.5 bg-green-500 text-white">
+                            Viewer: {video.live_stream_analytic?.viewers}
+                          </Badge>
+                        </p>
+                        <p>
+                          <Badge className="p-0.5 bg-yellow-500 text-white">
+                            Comment: {video.live_stream_analytic?.comments}
+                          </Badge>
+                        </p>
+                      </div>
                     </TableCell>
                     <TableCell className="items-center justify-center">
                       <div className="flex flex-row gap-1 justify-center">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="outline"
-                                onClick={() =>
-                                  handleplay(video.schedule_stream.video_url)
-                                }
-                              >
-                                <Play />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Play Video</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="outline"
-                                onClick={() =>
-                                  handledownload(
-                                    video.schedule_stream.video_url,
-                                    video.title
-                                  )
-                                }
-                              >
-                                <Download />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Download Video</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="destructive"
-                                onClick={() => {
-                                  setIsDeleteOpen(true);
-                                  setDeleteID(video.id);
-                                }}
-                              >
-                                <Trash2 />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Delete Video</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <Button
+                          variant="outline"
+                          onClick={() =>
+                            handledownload(
+                              video.schedule_stream.video_url,
+                              video.title
+                            )
+                          }
+                        >
+                          <Download />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            setIsDeleteOpen(true);
+                            setDeleteID(video.id);
+                          }}
+                        >
+                          <Trash2 />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>

@@ -30,6 +30,7 @@ import { Button } from "../ui/button";
 import { formatDate } from "@/lib/date-formated";
 import DataCombobox from "../ui/data-combobox";
 import { useAccounts } from "@/hooks/useAccounts";
+import { useActions } from "@/hooks/useActions";
 
 const AccountLog = () => {
   const [logData, setlogData] = useState([]);
@@ -40,10 +41,12 @@ const AccountLog = () => {
   const [keyword, setKeyword] = useState("");
   const [filter_by, setFilter_by] = useState("username");
   const [totalPages, setTotalPages] = useState(1);
+  const [action, setAction] = useState("");
   const { accounts } = useAccounts();
+  const { actions } = useActions();
   useEffect(() => {
     fetchData();
-  }, [pageSize, currentPage, sort, sort_by, keyword]);
+  }, [pageSize, currentPage, sort, sort_by, keyword, action]);
 
   const fetchData = async () => {
     try {
@@ -53,7 +56,8 @@ const AccountLog = () => {
         sort_by,
         sort,
         keyword,
-        filter_by
+        filter_by,
+        action
       );
       setlogData(response.data.data.page);
       setCurrentPage(response.data.data.current_page);
@@ -82,7 +86,7 @@ const AccountLog = () => {
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-      <div className="flex flex-rows w-[180px]">
+      <div className="flex flex-rows w-[180px] gap-3">
         <DataCombobox
           isRequired={true}
           placeholder="Select User"
@@ -91,7 +95,17 @@ const AccountLog = () => {
           data={accounts}
           onDataChange={setKeyword}
           disabled={false}
-          popOverClass={"w-auto xl:w-[22rem] p-0"}
+          popOverClass={"w-auto p-0"}
+        />
+        <DataCombobox
+          isRequired={true}
+          placeholder="Select Action"
+          label=""
+          emptyMsg="No Action found"
+          data={actions}
+          onDataChange={setAction}
+          disabled={false}
+          popOverClass={"w-auto p-0"}
         />
       </div>
       <div className="rounded-md border">
@@ -101,6 +115,7 @@ const AccountLog = () => {
               <TableCell>
                 <Button
                   variant="ghost"
+                  className="bg-transparent"
                   onClick={() => {
                     setSort_by("performed_at");
                     sort == "ASC" ? setSort("DESC") : setSort("ASC");
@@ -110,13 +125,13 @@ const AccountLog = () => {
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               </TableCell>
-              <TableCell>
+              <TableCell className="text-left">
                 <Label>User</Label>
               </TableCell>
-              <TableCell>
+              <TableCell className="text-left">
                 <Label>Action</Label>
               </TableCell>
-              <TableCell>
+              <TableCell className="text-left">
                 <Label>Details</Label>
               </TableCell>
             </TableRow>
@@ -126,9 +141,11 @@ const AccountLog = () => {
               logData.map((log: any) => (
                 <TableRow key={log.id}>
                   <TableCell>{formatDate(log.performed_at, true)}</TableCell>
-                  <TableCell>{log.user.username}</TableCell>
-                  <TableCell>{log.action}</TableCell>
-                  <TableCell>{log.details}</TableCell>
+                  <TableCell className="text-left">
+                    {log.user.username}
+                  </TableCell>
+                  <TableCell className="text-left">{log.action}</TableCell>
+                  <TableCell className="text-left">{log.details}</TableCell>
                 </TableRow>
               ))
             ) : (

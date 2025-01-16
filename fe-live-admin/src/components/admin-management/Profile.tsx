@@ -235,6 +235,7 @@ const Profile = () => {
                   <TableCell>
                     <Button
                       variant="ghost"
+                      className="bg-transparent text-left"
                       onClick={() => {
                         setSort_by("performed_at");
                         sort == "ASC" ? setSort("DESC") : setSort("ASC");
@@ -244,10 +245,10 @@ const Profile = () => {
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-left">
                     <Label>Action</Label>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-left">
                     <Label>Details</Label>
                   </TableCell>
                 </TableRow>
@@ -259,8 +260,8 @@ const Profile = () => {
                       <TableCell>
                         {formatDate(log.performed_at, true)}
                       </TableCell>
-                      <TableCell>{log.action}</TableCell>
-                      <TableCell>{log.details}</TableCell>
+                      <TableCell className="text-left">{log.action}</TableCell>
+                      <TableCell className="text-left">{log.details}</TableCell>
                     </TableRow>
                   ))
                 ) : (

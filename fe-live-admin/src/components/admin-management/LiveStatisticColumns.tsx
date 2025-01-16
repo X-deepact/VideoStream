@@ -1,11 +1,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "../ui/button";
 import { ArrowUpDown } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "../ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 export type LiveStatistic = {
   stream_id: number;
@@ -37,7 +33,7 @@ export const columns: ColumnDef<LiveStatistic>[] = [
     cell: ({ row }) => (
       <Popover>
         <PopoverTrigger asChild>
-          <div 
+          <div
             className="cursor-pointer hover:text-blue-600"
             data-state="closed"
             onMouseEnter={(e) => e.currentTarget.click()}
@@ -50,7 +46,7 @@ export const columns: ColumnDef<LiveStatistic>[] = [
           <div className="space-y-2">
             <h4 className="font-medium">Description</h4>
             <p className="text-sm text-muted-foreground">
-              {row.original.description || 'No description available'}
+              {row.original.description || "No description available"}
             </p>
           </div>
         </PopoverContent>
@@ -61,7 +57,7 @@ export const columns: ColumnDef<LiveStatistic>[] = [
     accessorKey: "current_viewers",
     header: ({ column, table }: any) => {
       return (
-        <div className="flex justify-center">
+        <div className="flex justify-start">
           <Button
             variant="ghost"
             className="bg-transparent text-black"
@@ -79,7 +75,7 @@ export const columns: ColumnDef<LiveStatistic>[] = [
     accessorKey: "total_viewers",
     header: ({ column, table }: any) => {
       return (
-        <div className="flex justify-center">
+        <div className="flex justify-start">
           <Button
             variant="ghost"
             className="bg-transparent text-black"
@@ -97,7 +93,7 @@ export const columns: ColumnDef<LiveStatistic>[] = [
     accessorKey: "likes",
     header: ({ column, table }: any) => {
       return (
-        <div className="flex justify-center">
+        <div className="flex justify-start">
           <Button
             variant="ghost"
             className="bg-transparent text-black"
@@ -123,10 +119,10 @@ export const columns: ColumnDef<LiveStatistic>[] = [
           >
             Comments
             <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button> 
+          </Button>
         </div>
       );
     },
     cell: ({ row }) => <div>{row.getValue("comments")}</div>,
   },
-]; 
+];

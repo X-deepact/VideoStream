@@ -1,7 +1,6 @@
 import { Separator } from "@/components/ui/separator.tsx";
-import { AspectRatio } from "@/components/ui/aspect-ratio.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
-import { Play, FileSliders, CircleStop, Copy, TextSearch } from "lucide-react";
+import { Copy } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { LIVESTREAM_STATUS } from "@/lib/interface.tsx";
 import { formatDate } from "@/lib/date-formated.ts";
@@ -15,15 +14,14 @@ import {
 } from "@/components/ui/dialog.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { Input } from "@/components/ui/input.tsx";
-import { toast } from "@/hooks/use-toast.ts";
 import ImageWithAuth from "@/components/ui/imagewithauth.tsx";
-import LivestreamPreview from "@/components/livestream-management/LivestreamPreview.tsx";
+import LivestreamPreview
+	from "@/components/livestream-management/LivestreamPreview.tsx";
 import copyToClipBoard from "@/lib/copy.ts";
 import { useState } from "react";
-import { endLivestreamSession } from "@/services/livestream-session.service.ts";
 import EndLiveDialog from "./EndLiveDialog";
 
-const LivestreamList = ({livestream}) => {
+const LivestreamList = ({ livestream }) => {
 	const {
 		id,
 		title,
@@ -35,37 +33,11 @@ const LivestreamList = ({livestream}) => {
 		broadcast_url,
 		thumbnail_file_name
 	} = livestream;
-
+	
 	const [showEndDialog, setShowEndDialog] = useState(false);
-
-	const handleEndLive = async () => {
-		try {
-			const response = await endLivestreamSession(livestream.id);
-
-			if (response.status === 200) {
-				toast({
-					description: "Stream ended successfully",
-					className: "bg-toast-success text-white border-toast-success-border"
-				});
-			} else if (response.status === 202) {
-				toast({
-					description: "Stream is already being ended, please wait",
-					className: "bg-toast-success text-white border-toast-success-border"
-				});
-			}
-		} catch (error) {
-			toast({
-				description: "Failed to end stream. Please try again!",
-				className: "bg-toast-error text-white border-toast-error-border"
-			});
-		} finally {
-			setShowEndDialog(false);
-		}
-	};
-
 	return (
 		<div className="w-full mt-5">
-			<Separator />
+			<Separator/>
 			<div className="grid grid-cols-3 xl:grid-cols-6 mt-4">
 				<div className="w-[80%] relative pt-[56.25%]">
 					<ImageWithAuth
@@ -79,8 +51,12 @@ const LivestreamList = ({livestream}) => {
 						{started_at && `Started at ${formatDate(started_at, true)} -`} {ended_at && `Ended at ${formatDate(ended_at, true)}`}
 					</div>
 					<div className="text-sm py-2">{user && user.display_name}</div>
-					<div className="text-sm">{description}</div>
-
+					<div
+						className="max-w-full max-h-10 text-sm whitespace-pre-wrap break-words overflow-hidden text-ellipsis"
+					>
+						{description}
+					</div>
+					
 					<div className="pt-2 flex flex-row gap-2">
 						<Dialog>
 							<DialogTrigger asChild>
@@ -110,7 +86,7 @@ const LivestreamList = ({livestream}) => {
 										onClick={() => copyToClipBoard(broadcast_url)}
 									>
 										<span className="sr-only">Copy</span>
-										<Copy />
+										<Copy/>
 									</Button>
 								</div>
 							</DialogContent>
@@ -118,28 +94,26 @@ const LivestreamList = ({livestream}) => {
 						{
 							status === LIVESTREAM_STATUS.UPCOMING && (
 								<>
-									<LivestreamPreview sessionId={id} />
+									<LivestreamPreview sessionId={id}/>
 								</>
 							)
 						}
 						{
-							status === LIVESTREAM_STATUS.NOT_STARTED && (
+							status === LIVESTREAM_STATUS.STARTED && (
 								<>
-									<Button variant="outline">
-										<FileSliders /> Configuration
-									</Button>
+									<EndLiveDialog
+										livestreamId={livestream.id}
+										isOpen={showEndDialog}
+										onOpenChange={setShowEndDialog}
+									/>
 								</>
 							)
 						}
-						<EndLiveDialog
-							livestreamId={livestream.id}
-							isOpen={showEndDialog}
-							onOpenChange={setShowEndDialog}
-						/>
 					</div>
 				</div>
 				<div className="ml-auto mr-0">
-					<Badge className="text-sm">{status && status.toString().toUpperCase()}</Badge>
+					<Badge
+						className="text-sm">{status && status.toString().toUpperCase()}</Badge>
 				</div>
 			</div>
 		</div>

@@ -517,10 +517,9 @@ paths:
       - application/json
       description: Get a paginated list of users based on the provided query parameters
       parameters:
-      - enum:
-        - status
-        in: query
-        name: filter_by
+      - in: query
+        maxLength: 255
+        name: created_by
         type: string
       - in: query
         maxLength: 255
@@ -557,6 +556,9 @@ paths:
         - display_name
         in: query
         name: sort_by
+        type: string
+      - in: query
+        name: status
         type: string
       produces:
       - application/json

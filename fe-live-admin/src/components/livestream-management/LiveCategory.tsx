@@ -16,7 +16,7 @@ import {
 } from "../ui/table";
 import { useEffect, useState } from "react";
 import { toast } from "@/hooks/use-toast";
-import { formatDate } from "@/lib/date-formated";
+import { formatDate, getTimeAgo } from "@/lib/date-formated";
 import { Label } from "../ui/label";
 import { Button } from "../ui/button";
 import {
@@ -30,11 +30,19 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { addCategory, getCategories } from "@/services/category.service";
+import { Badge } from "../ui/badge";
 
 const LiveCategory = () => {
   const [categories, setCategories] = useState([]);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [formdata, setFormdata] = useState("");
+  const header = [
+    { label: "Name", position: "text-left" },
+    { label: "Creator", position: "text-left" },
+    { label: "Created At", position: "text-left" },
+    { label: "Updater", position: "text-left" },
+    { label: "Updated At", position: "text-left" },
+  ];
   useEffect(() => {
     fetchData();
   }, []);
@@ -64,6 +72,14 @@ const LiveCategory = () => {
         variant: "destructive",
       });
     }
+  };
+  const getRandomColor = () => {
+    const letters = "0123456789ABCDEF";
+    let color = "#";
+    for (let i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
   };
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -126,24 +142,55 @@ const LiveCategory = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableCell>
-                <Label>Name</Label>
-              </TableCell>
-              <TableCell>
-                <Label>Creator</Label>
-              </TableCell>
-              <TableCell>
-                <Label>Created At</Label>
-              </TableCell>
+              {header.map((cell: any) => (
+                <TableCell className={cell.position}>
+                  <Label>{cell.label}</Label>
+                </TableCell>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
             {categories && categories.length > 0 ? (
               categories.map((category: any) => (
-                <TableRow key={category.id}>
-                  <TableCell>{category.name}</TableCell>
-                  <TableCell>{category.created_by_user.username}</TableCell>
-                  <TableCell>{formatDate(category.created_at, true)}</TableCell>
+                <TableRow key={category?.id}>
+                  <TableCell className="text-left">
+                    <Badge
+                      className="rounded-full"
+                      style={{
+                        backgroundColor: getRandomColor(),
+                      }}
+                    >
+                      <Label className="text-base">{category?.name}</Label>
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-left">
+                    <div>
+                      <Label>@{category?.created_by_user?.username}</Label>
+                      <p className="text-xs text-muted-foreground">
+                        {category?.created_by_user?.email}
+                      </p>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-left">
+                    <p>{formatDate(category?.created_at, true)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {getTimeAgo(category?.created_at)}
+                    </p>
+                  </TableCell>
+                  <TableCell className="text-left">
+                    <div>
+                      <Label>@{category?.updated_by_user?.username}</Label>
+                      <p className="text-xs text-muted-foreground">
+                        {category?.updated_by_user?.email}
+                      </p>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-left">
+                    <p>{formatDate(category?.updated_at, true)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {getTimeAgo(category?.updated_at)}
+                    </p>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (

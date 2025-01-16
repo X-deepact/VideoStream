@@ -32,10 +32,8 @@ interface DataTableProps<TData, TValue> {
   setCurrentPage: (page: number) => void;
   totalPages: number;
   pageSize: number;
-  setPageSize: (size: number) => void;
-  meta?: {
-    onSortChange?: (columnId: string) => void;
-  };
+  setPageSize: (pageSize: number) => void;
+  onSortChange: (columnId: string) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -46,14 +44,15 @@ export function DataTable<TData, TValue>({
   totalPages,
   pageSize,
   setPageSize,
-  meta,
+  onSortChange,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    meta,
-    manualSorting: true,
+    meta: {
+      onSortChange,
+    },
   });
 
   return (

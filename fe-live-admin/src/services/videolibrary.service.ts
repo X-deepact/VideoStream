@@ -10,7 +10,7 @@ export const getVideoLibrary = (
   sort: string = "ASC"
 ) => {
   return axios.get(
-    `${API_URL}/streams?page=${page}&limit=${pageSize}&sort_by=${sort_by}&sort=${sort}`,
+    `${API_URL}/streams?page=${page}&limit=${pageSize}&sort_by=${sort_by}&sort=${sort}&status=ended`,
     { headers: authHeader() }
   );
 };

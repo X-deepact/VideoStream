@@ -255,6 +255,8 @@ func (s *UserService) CheckUserTypeByID(id int) (*model.User, error) {
 func (s *UserService) GetUserStatistics(req *dto.UserStatisticsRequest) (*utils.PaginationModel[dto.UserStatisticsResponse], error) {
 	var result = new(utils.PaginationModel[dto.UserStatisticsResponse])
 	var data []dto.UserStatisticsResponse
+	var reRangeData []dto.UserStatisticsResponse
+
 	pagination, err := s.repo.User.GetUserStatistics(req)
 	if err != nil {
 		return nil, err
@@ -264,6 +266,9 @@ func (s *UserService) GetUserStatistics(req *dto.UserStatisticsRequest) (*utils.
 	var mu sync.Mutex
 
 	var wgSubThread sync.WaitGroup
+
+	// use for re-reange position
+	var reRangePosition = pagination.Page
 
 	for _, user := range pagination.Page {
 		wg.Add(1)
@@ -332,22 +337,31 @@ func (s *UserService) GetUserStatistics(req *dto.UserStatisticsRequest) (*utils.
 
 	wg.Wait()
 
+	for _, v := range reRangePosition {
+		for i, d := range data {
+			if v.UserID == d.UserID {
+				reRangeData = append(reRangeData, data[i])
+				break
+			}
+		}
+
+	}
 	// sort by
 	if req.SortBy != "" && req.Sort != "" {
 		if req.SortBy == "total_streams" {
-			data = s.sortByTotalStreams(data, req.Sort)
+			reRangeData = s.sortByTotalStreams(reRangeData, req.Sort)
 		}
 		if req.SortBy == "total_views" {
-			data = s.sortByViewers(data, req.Sort)
+			reRangeData = s.sortByViewers(reRangeData, req.Sort)
 		}
 		if req.SortBy == "total_comments" {
-			data = s.sortByTotalComments(data, req.Sort)
+			reRangeData = s.sortByTotalComments(reRangeData, req.Sort)
 		}
 		if req.SortBy == "total_likes" {
-			data = s.sortByTotalLikes(data, req.Sort)
+			reRangeData = s.sortByTotalLikes(reRangeData, req.Sort)
 		}
 	}
-	result.Page = data
+	result.Page = reRangeData
 	result.BasePaginationModel = pagination.BasePaginationModel
 	return result, nil
 }

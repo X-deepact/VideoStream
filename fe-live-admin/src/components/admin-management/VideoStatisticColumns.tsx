@@ -34,7 +34,7 @@ export const columns: ColumnDef<VideoStatistic>[] = [
     accessorKey: "viewers",
     header: ({ column, table }: any) => {
       return (
-        <div className="flex justify-center">
+        <div className="flex justify-start">
           <Button
             variant="ghost"
             className="bg-transparent text-black"
@@ -51,7 +51,7 @@ export const columns: ColumnDef<VideoStatistic>[] = [
     accessorKey: "likes",
     header: ({ column, table }: any) => {
       return (
-        <div className="flex justify-center">
+        <div className="flex justify-start">
           <Button
             variant="ghost"
             className="bg-transparent text-black"
@@ -68,7 +68,7 @@ export const columns: ColumnDef<VideoStatistic>[] = [
     accessorKey: "comments",
     header: ({ column, table }: any) => {
       return (
-        <div className="flex justify-center">
+        <div className="flex justify-start">
           <Button
             variant="ghost"
             className="bg-transparent text-black"
@@ -85,7 +85,7 @@ export const columns: ColumnDef<VideoStatistic>[] = [
     accessorKey: "duration",
     header: ({ column, table }: any) => {
       return (
-        <div className="flex justify-center">
+        <div className="flex justify-start">
           <Button
             variant="ghost"
             className="bg-transparent text-black"
@@ -102,7 +102,7 @@ export const columns: ColumnDef<VideoStatistic>[] = [
     accessorKey: "video_size",
     header: ({ column, table }: any) => {
       return (
-        <div className="flex justify-center">
+        <div className="flex justify-start">
           <Button
             variant="ghost"
             className="bg-transparent text-black"
@@ -131,5 +131,5 @@ export const columns: ColumnDef<VideoStatistic>[] = [
         </div>
       );
     },
-  }
+  },
 ];

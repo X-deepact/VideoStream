@@ -8,19 +8,12 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb.tsx";
 import { Slash } from "lucide-react";
-import { DataTable } from "../ui/datatable";
 import { getUserStatistics } from "@/services/userStatistic.service";
 import { columns } from "@/components/admin-management/UserStatisticColumns.tsx";
 import { useToast } from "@/hooks/use-toast";
+import { DataTable, TableSampleFilterType } from "../common/DataTable";
+import { formatKMBCount } from "@/lib/utils";
 
-import { Input } from "../ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 const UserStatistic = () => {
   const { toast } = useToast();
@@ -31,7 +24,8 @@ const UserStatistic = () => {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [roleType, setRoleType] = useState("streamer");
   const [sortBy, setSortBy] = useState<string | undefined>();
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+  const [totalItems, setTotalItems] = useState(0);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -55,15 +49,6 @@ const UserStatistic = () => {
         return;
       }
 
-      console.log('Fetching data with params:', {
-        currentPage,
-        pageSize,
-        searchKeyword,
-        roleType,
-        sortBy,
-        sortOrder
-      });
-
       const response = await getUserStatistics(
         currentPage,
         pageSize,
@@ -73,12 +58,9 @@ const UserStatistic = () => {
         sortOrder
       );
       
-      console.log('API Response:', response);
       const users = response.data?.page || [];
-      console.log('Users array:', users);
       
       if (!Array.isArray(users)) {
-        console.error('Unexpected data format:', users);
         toast({
           variant: "destructive",
           title: "Error",
@@ -90,20 +72,18 @@ const UserStatistic = () => {
       const transformedUserData = users.map((user: any) => ({
         display_name: user.display_name,
         username: user.username,
-        streams: user.total_streams || 0,
-        likes: user.total_likes || 0,
-        comments: user.total_comments || 0,
-        views: user.total_views || 0,
+        streams: formatKMBCount(user.total_streams || 0),
+        likes: formatKMBCount(user.total_likes || 0),
+        comments: formatKMBCount(user.total_comments || 0),
+        views: formatKMBCount(user.total_views || 0),
       }));
 
-      console.log('Transformed data:', transformedUserData);
-      setStreamData(transformedUserData);
+      setStreamData(transformedUserData as never[]);
       
       const totalItems = response.data?.total_items || 0;
-      console.log('Total items:', totalItems);
+      setTotalItems(totalItems);
       setTotalPages(Math.ceil(totalItems / pageSize));
     } catch (error) {
-      console.error('Fetch error:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -127,12 +107,12 @@ const UserStatistic = () => {
     setCurrentPage(newPage);
   };
 
-  const handleSortChange = (columnId: string) => {
+  const handleSort = (columnId: string) => {
     if (sortBy === columnId) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      setSortOrder(sortOrder === 'ASC' ? 'DESC' : 'ASC');
     } else {
       setSortBy(columnId);
-      setSortOrder('desc');
+      setSortOrder('DESC');
     }
   };
 
@@ -154,40 +134,48 @@ const UserStatistic = () => {
         </Breadcrumb>
       </div>
 
-      <div className="flex justify-end items-center py-4 gap-4">
-        <Select
-          value={roleType}
-          onValueChange={(value) => setRoleType(value)}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select role type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="streamer">Streamer</SelectItem>
-            <SelectItem value="user">User</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="Search by title..."
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-            className="max-w-sm"
-          />
-        </div>
-      </div>
-
       <DataTable
-        columns={columns}
-        data={streamData}
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        totalPages={totalPages}
-        pageSize={pageSize}
-        setPageSize={handlePageSizeChange}
-        meta={{
-          onSortChange: handleSortChange
+        columns={columns(handleSort).map(col => ({
+          ...col,
+          cell: ({ row }) => (
+            <div className="text-center">{row.getValue(col.accessorKey as string)}</div>
+          )
+        }))}
+        data={streamData} 
+        totalCount={totalItems}
+        isLoading={false}
+        onRefresh={fetchStreamData} 
+        actions={{
+          search: {
+            placeholder: "Search users...",
+            value: searchKeyword,
+            onSearch: setSearchKeyword,
+          },
+          sampleFilters: [
+            {
+              type: TableSampleFilterType.SELECT,
+              placeholder: "Streamer",
+              description: "Filter by role",
+              options: [
+                { value: "streamer", label: "Streamer" },
+                { value: "user", label: "User" },
+              ],
+              selectedValue: roleType,
+              handleFilter: (value) => setRoleType(value),
+            },
+          ],
+        }}
+        pagination={{
+          rowsPerPage: {
+            value: pageSize,
+            onChange: handlePageSizeChange,
+          },
+          pages: {
+            totalCount: totalPages * pageSize,
+            currentPage: currentPage,
+            limit: pageSize,
+            handlePageChange: setCurrentPage,
+          },
         }}
       />
     </div>

@@ -1,147 +1,125 @@
 import { ColumnDef } from "@tanstack/react-table";
-import { Button } from "../ui/button";
-import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-interface TableMeta {
-  onSortChange: (columnId: string) => void;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-}
-
-export type UserStatistic = {
+interface UserStatistic {
+  display_name: string;
   username: string;
+  streams: number;
   likes: number;
   comments: number;
   views: number;
-  streams: number;
-  display_name: string;
-};
+}
 
-export const columns: ColumnDef<UserStatistic, any>[] = [
+export const columns = (
+  onSort: (columnId: string) => void
+): ColumnDef<UserStatistic>[] => [
   {
     accessorKey: "display_name",
-    header: ({ table }) => {
-      const meta = table.options.meta as TableMeta;
-      const isActive = meta.sortBy === "display_name";
+    header: () => {
       return (
         <Button
           variant="ghost"
-          className="bg-transparent text-black hover:bg-gray-100"
-          onClick={() => meta.onSortChange("display_name")}
+          onClick={() => onSort("display_name")}
+          className="w-full justify-center"
         >
           Display Name
-          {isActive ? (
-            meta.sortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-          ) : (
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          )}
+          <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
+    },
+    cell: ({ row }) => {
+      return <div>{row.getValue("display_name")}</div>;
     },
   },
   {
     accessorKey: "username",
-    header: ({ table }) => {
-      const meta = table.options.meta as TableMeta;
-      const isActive = meta.sortBy === "username";
+    header: () => {
       return (
         <Button
           variant="ghost"
-          className="bg-transparent text-black hover:bg-gray-100"
-          onClick={() => meta.onSortChange("username")}
+          onClick={() => onSort("username")}
+          className="w-full justify-center"
         >
           Username
-          {isActive ? (
-            meta.sortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-          ) : (
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          )}
+          <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
+    },
+    cell: ({ row }) => {
+      return <div>{row.getValue("username")}</div>;
     },
   },
   {
     accessorKey: "streams",
-    header: ({ table }) => {
-      const meta = table.options.meta as TableMeta;
-      const isActive = meta.sortBy === "total_streams";
+    header: () => {
       return (
         <Button
           variant="ghost"
-          className="bg-transparent text-black hover:bg-gray-100"
-          onClick={() => meta.onSortChange("total_streams")}
+          onClick={() => onSort("streams")}
+          className="w-full justify-center"
         >
           Streams
-          {isActive ? (
-            meta.sortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-          ) : (
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          )}
+          <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
+    },
+    cell: ({ row }) => {
+      return <div>{row.getValue("streams")}</div>;
     },
   },
   {
     accessorKey: "likes",
-    header: ({ table }) => {
-      const meta = table.options.meta as TableMeta;
-      const isActive = meta.sortBy === "total_likes";
+    header: () => {
       return (
         <Button
           variant="ghost"
-          className="bg-transparent text-black hover:bg-gray-100"
-          onClick={() => meta.onSortChange("total_likes")}
+          onClick={() => onSort("likes")}
+          className="w-full justify-center"
         >
           Likes
-          {isActive ? (
-            meta.sortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-          ) : (
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          )}
+          <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
+    },
+    cell: ({ row }) => {
+      return <div>{row.getValue("likes")}</div>;
     },
   },
   {
     accessorKey: "comments",
-    header: ({ table }) => {
-      const meta = table.options.meta as TableMeta;
-      const isActive = meta.sortBy === "total_comments";
+    header: () => {
       return (
         <Button
           variant="ghost"
-          className="bg-transparent text-black hover:bg-gray-100"
-          onClick={() => meta.onSortChange("total_comments")}
+          onClick={() => onSort("comments")}
+          className="w-full justify-center"
         >
           Comments
-          {isActive ? (
-            meta.sortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-          ) : (
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          )}
+          <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
+    },
+    cell: ({ row }) => {
+      return <div>{row.getValue("comments")}</div>;
     },
   },
   {
     accessorKey: "views",
-    header: ({ table }) => {
-      const meta = table.options.meta as TableMeta;
-      const isActive = meta.sortBy === "total_views";
+    header: () => {
       return (
         <Button
           variant="ghost"
-          className="bg-transparent text-black hover:bg-gray-100"
-          onClick={() => meta.onSortChange("total_views")}
+          onClick={() => onSort("views")}
+          className="w-full justify-center"
         >
           Views
-          {isActive ? (
-            meta.sortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-          ) : (
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          )}
+          <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
+    },
+    cell: ({ row }) => {
+      return <div>{row.getValue("views")}</div>;
     },
   },
 ];
