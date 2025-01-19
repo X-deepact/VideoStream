@@ -33,6 +33,7 @@ func (s *UserService) toUserResponseDTO(user *model.User, apiURL string) dto.Use
 	userResp.DisplayName = user.DisplayName
 	userResp.Email = user.Email
 	userResp.Status = user.Status
+	userResp.BlockedReason = user.BlockedReason
 	if user.AvatarFileName.Valid {
 		userResp.AvatarFileName = utils.MakeAvatarURL(apiURL, user.AvatarFileName.String)
 	}
@@ -227,6 +228,16 @@ func (s *UserService) ChangeStatusUser(user *model.User, updatedByID uint, statu
 	user.UpdatedByID = &updatedByID
 	user.UpdatedAt = time.Now()
 	return s.toUpdatedUserDTO(user, user.Role.Type, apiUrl), s.repo.User.Update(user)
+}
+
+func (s *UserService) ChangeStatusUserByID(id uint, updatedByID uint, status model.UserStatusType) error {
+	user, err := s.repo.User.FindByID(int(id))
+	if err != nil {
+		return err
+	}
+	user.Status = status
+	user.UpdatedByID = &updatedByID
+	return s.repo.User.Update(user)
 }
 
 func (s *UserService) FindByUsername(username string) (*model.User, error) {

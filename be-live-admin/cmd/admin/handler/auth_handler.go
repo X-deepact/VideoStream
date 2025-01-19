@@ -25,6 +25,10 @@ type authHandler struct {
 func newAuthHandler(r *echo.Group, srv *service.Service) *authHandler {
 	apiURL := conf.GetApiFileConfig().Url
 	auth := &authHandler{
+		Handler: Handler{
+			r:   r,
+			srv: srv,
+		},
 		r:      r,
 		srv:    srv,
 		apiURL: apiURL,
@@ -41,6 +45,8 @@ func (h *authHandler) register() {
 	group.POST("/login", h.login)
 
 	group.Use(h.JWTMiddleware())
+
+	group.POST("/logout", h.logout)
 	group.POST("/resetPassword", h.resetPassword)
 	group.POST("/forgetPassword", h.forgetPassword)
 
@@ -74,6 +80,11 @@ func (h *authHandler) login(c echo.Context) error {
 	if !slices.Contains([]model.RoleType{model.ADMINROLE, model.SUPPERADMINROLE}, user.Role.Type) {
 		return utils.BuildErrorResponse(c, http.StatusUnauthorized, errors.New("you have no permission to login"), nil)
 	}
+	// update to online
+	_, err = h.srv.User.ChangeStatusUser(user, user.ID, model.ONLINE, "", h.apiURL)
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
 
 	token, expiredTime, err := utils.GenerateAccessToken(user.ID, user.Username, user.Email, user.Role.Type) // createdByID is current user id login
 	if err != nil {
@@ -90,9 +101,11 @@ func (h *authHandler) login(c echo.Context) error {
 	if user.AvatarFileName.Valid {
 		avatarFileName = utils.MakeAvatarURL(h.apiURL, user.AvatarFileName.String)
 	}
+
 	response := dto.LoginResponse{
 		ID:          user.ID,
 		Avatar:      avatarFileName,
+		Status:      string(model.ONLINE),
 		Username:    user.Username,
 		DisplayName: user.DisplayName,
 		Email:       user.Email,
@@ -102,6 +115,33 @@ func (h *authHandler) login(c echo.Context) error {
 	}
 
 	return utils.BuildSuccessResponse(c, http.StatusOK, "Login successful", response)
+}
+
+// @Summary Logout user
+// @Description Logout the current user and invalidate the token
+// @Tags Auth
+// @Accept  json
+// @Produce  json
+// @Success 200 "Logout successful"
+// @Failure 500 "Internal Server Error"
+// @Security Bearer
+// @Router /api/auth/logout [post]
+func (h *authHandler) logout(c echo.Context) error {
+
+	token, err := utils.GetTokenFromHeader(c)
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+	currentUser := c.Get("user").(*utils.Claims)
+	// add token.jti to cache
+	if err := h.srv.SetCache(c.Request().Context(), token, fmt.Sprintf("%d_%s", currentUser.ID, currentUser.Username), 24*time.Hour); err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+	if err := h.srv.User.ChangeStatusUserByID(currentUser.ID, currentUser.ID, model.OFFLINE); err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	return utils.BuildSuccessResponse(c, http.StatusOK, "Logout successful", nil)
 }
 
 // forgetPassword godoc

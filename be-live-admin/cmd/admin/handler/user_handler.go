@@ -25,16 +25,23 @@ type userHandler struct {
 	srv          *service.Service
 	avatarFolder string
 	apiURL       string
+	clientHost   string
 }
 
 func newUserHandler(r *echo.Group, srv *service.Service) *userHandler {
 	fileStorageConfig := conf.GetFileStorageConfig()
 	apiURL := conf.GetApiFileConfig().Url
+	clientHost := conf.GetClientConfig().Host
 	user := &userHandler{
+		Handler: Handler{
+			r:   r,
+			srv: srv,
+		},
 		r:            r,
 		srv:          srv,
 		avatarFolder: fileStorageConfig.AvatarFolder,
 		apiURL:       apiURL,
+		clientHost:   clientHost,
 	}
 
 	user.register()
@@ -256,6 +263,16 @@ func (h *userHandler) deactiveUser(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
+	// remove ws connection
+	currentToken, err := utils.GetTokenFromHeader(c)
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+	_, err = utils.PostAsync[dto.CommonResponseDTO](fmt.Sprintf("%s/api/notification/blocked", h.clientHost), currentToken, map[string]interface{}{"user_id": id})
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+	//
 	adminLog := h.srv.Admin.MakeAdminLogModel(currentUser.ID, model.DeactiveUserAction, fmt.Sprintf("%s block %s. reason is %s", currentUser.Username, data.UserName, request.Reason))
 	err = h.srv.Admin.CreateLog(adminLog)
 	if err != nil {

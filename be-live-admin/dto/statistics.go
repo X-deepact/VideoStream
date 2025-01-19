@@ -34,6 +34,22 @@ type LiveStatRespDTO struct {
 	CurrentViewers uint               `json:"current_viewers"`
 	TotalViewers   uint               `json:"total_viewers"`
 	Comments       uint               `json:"comments"`
+	CreatedAt      *time.Time         `json:"created_at,omitempty"`
+}
+
+type BaseDTO struct {
+	ID        uint      `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type LiveStatRespInDayDTO struct {
+	Title       string             `json:"title"`
+	Description string             `json:"description"`
+	StreamID    uint               `json:"stream_id"`
+	Status      model.StreamStatus `json:"status"`
+	Likes       []BaseDTO          `json:"likes"`
+	Viewers     []BaseDTO          `json:"viewers"`
+	Comments    []BaseDTO          `json:"comments"`
 }
 
 type StatisticsTotalLiveStreamDTO struct {
@@ -47,7 +63,7 @@ type LiveCurrentViewers struct {
 }
 
 type StatisticsQuery struct {
-	SortBy  string `query:"sort_by" validate:"omitempty,oneof=title created_at views likes comments video_size duration stream_id id"`
+	SortBy  string ` json:"sort_by" query:"sort_by" validate:"omitempty,oneof=title created_at views likes comments video_size duration stream_id id"`
 	Sort    string `query:"sort" validate:"omitempty,oneof=DESC ASC"`
 	From    int64  `query:"from" validate:"omitempty"`
 	To      int64  `query:"to" validate:"omitempty"`
@@ -56,16 +72,20 @@ type StatisticsQuery struct {
 	Limit   uint   `query:"limit" validate:"required,min=1,max=20"`
 }
 
+type StatisticsStreamInDayQuery struct {
+	TargetedDate string `json:"targeted_date" query:"targeted_date" validate:"required,datetime=2006-01-02 15:04:05.999 -0700"`
+}
+
 type LiveStreamBroadCastQueryDTO struct {
-	SortBy          string               `query:"sort_by" validate:"omitempty,oneof=title started_at ended_at views likes comments video_size duration created_at"`
+	SortBy          string               `json:"sort_by" query:"sort_by" validate:"omitempty,oneof=title started_at ended_at views likes comments video_size duration created_at"`
 	Sort            string               `query:"sort" validate:"omitempty,oneof=DESC ASC"`
 	Status          []model.StreamStatus `query:"status" validate:"omitempty"`
 	Type            model.StreamType     `query:"type" validate:"omitempty,oneof=camera software"`
 	Category        string               `query:"category" validate:"omitempty"`
-	FromStartedTime int64                `query:"from_started_time" validate:"omitempty"`
-	EndStartedTime  int64                `query:"end_started_time" validate:"omitempty"`
-	FromEndedTime   int64                `query:"from_ended_time" validate:"omitempty"`
-	EndEndedTime    int64                `query:"end_ended_time" validate:"omitempty"`
+	FromStartedTime int64                `json:"from_started_time" query:"from_started_time" validate:"omitempty"`
+	EndStartedTime  int64                `json:"end_started_time" query:"end_started_time" validate:"omitempty"`
+	FromEndedTime   int64                `json:"from_ended_time" query:"from_ended_time" validate:"omitempty"`
+	EndEndedTime    int64                `json:"end_ended_time" query:"end_ended_time" validate:"omitempty"`
 	Keyword         string               `query:"keyword" validate:"omitempty"`
 	Page            uint                 `query:"page" validate:"required,min=1"`
 	Limit           uint                 `query:"limit" validate:"required,min=1,max=20"`

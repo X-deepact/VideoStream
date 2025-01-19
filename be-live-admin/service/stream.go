@@ -11,6 +11,7 @@ import (
 	"gitlab/live/be-live-admin/utils"
 	"log"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -137,6 +138,82 @@ func (s *StreamService) GetStreamAnalyticsData(req *dto.StatisticsQuery) (*utils
 	if req != nil && req.SortBy == dto.SORT_BY_DURATION && req.Sort != "" {
 		result.Page = s.sortByDuration(result.Page, req.Sort)
 	}
+	return result, nil
+}
+
+func (s *StreamService) GetLiveStatDataInDay(cond *dto.StatisticsStreamInDayQuery) ([]dto.LiveStatRespInDayDTO, error) {
+	var result []dto.LiveStatRespInDayDTO
+	startedStream, err := s.repo.Stream.GetStartedStreams()
+	if err != nil {
+		return nil, err
+	}
+
+	startedDate, endedDate, err := utils.GetStartDateEndDateSameDay(cond.TargetedDate)
+	fmt.Println(startedDate.Unix(), endedDate.Unix())
+	if err != nil {
+		return nil, err
+	}
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	var wgSubThread sync.WaitGroup
+
+	for _, stream := range startedStream {
+		wg.Add(1)
+		go func(user model.Stream) {
+			defer wg.Done()
+
+			var comments, likes, views []dto.BaseDTO
+			var err error
+
+			// Fetch likes
+			wgSubThread.Add(1)
+			go func() {
+				defer wgSubThread.Done()
+				likes, err = s.repo.Stream.GetLikesByStreamID(stream.ID, *startedDate, *endedDate)
+				if err != nil {
+					likes = []dto.BaseDTO{}
+				}
+			}()
+
+			// Fetch comments
+			wgSubThread.Add(1)
+			go func() {
+				defer wgSubThread.Done()
+				comments, err = s.repo.Stream.GetCommentsByStreamID(stream.ID, *startedDate, *endedDate)
+				if err != nil {
+					comments = []dto.BaseDTO{}
+				}
+			}()
+
+			// Fetch views
+			wgSubThread.Add(1)
+			go func() {
+				defer wgSubThread.Done()
+				views, err = s.repo.Stream.GetViewsByStreamID(stream.ID, *startedDate, *endedDate)
+				if err != nil {
+					views = []dto.BaseDTO{}
+				}
+			}()
+			wgSubThread.Wait()
+
+			mu.Lock()
+			result = append(result, dto.LiveStatRespInDayDTO{
+				StreamID:    stream.ID,
+				Title:       stream.Title,
+				Description: stream.Description,
+				Status:      stream.Status,
+				Comments:    comments,
+				Likes:       likes,
+				Viewers:     views,
+			})
+			mu.Unlock()
+		}(stream)
+	}
+
+	wg.Wait()
+
 	return result, nil
 }
 

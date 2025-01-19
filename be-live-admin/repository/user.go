@@ -62,6 +62,10 @@ func (s *UserRepository) Page(filter *dto.UserQuery, page, limit uint) (*utils.P
 		query = query.Where("users.status = ?", model.UserStatusType(filter.Status))
 	}
 
+	if filter.Reason != "" {
+		query = query.Where("users.blocked_reason ILIKE ?", "%"+filter.Reason+"%")
+	}
+
 	if filter != nil && filter.Role != "" {
 		query = query.Where("roles.type = ?", filter.Role)
 	}

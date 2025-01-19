@@ -25,8 +25,12 @@ type Config struct {
 	FileStorage  FileStorageConfig  `yaml:"file_storage"`
 	StreamServer StreamServerConfig `yaml:"stream_server"`
 	ApiFile      ApiFileConfig      `yaml:"api_file"`
+	Client       ClientConfig       `yaml:"client"`
 }
 
+type ClientConfig struct {
+	Host string `yaml:"host"`
+}
 type ApiFileConfig struct {
 	Url string `yaml:"url"`
 }
@@ -145,6 +149,10 @@ func init() {
 
 func GetDatabaseConfig() *DBConfig {
 	return &cfg.DB
+}
+
+func GetClientConfig() *ClientConfig {
+	return &cfg.Client
 }
 
 func GetRedisConfig() *RedisConfig {

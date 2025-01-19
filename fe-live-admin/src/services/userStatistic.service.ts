@@ -1,62 +1,44 @@
 import axios from "axios";
 import authHeader from "./auth-header";
+import { UserStatisticsResponse } from "@/type/statistic.ts";
+import { ApiResult, CommonQueryStringsType, PaginatedResponse } from "@/type/api.ts";
+import { mapToQueryString } from "@/lib/utils.ts";
+import { handleApiError } from "@/lib/error-handler.ts";
 
 // You might want to get this from environment variables
 const API_URL = import.meta.env.VITE_API_BASE_URL;
+const USER_STATISTIC_API = `${API_URL}/api/users/statistics`;
 
-interface StatisticsResponse {
-  code: number;
-  message: string;
-  data: {
-    page: any[];
-    total_items: number;
-    current_page: number;
-    page_size: number;
-  };
-}
+export const getUserStatistics = async <T = UserStatisticsResponse>(
+  queryParams: CommonQueryStringsType
+): Promise<ApiResult<PaginatedResponse<T>>> => {
+  const url = `${USER_STATISTIC_API}?${mapToQueryString<CommonQueryStringsType>(queryParams)}`;
 
-export const getUserStatistics = async (
-  page: number = 1,
-  pageSize: number = 20,
-  keyword?: string,
-  roleType: string = "streamer",
-  sortBy?: string,
-  sortOrder: 'ASC' | 'DESC' = 'DESC'
-): Promise<StatisticsResponse> => {
   try {
-    // Map frontend sort fields to backend fields
-    const sortFieldMapping: { [key: string]: string } = {
-      'display_name': 'display_name',
-      'username': 'username',
-      'streams': 'total_streams',
-      'likes': 'total_likes',
-      'comments': 'total_comments',
-      'views': 'total_views'
-    };
-
-    const url = `${API_URL}/api/users/statistics`;
-    const params = {
-      page,
-      limit: pageSize,
-      role_type: roleType,
-      ...(keyword && keyword.trim() ? { keyword: keyword } : {}),
-      ...(sortBy ? { 
-        sort_by: sortFieldMapping[sortBy] || sortBy,
-        sort: sortOrder
-      } : {})
-    };
-
-
-    const response = await axios.get(url, {
-      params,
-      headers: authHeader()
+    const apiResponse = await axios.get<PaginatedResponse<T>>(url, {
+      headers: authHeader(),
     });
 
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(error.response?.data?.message || error.message);
+    if (apiResponse?.data) {
+      return {
+        data: apiResponse.data,
+        message: "Successfully fetch User Statistic",
+        code: 200,
+      }
     }
-    throw error;
+
+    return {
+      data: null as unknown as PaginatedResponse<T>,
+      message: "No data received from API",
+      code: 204,
+    };
+  } catch (error) {
+    handleApiError(error);
+
+    return {
+      data: {} as PaginatedResponse<T>,
+      message: "Failed to fetch user list",
+      code: 500,
+    };
   }
 };

@@ -28,6 +28,8 @@ const (
 	ForgetPassword               AdminAction = "forget_password"
 	ResetPassword                AdminAction = "reset_password"
 	CreateAdmin                  AdminAction = "create_admin"
+	DeleteCategory               AdminAction = "delete_category"
+	UpdateCategory               AdminAction = "update_category"
 )
 
 var Actions = map[AdminAction]string{
@@ -49,6 +51,8 @@ var Actions = map[AdminAction]string{
 	ForgetPassword:               "forget_password",
 	ResetPassword:                "reset_password",
 	CreateAdmin:                  "create_admin",
+	DeleteCategory:               "delete_category",
+	UpdateCategory:               "update_category",
 }
 
 type RoleType string

@@ -26,6 +26,9 @@ file_storage:
 api_file:
   url: http://localhost:8686
 
+client:
+  host: http://localhost:8787
+
 stream_server:
   http_url: http://localhost:8090
   rtmp_url: rtmp://localhost:1935/live

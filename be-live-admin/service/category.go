@@ -59,12 +59,17 @@ func (s *CategoryService) toCategoryDto(category *model.Category) *dto.CategoryR
 	return result
 }
 
-func (s *CategoryService) GetAll() ([]dto.CategoryRespDto, error) {
-	categories, err := s.repo.Category.FindAll()
+func (s *CategoryService) GetAll(request *dto.CategoryQueryDTO) (*utils.PaginationModel[dto.CategoryRespDto], error) {
+	var newPage = new(utils.PaginationModel[dto.CategoryRespDto])
+	categories, err := s.repo.Category.FindAll(request)
 	if err != nil {
 		return nil, err
 	}
-	return utils.Map(categories, func(e model.Category) dto.CategoryRespDto { return *s.toCategoryDto(&e) }), err
+	newPage.BasePaginationModel = categories.BasePaginationModel
+	for _, category := range categories.Page {
+		newPage.Page = append(newPage.Page, *s.toCategoryDto(&category))
+	}
+	return newPage, err
 }
 
 func (s *CategoryService) CreateCategory(request *dto.CategoryRequestDTO) error {
@@ -80,4 +85,24 @@ func (s *CategoryService) CreateCategory(request *dto.CategoryRequestDTO) error 
 		return err
 	}
 	return nil
+}
+
+func (s *CategoryService) UpdateCategory(id uint, request *dto.CategoryUpdateRequestDTO) (*dto.CategoryRespDto, error) {
+
+	category, err := s.repo.Category.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	category.Name = request.Name
+	category.UpdatedAt = time.Now()
+	category.UpdatedByID = request.UpdatedByID
+
+	if err := s.repo.Category.Update(category); err != nil {
+		return nil, err
+	}
+	return s.toCategoryDto(category), nil
+}
+
+func (s *CategoryService) DeleteCategory(id uint) error {
+	return s.repo.Category.Delete(id)
 }

@@ -47,7 +47,6 @@ func GenerateAccessToken(id uint, username string, email string, roleType model.
 		log.Printf("Failed to sign the token: %v\n", err)
 		return "", time.Now(), err
 	}
-
 	return ss, expirationTime, nil
 }
 
@@ -64,6 +63,10 @@ func ValidateAccessToken(tokenString string) (*Claims, error) {
 	})
 
 	if err != nil {
+		// Check if the token is expired
+		if ve, ok := err.(*jwt.ValidationError); ok && ve.Errors == jwt.ValidationErrorExpired {
+			return claims, fmt.Errorf("token is expired")
+		}
 		return nil, err
 	}
 

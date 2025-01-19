@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +14,8 @@ type RedisStore interface {
 	Set(ctx context.Context, key string, value any, expiration time.Duration) error
 	SetWithDefaultCtx(key string, value any, expiration time.Duration) error
 	Get(ctx context.Context, key string) (string, error)
+	GetInt(ctx context.Context, key string) (int64, error)
+	GetBoolean(ctx context.Context, key string) (bool, error)
 	Remove(ctx context.Context, key string) error
 	RemoveWithDefaultCtx(key string) error
 	Publish(ctx context.Context, channel string, message any) error
@@ -37,6 +40,24 @@ func (c *RedisClient) SetWithDefaultCtx(key string, value any, expiration time.D
 
 func (c *RedisClient) Get(ctx context.Context, key string) (string, error) {
 	return c.Rdb.Get(ctx, key).Result()
+}
+
+func (c *RedisClient) GetInt(ctx context.Context, key string) (int64, error) {
+	data, err := c.Rdb.Get(ctx, key).Result()
+	if err != nil {
+		return 0, err
+	}
+
+	return strconv.ParseInt(data, 10, 64)
+}
+
+func (c *RedisClient) GetBoolean(ctx context.Context, key string) (bool, error) {
+	data, err := c.Rdb.Get(ctx, key).Result()
+	if err != nil {
+		return false, err
+	}
+
+	return strconv.ParseBool(data)
 }
 
 func (c *RedisClient) Remove(ctx context.Context, key string) error {

@@ -37,6 +37,10 @@ func newStreamHandler(r *echo.Group, srv *service.Service) *streamHandler {
 	streamConfig := conf.GetStreamServerConfig()
 
 	stream := &streamHandler{
+		Handler: Handler{
+			r:   r,
+			srv: srv,
+		},
 		r:                     r,
 		srv:                   srv,
 		thumbnailFolder:       fileStorageConfig.ThumbnailFolder,
@@ -58,6 +62,7 @@ func (h *streamHandler) register() {
 
 	group.Use(h.JWTMiddleware())
 	group.GET("/statistics", h.getLiveStreamStatisticsData)
+	group.GET("/statistics/day", h.getLiveStreamStatisticsDataInDay)
 	group.GET("/live-statistics", h.getLiveStatData)
 	group.GET("/statistics/total", h.getTotalLiveStream)
 	group.GET("", h.getLiveStreamWithPagination)
@@ -494,6 +499,15 @@ func (h *streamHandler) createLiveStreamByAdmin(c echo.Context) error {
 	})
 }
 
+// @Summary Get total live stream statistics
+// @Description Get total statistics data for live streams
+// @Tags Streams
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} dto.StatisticsTotalLiveStreamDTO
+// @Failure 500 "Internal Server Error"
+// @Security Bearer
+// @Router /api/streams/statistics/total [get]
 func (h *streamHandler) getTotalLiveStream(c echo.Context) error {
 
 	data, err := h.srv.Stream.GetStatisticsTotalLiveStreamData()
@@ -504,6 +518,17 @@ func (h *streamHandler) getTotalLiveStream(c echo.Context) error {
 	return utils.BuildSuccessResponse(c, http.StatusOK, "Successfully", data)
 }
 
+// @Summary Get live stream statistics data
+// @Description Get statistics data for live streams
+// @Tags Streams
+// @Accept  json
+// @Produce  json
+// @Param request query dto.StatisticsQuery true "Statistics Query"
+// @Success 200 {object} utils.PaginationModel[dto.LiveStreamRespDTO]
+// @Failure 400 "Invalid request"
+// @Failure 500 "Internal Server Error"
+// @Security Bearer
+// @Router /api/streams/statistics [get]
 func (h *streamHandler) getLiveStreamStatisticsData(c echo.Context) error {
 
 	var req dto.StatisticsQuery
@@ -520,6 +545,44 @@ func (h *streamHandler) getLiveStreamStatisticsData(c echo.Context) error {
 
 }
 
+// @Summary Get live stream statistics data in a day
+// @Description Get statistics data for live streams in a specific day
+// @Tags streams
+// @Accept  json
+// @Produce  json
+// @Param request query dto.StatisticsStreamInDayQuery true "Statistics Stream In Day Query"
+// @Success 200 {array} dto.LiveStatRespInDayDTO
+// @Failure 400 "Invalid Request"
+// @Failure 500 "Internal Server Error"
+// @Security Bearer
+// @Router /api/streams/statistics/day [get]
+func (h *streamHandler) getLiveStreamStatisticsDataInDay(c echo.Context) error {
+
+	var req dto.StatisticsStreamInDayQuery
+	if err := utils.BindAndValidate(c, &req); err != nil {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+	}
+
+	data, err := h.srv.Stream.GetLiveStatDataInDay(&req)
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	return utils.BuildSuccessResponse(c, http.StatusOK, "Successfully", data)
+
+}
+
+// @Summary Get live stream statistics with pagination
+// @Description Get live stream statistics data with pagination
+// @Tags Streams
+// @Accept  json
+// @Produce  json
+// @Param request query dto.LiveStatQuery true "Live Stat Query"
+// @Success 200 {object} utils.PaginationModel[dto.LiveStatRespDTO]
+// @Failure 400 "Invalid request"
+// @Failure 500 "Internal Server Error"
+// @Security Bearer
+// @Router /api/streams/live-statistics [get]
 func (h *streamHandler) getLiveStatData(c echo.Context) error {
 
 	var req dto.LiveStatQuery

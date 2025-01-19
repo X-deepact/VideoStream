@@ -35,3 +35,9 @@ type AdminLogRespDTO struct {
 	PerformedAt time.Time       `json:"performed_at,omitempty"`
 	User        UserResponseDTO `json:"user,omitempty"`
 }
+
+type AdminResp struct {
+	ID          uint   `json:"id"`
+	Username    string `json:"username"`
+	DisplayName string `json:"display_name"`
+}

@@ -6,10 +6,11 @@ import (
 )
 
 type UserQuery struct {
-	Role      string `json:"role" query:"role" validate:"omitempty,oneof=super_admin admin streamer user"`
+	Role      string `json:"role" query:"role" validate:"omitempty,oneof=admin streamer user"`
 	Keyword   string `query:"keyword" validate:"omitempty,max=255"`
 	CreatedBy string `json:"created_by" query:"created_by" validate:"omitempty,max=255"`
-	Status    string `json:"status" query:"status" validate:"omitempty"`
+	Status    string `json:"status" query:"status" validate:"omitempty,oneof=online offline blocked"`
+	Reason    string `json:"reason" query:"reason" validate:"omitempty,min=3,max=255"`
 	SortBy    string `json:"sort_by" query:"sort_by" validate:"omitempty,oneof=created_at updated_at username email display_name"`
 	Sort      string `json:"sort" query:"sort" validate:"omitempty,oneof=DESC ASC"`
 	Page      uint   `query:"page" validate:"omitempty,min=1"`
@@ -23,6 +24,7 @@ type UserResponseDTO struct {
 	AvatarFileName string               `json:"avatar_file_name,omitempty"`
 	Email          string               `json:"email,omitempty"`
 	RoleID         uint                 `json:"role_id,omitempty"`
+	BlockedReason  string               `json:"blocked_reason,omitempty"`
 	Role           *RoleDTO             `json:"role,omitempty"`
 	Status         model.UserStatusType `json:"status,omitempty"`
 	CreatedAt      time.Time            `json:"created_at,omitempty"`
@@ -118,3 +120,5 @@ type UserStatisticsResponse struct {
 func (r *UserStatisticsResponse) TableName() string {
 	return "users"
 }
+
+type CommonResponseDTO interface{}

@@ -30,6 +30,16 @@ func (s *AdminRepository) CreateAdmin(newUser *model.User) error {
 	return nil
 }
 
+func (s *AdminRepository) GetAdmins() ([]model.User, error) {
+
+	var users []model.User
+	if err := s.db.Model(model.User{}).Joins("INNER JOIN roles ON roles.id = users.role_id").Where("roles.type IN ?", []model.RoleType{model.ADMINROLE, model.SUPPERADMINROLE}).Find(&users).Error; err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 func (s *AdminRepository) ById(id uint) (*model.User, error) {
 	var user model.User
 	var query = s.db.Model(model.User{})

@@ -112,6 +112,24 @@ func (s *AdminService) GetAdminLogs(req *dto.AdminLogQuery) (*utils.PaginationMo
 	return &result, err
 }
 
+func (s *AdminService) GetAdmins() ([]dto.AdminResp, error) {
+	var result []dto.AdminResp
+	list, err := s.repo.Admin.GetAdmins()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range list {
+		var data dto.AdminResp
+		data.ID = v.ID
+		data.Username = v.Username
+		data.DisplayName = v.DisplayName
+		result = append(result, data)
+	}
+
+	return result, err
+}
+
 func (s *AdminService) CreateLog(adminLog *model.AdminLog) error {
 	return s.repo.Admin.Create(adminLog)
 }

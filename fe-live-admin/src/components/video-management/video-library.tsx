@@ -129,8 +129,11 @@ const VideoLibrary = () => {
 
       // Optionally, revoke the object URL after some time
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (error) {
-      console.error("Error opening tab:", error);
+    } catch (error: any) {
+      toast({
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 

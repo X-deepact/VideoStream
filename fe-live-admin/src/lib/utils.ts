@@ -1,5 +1,5 @@
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatFileSize(size: number): string {
   if (size < 0) {
-    throw new Error('Size must be a non-negative number.');
+    throw new Error("Size must be a non-negative number.");
   }
 
   const sizeInMB = size / (1024 * 1024);
@@ -15,14 +15,13 @@ export function formatFileSize(size: number): string {
 }
 
 export function formatDuration(duration: number | string): string {
-  console.log('Duration input:', duration, typeof duration);
 
-  if (typeof duration === 'string') {
+  if (typeof duration === "string") {
     return duration;
   }
 
   if (!duration || duration <= 0) {
-    return '00:00:00';
+    return "00:00:00";
   }
 
   // Convert microseconds to seconds
@@ -33,17 +32,17 @@ export function formatDuration(duration: number | string): string {
   const minutes = Math.floor(remainingSeconds / 60);
   const seconds = Math.floor(remainingSeconds % 60);
 
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
     2,
-    '0'
-  )}:${String(seconds).padStart(2, '0')}`;
+    "0"
+  )}:${String(seconds).padStart(2, "0")}`;
 }
 
 export function formatDate(dateString: string): string {
   const date = new Date(dateString);
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}.${month}.${day}`;
 }
 
@@ -90,7 +89,7 @@ const toSnakeCase = (str: string): string =>
   str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 
 export const retrieveAuthToken = () => {
-  const userStr = localStorage.getItem('user');
+  const userStr = localStorage.getItem("user");
   let user = null;
   if (userStr) user = JSON.parse(userStr);
 
@@ -107,5 +106,17 @@ export function formatKMBCount(count: number | undefined  ): string {
 }
 
 export function getAvatarFallbackText(str: string): string {
-  return str?.length > 0 ? str.substring(0, 2).toUpperCase() : 'PF';
+  return str?.length > 0 ? str.substring(0, 2).toUpperCase() : "PF";
+}
+export function getRandomColor(str: string) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  let color = "#";
+  for (let i = 0; i < 3; i++) {
+    const value = (hash >> (i * 8)) & 0xff;
+    color += ("00" + value.toString(16)).slice(-2);
+  }
+  return color;
 }

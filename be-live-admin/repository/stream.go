@@ -23,6 +23,38 @@ func newStreamRepository(db *gorm.DB) *StreamRepository {
 	}
 }
 
+func (s *StreamRepository) GetStartedStreams() ([]model.Stream, error) {
+	var streams []model.Stream
+	if err := s.db.Model(model.Stream{}).Where("status = ?", model.STARTED).Find(&streams).Error; err != nil {
+		return nil, err
+	}
+	return streams, nil
+}
+
+func (r *StreamRepository) GetLikesByStreamID(id uint, startedDate, endedDate time.Time) ([]dto.BaseDTO, error) {
+	var data []dto.BaseDTO
+	if err := r.db.Model(model.Like{}).Select("likes.id, likes.created_at").Where("stream_id = ? AND created_at BETWEEN ? AND ?", id, startedDate, endedDate).Scan(&data).Error; err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (r *StreamRepository) GetCommentsByStreamID(id uint, startedDate, endedDate time.Time) ([]dto.BaseDTO, error) {
+	var data []dto.BaseDTO
+	if err := r.db.Model(model.Comment{}).Select("comments.id, comments.created_at").Where("stream_id = ? AND created_at BETWEEN ? AND ?", id, startedDate, endedDate).Scan(&data).Error; err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (r *StreamRepository) GetViewsByStreamID(id uint, startedDate, endedDate time.Time) ([]dto.BaseDTO, error) {
+	var data []dto.BaseDTO
+	if err := r.db.Model(model.View{}).Select("views.id, views.created_at").Where("stream_id = ? AND created_at BETWEEN ? AND ?", id, startedDate, endedDate).Scan(&data).Error; err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
 func (s *StreamRepository) PaginateStreamStatisticsData(cond *dto.StatisticsQuery) (*utils.PaginationModel[model.StreamAnalytics], error) {
 
 	var query = s.db.Model(model.StreamAnalytics{}).Preload("Stream")

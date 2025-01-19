@@ -32,6 +32,7 @@ type LoginResponse struct {
 	ID          uint           `json:"id"`
 	Avatar      string         `json:"avatar"`
 	Username    string         `json:"username"`
+	Status      string         `json:"status"`
 	DisplayName string         `json:"display_name"`
 	Email       string         `json:"email"`
 	Role        model.RoleType `json:"role"`
