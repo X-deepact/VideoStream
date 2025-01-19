@@ -69,13 +69,13 @@ func (s *AdminRepository) GetAdminLogs(req *dto.AdminLogQuery) (*utils.Paginatio
 			if req.FilterBy == "id" {
 				query = query.Where("users.id = ?", req.Keyword)
 			}
-			if req.Action != "" {
-				query = query.Where("admin_logs.action = ?", req.Action)
-			}
 			if req.FilterBy == "details" {
 				query = query.Where("admin_logs.details ILIKE ?", "%"+req.Keyword+"%")
 			}
 
+		}
+		if req.Action != "" {
+			query = query.Where("admin_logs.action = ?", req.Action)
 		}
 		if req.UserID > 0 {
 			if req.IsMe {

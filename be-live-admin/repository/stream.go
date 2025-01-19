@@ -60,12 +60,10 @@ func (s *StreamRepository) PaginateStreamStatisticsData(cond *dto.StatisticsQuer
 	var query = s.db.Model(model.StreamAnalytics{}).Preload("Stream")
 	query = query.Joins("LEFT JOIN streams st ON st.id = stream_analytics.stream_id")
 	if cond != nil && cond.Sort != "" && cond.SortBy != "" {
-		if cond.SortBy != "duration" {
-			if cond.SortBy == "title" {
-				query = query.Order(fmt.Sprintf("st.%s %s", cond.SortBy, cond.Sort))
-			} else {
-				query = query.Order(fmt.Sprintf("stream_analytics.%s %s", cond.SortBy, cond.Sort))
-			}
+		if cond.SortBy == "title" {
+			query = query.Order(fmt.Sprintf("st.%s %s", cond.SortBy, cond.Sort))
+		} else {
+			query = query.Order(fmt.Sprintf("stream_analytics.%s %s", cond.SortBy, cond.Sort))
 		}
 	} else {
 		query = query.Order(fmt.Sprintf("stream_analytics.%s %s", "created_at", dto.SORT_DESC))

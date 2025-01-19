@@ -153,6 +153,8 @@ definitions:
         type: integer
       likes:
         type: integer
+      shares:
+        type: integer
       stream_id:
         type: integer
       title:
@@ -1013,6 +1015,7 @@ paths:
         - comments
         - video_size
         - duration
+        - shares
         - stream_id
         - id
         in: query

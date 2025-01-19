@@ -12,6 +12,7 @@ type LiveStreamRespDTO struct {
 	VideoSize   int64      `json:"video_size"`
 	Likes       uint       `json:"likes"`
 	Viewers     uint       `json:"viewers"`
+	Shares      uint       `json:"shares"`
 	Comments    uint       `json:"comments"`
 	Duration    int64      `json:"duration"`
 	CreatedAt   *time.Time `json:"created_at,omitempty"`
@@ -63,7 +64,7 @@ type LiveCurrentViewers struct {
 }
 
 type StatisticsQuery struct {
-	SortBy  string ` json:"sort_by" query:"sort_by" validate:"omitempty,oneof=title created_at views likes comments video_size duration stream_id id"`
+	SortBy  string ` json:"sort_by" query:"sort_by" validate:"omitempty,oneof=title created_at views likes comments video_size duration shares stream_id id"`
 	Sort    string `query:"sort" validate:"omitempty,oneof=DESC ASC"`
 	From    int64  `query:"from" validate:"omitempty"`
 	To      int64  `query:"to" validate:"omitempty"`
@@ -77,7 +78,7 @@ type StatisticsStreamInDayQuery struct {
 }
 
 type LiveStreamBroadCastQueryDTO struct {
-	SortBy          string               `json:"sort_by" query:"sort_by" validate:"omitempty,oneof=title started_at ended_at views likes comments video_size duration created_at"`
+	SortBy          string               `json:"sort_by" query:"sort_by" validate:"omitempty,oneof=title started_at ended_at views likes comments video_size duration shares created_at"`
 	Sort            string               `query:"sort" validate:"omitempty,oneof=DESC ASC"`
 	Status          []model.StreamStatus `query:"status" validate:"omitempty"`
 	Type            model.StreamType     `query:"type" validate:"omitempty,oneof=camera software"`

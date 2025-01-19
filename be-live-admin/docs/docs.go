@@ -723,6 +723,7 @@ const docTemplate = `{
                             "comments",
                             "video_size",
                             "duration",
+                            "shares",
                             "stream_id",
                             "id"
                         ],
@@ -1718,6 +1719,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "likes": {
+                    "type": "integer"
+                },
+                "shares": {
                     "type": "integer"
                 },
                 "stream_id": {

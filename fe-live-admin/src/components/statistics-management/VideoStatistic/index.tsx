@@ -26,7 +26,7 @@ const VideoStatistic = () => {
     sortOrder,
     refetchData,
     setCurrentPage,
-    setPageLimit,
+    setPageLimit, 
     setSortBy,
     setSortOrder,
   } = useVideoStatistic({

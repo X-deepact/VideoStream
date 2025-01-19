@@ -33,7 +33,7 @@ export const getUserStatisticsTableColumns = ({sort}: ColumnProps): ColumnDef<Us
       const {display_name} = row.original;
       return (
         <div>
-          <p className="font-medium">{display_name}</p>
+          <p >{display_name}</p>
         </div>
       )
     },
@@ -56,7 +56,7 @@ export const getUserStatisticsTableColumns = ({sort}: ColumnProps): ColumnDef<Us
       const {username} = row.original;
       return (
         <div>
-          <p className="font-medium">{username}</p>
+          <p >{username}</p>
         </div>
       )
     },
@@ -79,7 +79,7 @@ export const getUserStatisticsTableColumns = ({sort}: ColumnProps): ColumnDef<Us
       const {total_streams} = row.original;
       return (
         <div>
-          <p className="font-medium">{formatKMBCount(total_streams || 0)} streams</p>
+          <p >{formatKMBCount(total_streams || 0)}</p>
         </div>
       )
     },
@@ -102,7 +102,7 @@ export const getUserStatisticsTableColumns = ({sort}: ColumnProps): ColumnDef<Us
       const {total_likes} = row.original;
       return (
         <div>
-          <p className="font-medium">{formatKMBCount(total_likes || 0)} likes</p>
+          <p >{formatKMBCount(total_likes || 0)}</p>
         </div>
       )
     },
@@ -125,7 +125,7 @@ export const getUserStatisticsTableColumns = ({sort}: ColumnProps): ColumnDef<Us
       const {total_comments} = row.original;
       return (
         <div>
-          <p className="font-medium">{formatKMBCount(total_comments || 0)} comments</p>
+          <p>{formatKMBCount(total_comments || 0)}</p>
         </div>
       )
     },
@@ -148,7 +148,7 @@ export const getUserStatisticsTableColumns = ({sort}: ColumnProps): ColumnDef<Us
       const {total_views} = row.original;
       return (
         <div>
-          <p className="font-medium">{formatKMBCount(total_views || 0)} views</p>
+          <p>{formatKMBCount(total_views || 0)}</p>
         </div>
       )
     },

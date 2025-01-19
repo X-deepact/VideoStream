@@ -95,6 +95,7 @@ const useVideoStatistic = (payload: Props) => {
           likes: Number(item.likes),
           duration: item.duration,
           comments: Number(item.comments),
+          shares: Number(item.shares),
           video_size: item.video_size,
           created_at: item.created_at
         }));

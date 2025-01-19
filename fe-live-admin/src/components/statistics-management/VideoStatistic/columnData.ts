@@ -26,5 +26,9 @@ export const ColumnNames = {
   createdAt: {
     label: "Created At",
     sortKey: "created_at",
+  },
+  shares: {
+    label: "Shares",
+    sortKey: "shares"
   }
 }; 
