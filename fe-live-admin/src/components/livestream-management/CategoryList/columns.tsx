@@ -170,7 +170,7 @@ export const getCategoriesListTableColumns = ({
           <Button
             title="Delete Category"
             size="icon"
-            variant="outline"
+            variant="destructive"
             onClick={() => onDelete(data.value)}
           >
             <Trash2 />

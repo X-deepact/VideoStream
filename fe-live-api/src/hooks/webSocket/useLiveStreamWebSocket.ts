@@ -2,23 +2,22 @@ import { StreamDetailsResponse } from '@/data/dto/stream';
 import { retrieveAuthToken } from '@/data/model/userAccount';
 import { EVENT_EMITTER_NAME, EventEmitter } from '@/lib/event-emitter';
 import logger from '@/lib/logger';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 const wsURL = import.meta.env.VITE_WS_STREAM_URL;
 
 interface ComponentProps {
   videoRef: React.RefObject<HTMLVideoElement>;
-  setIsStreamStarted: React.Dispatch<React.SetStateAction<boolean>>;
   setStreamDetails: React.Dispatch<React.SetStateAction<StreamDetailsResponse>>;
 }
 
 export const useLiveStreamWebSocket = ({
   videoRef,
-  setIsStreamStarted,
   setStreamDetails,
 }: ComponentProps) => {
   const streamWsRef = useRef<WebSocket | null>(null);
+  const [isStreamStarted, setIsStreamStarted] = useState(false);
 
   const cleanupStream = (reason: string, mediaRecorder?: MediaRecorder) => {
     logger.log(reason);
@@ -108,6 +107,8 @@ export const useLiveStreamWebSocket = ({
   }, []);
 
   return {
+    isStreamStarted,
+    setIsStreamStarted,
     startStream,
     stopStream,
   };

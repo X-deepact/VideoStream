@@ -117,7 +117,7 @@ func main() {
 	handler.Register()
 
 	go func() {
-		if err := e.Start(fmt.Sprintf(":%d", conf.GetApplicationConfig().Port)); err != nil && err != http.ErrServerClosed {
+		if err := e.Start(fmt.Sprintf("127.0.0.1:%d", conf.GetApplicationConfig().Port)); err != nil && err != http.ErrServerClosed {
 			e.Logger.Fatal("shutting down the server")
 		}
 	}()

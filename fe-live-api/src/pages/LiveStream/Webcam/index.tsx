@@ -79,10 +79,16 @@ const LiveStreamWebcam = () => {
     onCancel: () => {},
   });
 
+  // stream websocket
+  const { isStreamStarted, setIsStreamStarted, startStream, stopStream } =
+    useLiveStreamWebSocket({
+      videoRef,
+      setStreamDetails,
+    });
+
   // live chat interaction websocket
   const {
     isChatVisible,
-    isStreamStarted,
     isLiveEndEventReceived,
     liveInitialStats,
     liveViewersCount,
@@ -90,15 +96,11 @@ const LiveStreamWebcam = () => {
     openChat,
     sendReaction,
     sendComment,
-    setIsStreamStarted,
-  } = useLiveChatWebSocket(streamDetails?.id?.toString() || null);
-
-  // stream websocket
-  const { startStream, stopStream } = useLiveStreamWebSocket({
-    videoRef,
-    setIsStreamStarted,
-    setStreamDetails,
-  });
+  } = useLiveChatWebSocket(
+    streamDetails?.id?.toString() || null,
+    isStreamStarted,
+    setIsStreamStarted
+  );
 
   // toggle stream initialize modal to start a stream. Without this step, can't stream.
   const handleStreamDetailsModalToggle = (): void =>

@@ -283,7 +283,7 @@ func (h *wsHandler) handleUserInteraction(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusBadRequest, fmt.Errorf("stream with id %d not found", id), nil)
 	}
 
-	if stream.Status != model.STARTED {
+	if stream.UserID != claims.ID && stream.Status != model.STARTED {
 		return utils.BuildErrorResponse(c, http.StatusBadRequest, fmt.Errorf("stream with id %d is not live", id), nil)
 	}
 

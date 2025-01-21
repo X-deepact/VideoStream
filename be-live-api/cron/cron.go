@@ -57,7 +57,7 @@ func (c *Cron) checkScheduledStream() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		// log.Println("checking scheduled streams")
+		log.Println("checking scheduled streams")
 
 		scheduledStreams, err := c.srv.Stream.CheckScheduledStream()
 		if err != nil {

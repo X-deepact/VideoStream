@@ -59,6 +59,7 @@ export interface VideoDetailsResponse {
   status: CONTENT_STATUS;
   created_at: string;
   started_at: string;
+  scheduled_at?: string;
 
   user_id: number;
   display_name: string;

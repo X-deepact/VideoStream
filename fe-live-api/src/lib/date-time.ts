@@ -71,3 +71,24 @@ export const getMicrosecondsToHHMMSS = (microseconds: number): string => {
   // show only ss if only seconds exist
   return `00:${seconds.toString().padStart(2, '0')}`;
 };
+
+export const getCountDown = (targetDateString: string) => {
+  const targetDate = moment.utc(targetDateString);
+
+  const interval = setInterval(() => {
+    const now = moment.utc(); // Current time in UTC
+    const duration = moment.duration(targetDate.diff(now));
+
+    if (duration.asMilliseconds() <= 0) {
+      clearInterval(interval);
+      console.log('Countdown complete');
+      return;
+    }
+
+    const hours = String(duration.hours()).padStart(2, '0');
+    const minutes = String(duration.minutes()).padStart(2, '0');
+    const seconds = String(duration.seconds()).padStart(2, '0');
+
+    console.log(`${hours}:${minutes}:${seconds}`);
+  }, 1000);
+};

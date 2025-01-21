@@ -12,7 +12,6 @@ import { Layout } from "@/app/Layout.tsx";
 import AccountList from "@/components/admin-management/AccountList";
 import { AuthProvider, useAuth } from "./lib/auth-util";
 import Profile from "./components/admin-management/Profile";
-import VideoLibrary from "./components/video-management/video-library";
 import VideoStatistic from "@/components/statistics-management/VideoStatistic";
 
 import Register from "./pages/auth/Register";
@@ -40,6 +39,8 @@ import UpcomingSession from "@/pages/live-management/UpcomingSession.tsx";
 import LiveStatistic from "@/components/statistics-management/LiveStatistic";
 import UserStatistic from "./components/statistics-management/UserStatistic";
 import AccountLog from "@/components/admin-management/AccountLog";
+import VideoLibrary from "./components/video-management/VideoLibrary";
+import NotFound from "@/pages/NotFound.tsx";
 
 function RedirectHome() {
   const { isAuthenticated } = useAuth();
@@ -85,7 +86,10 @@ function App() {
                 path={APP_USER_STATISTICS_PATH}
                 element={<UserStatistic />}
               />
+
+              <Route path="*" element={<NotFound />} />
             </Route>
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
       </Router>

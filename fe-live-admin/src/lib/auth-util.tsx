@@ -4,12 +4,15 @@ import { AuthContextProps } from "./interface";
 
 const AuthContext = createContext<AuthContextProps>({
   isAuthenticated: false,
+  status: "",
   loginUser: () => {},
   logoutUser: () => {},
+  setUserStatus: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [status, setStatus] = useState("");
 
   const loginUser = () => {
     setIsAuthenticated(true);
@@ -19,8 +22,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsAuthenticated(false);
     localStorage.setItem("IsAuth", "false");
   };
+  const setUserStatus = (status: string) => setStatus(status);
   return (
-    <AuthContext.Provider value={{ isAuthenticated, loginUser, logoutUser }}>
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        loginUser,
+        logoutUser,
+        setUserStatus,
+        status
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

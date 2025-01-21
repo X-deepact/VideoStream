@@ -25,8 +25,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
-	echoSwagger "github.com/swaggo/echo-swagger"
 	_ "gitlab/live/be-live-api/docs"
+
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 type CustomValidator struct {
@@ -125,7 +126,7 @@ func main() {
 	handler.Register()
 
 	go func() {
-		if err := e.Start(fmt.Sprintf(":%d", appCfg.Port)); err != nil && err != http.ErrServerClosed {
+		if err := e.Start(fmt.Sprintf("127.0.0.1:%d", appCfg.Port)); err != nil && err != http.ErrServerClosed {
 			e.Logger.Fatal("shutting down the server")
 		}
 	}()

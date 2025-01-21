@@ -6,12 +6,16 @@ import 'videojs-flvjs';
 import { Button } from './ui/button';
 import { useNavigate } from 'react-router-dom';
 import { FEED_PATH } from '@/data/route';
-import { RotateCw, SquarePlay, VideoOff } from 'lucide-react';
+import { Clock, RotateCw, SquarePlay, VideoOff } from 'lucide-react';
 import DefaultThumbnail from '@/assets/images/video-thumbnail.jpg';
 import logger from '@/lib/logger';
+import { CONTENT_STATUS } from '@/data/types/stream';
+import { getFormattedDate } from '@/lib/date-time';
+import { VideoDetailsResponse } from '@/data/dto/stream';
+import Countdown from './CountDown';
 
 interface VideoPlayerProps {
-  url?: string;
+  videoDetails: VideoDetailsResponse | null;
   token: string;
   poster?: string;
   styles?: string;
@@ -21,7 +25,7 @@ interface VideoPlayerProps {
 }
 
 const VideoPlayerFLV: React.FC<VideoPlayerProps> = ({
-  url,
+  videoDetails,
   token,
   poster,
   styles,
@@ -30,6 +34,10 @@ const VideoPlayerFLV: React.FC<VideoPlayerProps> = ({
   onLoadVideo,
 }) => {
   const navigate = useNavigate();
+
+  const url = videoDetails?.broadcast_url;
+  const status = videoDetails?.status;
+  const scheduledAt = videoDetails?.scheduled_at;
 
   const posterRef = useRef(poster);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -95,7 +103,7 @@ const VideoPlayerFLV: React.FC<VideoPlayerProps> = ({
         logger.log('FLV Player disposed');
       }
     };
-  }, [url, token]);
+  }, [url, token, status]);
 
   useEffect(() => {
     posterRef.current = poster;
@@ -105,12 +113,45 @@ const VideoPlayerFLV: React.FC<VideoPlayerProps> = ({
     <div
       className={`${styles} relative w-full h-full flex justify-center`}
       style={{
-        backgroundImage: error && poster ? `url(${poster})` : DefaultThumbnail,
+        backgroundImage:
+          error && poster ? `url(${poster})` : `url(${DefaultThumbnail})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
-      {!error && (
+      {status === CONTENT_STATUS.UPCOMING && (
+        <div className="flex flex-col justify-center text-center items-center absolute inset-0 bg-gray-900 bg-opacity-75 text-white backdrop-blur space-y-2">
+          <Clock className="w-7 h-7 mb-2" />
+          <p className="text-lg font-semibold">Stay Tuned. Upcoming Video!</p>
+          {scheduledAt && (
+            <>
+              <p className="text-sm text-gray-300">
+                This video can be accessed on{' '}
+                {getFormattedDate(new Date(scheduledAt), true)}.
+              </p>
+              <div className="flex gap-2 text-xs font-medium">
+                <span className="bg-red-500 text-white px-2 py-0.5 rounded-full">
+                  Available on
+                </span>{' '}
+                <Countdown targetDate={scheduledAt} />
+              </div>
+            </>
+          )}
+          <div className="flex gap-2 items-center justify-center">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate(FEED_PATH)}
+            >
+              <SquarePlay className="w-4 h-4" /> Watch Videos
+            </Button>
+            <Button size="sm" onClick={() => window.location.reload()}>
+              <RotateCw className="w-4 h-4" /> Reload
+            </Button>
+          </div>
+        </div>
+      )}
+      {status !== CONTENT_STATUS.UPCOMING && !error && (
         <video
           ref={videoRef}
           onLoad={onLoadVideo && onLoadVideo}
@@ -125,7 +166,7 @@ const VideoPlayerFLV: React.FC<VideoPlayerProps> = ({
           }}
         ></video>
       )}
-      {error && (
+      {status !== CONTENT_STATUS.UPCOMING && error && (
         <div className="flex flex-col justify-center text-center items-center absolute inset-0 bg-gray-900 bg-opacity-75 text-white backdrop-blur space-y-2">
           <VideoOff className="w-7 h-7 mb-3" />
           <p className="text-lg font-semibold">Ooops!</p>

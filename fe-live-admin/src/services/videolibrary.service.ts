@@ -7,10 +7,13 @@ export const getVideoLibrary = (
   page: number = 1,
   pageSize: number = 5,
   sort_by: string = "title",
-  sort: string = "ASC"
+  sort: string = "ASC",
+  category: string = "",
+  keyword: string = "",
+  type: string = ""
 ) => {
   return axios.get(
-    `${API_URL}/streams?page=${page}&limit=${pageSize}&sort_by=${sort_by}&sort=${sort}&status=ended`,
+    `${API_URL}/streams?page=${page}&limit=${pageSize}&sort_by=${sort_by}&sort=${sort}&status=ended&category=${category}&keyword=${keyword}&type=${type}`,
     { headers: authHeader() }
   );
 };

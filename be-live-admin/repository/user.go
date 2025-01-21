@@ -45,12 +45,6 @@ func (s *UserRepository) Page(filter *dto.UserQuery, page, limit uint) (*utils.P
 	query = query.Joins("LEFT JOIN users cr ON cr.id = users.created_by_id")
 	query = query.Joins("LEFT JOIN users ur ON ur.id = users.updated_by_id")
 
-	if filter != nil && filter.Keyword != "" {
-		query = query.Where("users.username ILIKE ? AND users.username != ?", "%"+filter.Keyword+"%", model.SUPER_ADMIN_USERNAME)
-		query = query.Or("users.display_name ILIKE ?", "%"+filter.Keyword+"%")
-		query = query.Or("users.email ILIKE ? AND users.email != ?", "%"+filter.Keyword+"%", model.SUPER_ADMIN_EMAIL)
-	}
-
 	if filter != nil && filter.CreatedBy != "" {
 		query = query.Where("cr.username = ?", filter.CreatedBy)
 	}
@@ -65,6 +59,10 @@ func (s *UserRepository) Page(filter *dto.UserQuery, page, limit uint) (*utils.P
 
 	if filter != nil && filter.Role != "" {
 		query = query.Where("roles.type = ?", filter.Role)
+	}
+
+	if filter != nil && filter.Keyword != "" {
+		query = query.Where("users.username != ? AND (users.username ILIKE ? OR users.display_name ILIKE ?) OR (users.email ILIKE ? AND users.email != ?)", model.SUPER_ADMIN_USERNAME, "%"+filter.Keyword+"%", "%"+filter.Keyword+"%", "%"+filter.Keyword+"%", model.SUPER_ADMIN_EMAIL)
 	}
 
 	if filter != nil && filter.SortBy != "" && filter.Sort != "" {

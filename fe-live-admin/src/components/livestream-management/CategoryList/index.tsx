@@ -17,6 +17,15 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useAdminsList } from "@/hooks/useAdminsList";
 import { UserMiniResponse } from "@/type/users";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Slash } from "lucide-react";
 
 const LiveCategory = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -154,6 +163,19 @@ const LiveCategory = () => {
   const transformedNameOptions = transformNameMiniResponse(nameList);
   return (
     <div className="px-8 pb-4">
+      <Breadcrumb className="py-3">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator>
+            <Slash />
+          </BreadcrumbSeparator>
+          <BreadcrumbItem>
+            <BreadcrumbPage>Category List Page</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
       <DataTable
         data={categories}
         totalCount={totalItems}

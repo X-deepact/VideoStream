@@ -1,7 +1,9 @@
 //  Auth Interfaces
 
 export interface AuthContextProps {
+	status: string;
   isAuthenticated: boolean;
+	setUserStatus: (status: string) => void;
   loginUser: () => void;
   logoutUser: () => void;
 }

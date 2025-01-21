@@ -38,26 +38,7 @@ const WatchLive = () => {
   const currentUser = useUserAccount();
   const { id: videoId } = useParams<{ id: string }>();
 
-  // fetch video details
-  const {
-    videoDetails,
-    isLoading: isFetching,
-    error: apiError,
-  } = useVideoDetails({
-    id: videoId || null,
-  });
-  // work with live chat and reaction
-  const {
-    isChatVisible,
-    isStreamStarted,
-    isLiveEndEventReceived,
-    liveInitialStats,
-    liveViewersCount,
-    toggleChat,
-    sendReaction,
-    sendComment,
-  } = useLiveChatWebSocket(videoId || null);
-
+  const [isStreamStarted, setIsStreamStarted] = useState(false);
   const [thumbnailSrc, setThumbnailSrc] = useState<string>('');
   const [videoDimensions, setVideoDimensions] = useState<{
     width: number | string;
@@ -73,6 +54,31 @@ const WatchLive = () => {
     description: '',
     onClose: undefined,
   });
+
+  // fetch video details
+  const {
+    videoDetails,
+    isLoading: isFetching,
+    error: apiError,
+  } = useVideoDetails({
+    id: videoId || null,
+  });
+  // work with live chat and reaction
+  const {
+    isChatVisible,
+    // isStreamStarted,
+    isLiveEndEventReceived,
+    liveInitialStats,
+    liveViewersCount,
+    setIsChatVisible,
+    toggleChat,
+    sendReaction,
+    sendComment,
+  } = useLiveChatWebSocket(
+    videoId || null,
+    isStreamStarted,
+    setIsStreamStarted
+  );
 
   // calculate video width and height
   useEffect(() => {
@@ -139,8 +145,18 @@ const WatchLive = () => {
       (apiError && apiError === API_ERROR.NOT_FOUND)
     ) {
       navigate(NOT_FOUND_PATH);
+    } else if (
+      videoDetails &&
+      videoDetails?.status === CONTENT_STATUS.UPCOMING
+    ) {
+      //
     } else if (videoDetails && videoDetails?.status !== CONTENT_STATUS.LIVE) {
       navigate(getFEUrl(WATCH_VIDEO_PATH, videoDetails?.id.toString()));
+    } else {
+      if (videoDetails?.status === CONTENT_STATUS.LIVE) {
+        setIsStreamStarted(true);
+        setIsChatVisible(true);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoDetails, apiError]);
@@ -212,7 +228,10 @@ const WatchLive = () => {
                 }}
               >
                 <VideoPlayerFLV
-                  url={videoDetails?.broadcast_url}
+                  videoDetails={videoDetails || null}
+                  // scheduledAt={videoDetails?.scheduled_at}
+                  // status={videoDetails?.status}
+                  // url={videoDetails?.broadcast_url}
                   token={retrieveAuthToken() || ''}
                   poster={thumbnailSrc}
                   videoWidth={videoDimensions.width}

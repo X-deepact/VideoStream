@@ -1,0 +1,11 @@
+# # FLV Options
+flv_archive: true
+flv_dir: "/tmp"
+
+server:
+- appname: live
+  live: true
+  hls: true
+  api: true
+  flv: true
+

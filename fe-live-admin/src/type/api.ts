@@ -1,4 +1,4 @@
-import { SORT_ORDER } from '@/lib/validation';
+import { SORT_ORDER } from "@/lib/validation";
 
 export interface PaginatedResponse<T> {
   code: number;
@@ -35,3 +35,17 @@ export interface CommonQueryStrings extends Record<string, unknown> {
 }
 
 export type CommonQueryStringsType = CommonQueryStrings;
+export interface Video {
+  id: number;
+  title: string;
+  description: string;
+  broadcast_url: string;
+  stream_type: string;
+  thumbnail_file_name: string;
+  started_at: string;
+  ended_at: string;
+  user: [];
+  categories: [];
+  live_stream_analytic: [];
+  schedule_stream: [];
+}

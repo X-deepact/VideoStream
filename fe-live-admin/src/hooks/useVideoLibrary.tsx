@@ -1,90 +1,83 @@
 import { useEffect, useState } from "react";
-import { getCategories } from "@/services/category.service.ts";
-import { Catalogue } from "@/lib/interface.tsx";
 import { toast } from "@/hooks/use-toast.ts";
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, SORT_ORDER } from "@/lib/validation";
-
-interface Category {
-  label: string;
-  value: string;
-  creator: [];
-  created_at: string;
-  updater: [];
-  updated_at: string;
-}
+import { getVideoLibrary } from "@/services/videolibrary.service";
+import { VIDEO_TYPE } from "@/type/video";
+import { Video } from "@/type/api";
 
 interface Props {
   page?: number;
   limit?: number;
   sort_By?: string;
   sort?: SORT_ORDER;
-  name?: string;
-  created_by?: string;
+  category?: string;
+  keyword?: string;
+  type?: string;
 }
-export const useCategories = (payload: Props) => {
+export const useVideoLibrary = (payload: Props) => {
   const {
     page = DEFAULT_PAGE,
-    limit = 99999,
-    sort_By = "name",
+    limit = DEFAULT_PAGE_SIZE,
+    sort_By = "title",
     sort = SORT_ORDER.ASC,
-    name = "",
-    created_by = "",
+    keyword = "",
   } = payload;
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalItems, setTotalItems] = useState(0);
-  const [currentPage, setCurrentPage] = useState(page);
-  const [pageLimit, setPageLimit] = useState(limit);
+  const [currentPage, setCurrentPage] = useState(page | DEFAULT_PAGE);
+  const [pageLimit, setPageLimit] = useState(limit | DEFAULT_PAGE_SIZE);
   const [sortBy, setSortBy] = useState(sort_By);
   const [sortOrder, setSortOrder] = useState<SORT_ORDER>(sort);
+  const [filteredCategory, setFilteredCategory] = useState("All");
+  const [filteredType, setFilteredType] = useState<VIDEO_TYPE | string>("All");
 
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [filteredCreatorUsername, setFilteredCreatorUsername] =
-    useState<string>("All");
-  const [filteredName, setFilteredName] = useState<string>("All");
+  const [videos, setVideos] = useState<Video[]>([]);
   const [refetchKey, setRefetchKey] = useState(0);
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         setIsLoading(true);
         setError(null);
-
-        let createdBy;
-        filteredCreatorUsername !== "All"
-          ? (createdBy = filteredCreatorUsername)
-          : (createdBy = created_by);
-        let Name;
-        filteredName !== "All" ? (Name = filteredName) : (Name = name);
-
-        const response = await getCategories(
+        let category =
+          filteredCategory !== "All" ? filteredCategory : undefined;
+        let type = filteredType !== "All" ? filteredType : undefined;
+        const response = await getVideoLibrary(
           currentPage,
           pageLimit,
-          Name,
-          createdBy,
           sortBy,
-          sortOrder
+          sortOrder,
+          category,
+          keyword,
+          type
         );
         const { data } = response.data;
         setTotalItems(data.total_items ?? 0);
         setCurrentPage(data.current_page ?? 1);
-        setPageLimit(data.page_size);
+        setPageLimit(data.page_size ?? 10);
         let transformData;
         if (data.page) {
-          transformData = data.page.map((category: Catalogue) => {
+          transformData = data.page.map((video: any) => {
             return {
-              label: category.name,
-              value: String(category.id),
-              creator: category.created_by_user,
-              created_at: category.created_at,
-              updater: category.updated_by_user,
-              updated_at: category.updated_at,
+              id: video.id,
+              title: video.title,
+              description: video.description,
+              broadcast_url: video.broadcast_url,
+              stream_type: video.stream_type,
+              thumbnail_file_name: video.thumbnail_file_name,
+              started_at: video.started_at,
+              ended_at: video.ended_at,
+              user: video.user,
+              categories: video.categories,
+              live_stream_analytic: video.live_stream_analytic,
+              schedule_stream: video.schedule_stream,
             };
           });
         }
         transformData = transformData ?? [];
 
-        setCategories(transformData);
+        setVideos(transformData);
       } catch (e: any) {
         toast({
           description: e.message,
@@ -101,10 +94,9 @@ export const useCategories = (payload: Props) => {
     pageLimit,
     sortBy,
     sortOrder,
-    created_by,
-    name,
-    filteredCreatorUsername,
-    filteredName,
+    filteredCategory,
+    keyword,
+    filteredType,
     refetchKey,
   ]);
 
@@ -113,7 +105,7 @@ export const useCategories = (payload: Props) => {
   };
 
   return {
-    categories,
+    videos,
     isLoading,
     totalItems,
     currentPage,
@@ -121,14 +113,14 @@ export const useCategories = (payload: Props) => {
     error,
     sortBy,
     sortOrder,
-    filteredCreatorUsername,
-    filteredName,
+    filteredCategory,
+    filteredType,
     refetchCategories,
     setCurrentPage,
     setPageLimit,
     setSortBy,
     setSortOrder,
-    setFilteredCreatorUsername,
-    setFilteredName,
+    setFilteredCategory,
+    setFilteredType,
   };
 };

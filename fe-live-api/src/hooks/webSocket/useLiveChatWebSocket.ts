@@ -17,13 +17,18 @@ import logger from '@/lib/logger';
 
 const wsURL = import.meta.env.VITE_WS_STREAM_URL;
 
-export function useLiveChatWebSocket(videoId: string | null) {
+export function useLiveChatWebSocket(
+  videoId: string | null,
+  isStreamStarted: boolean,
+  setIsStreamStarted: React.Dispatch<React.SetStateAction<boolean>>
+) {
   const isMobile = useIsMobile();
 
   const chatWsRef = useRef<WebSocket | null>(null);
-  const [isStreamStarted, setIsStreamStarted] = useState(false);
   const [isLiveEndEventReceived, setIsLiveEndEventReceived] = useState(false);
-  const [isChatVisible, setIsChatVisible] = useState(!isMobile);
+  const [isChatVisible, setIsChatVisible] = useState(
+    !isMobile || isStreamStarted
+  );
   const [liveViewersCount, setLiveViewersCount] = useState(0);
   const [liveInitialStats, setLiveInitialStats] =
     useState<LiveInitialStatsResponse>({
@@ -67,7 +72,11 @@ export function useLiveChatWebSocket(videoId: string | null) {
   useEffect(() => {
     if (!videoId) return;
 
-    if (chatWsRef.current && chatWsRef.current.readyState === WebSocket.OPEN)
+    if (
+      chatWsRef.current &&
+      chatWsRef.current.readyState === WebSocket.OPEN &&
+      isStreamStarted
+    )
       return;
 
     const url = getWsURL(videoId);
@@ -76,7 +85,7 @@ export function useLiveChatWebSocket(videoId: string | null) {
     const chatWs = new WebSocket(url);
     chatWsRef.current = chatWs;
 
-    chatWs.onopen = () => setIsStreamStarted(true);
+    chatWs.onopen = () => {};
 
     const handleMessage = (event: MessageEvent) => {
       try {
@@ -167,11 +176,10 @@ export function useLiveChatWebSocket(videoId: string | null) {
     return () => {
       if (chatWs.readyState === WebSocket.OPEN) chatWs?.close();
     };
-  }, [videoId]);
+  }, [videoId, isStreamStarted, setIsStreamStarted]);
 
   return {
     isChatVisible,
-    isStreamStarted,
     isLiveEndEventReceived,
 
     liveInitialStats,
@@ -184,7 +192,7 @@ export function useLiveChatWebSocket(videoId: string | null) {
     sendReaction,
     sendComment,
 
-    setIsStreamStarted,
+    setIsChatVisible,
   };
 }
 

@@ -12,7 +12,7 @@ import { APP_DASHBOARD_PATH } from "@/router";
 const LoginForm: React.FC = () => {
   const navigator = useNavigate();
   const { toast } = useToast();
-  const { loginUser } = useAuth();
+  const { loginUser, setUserStatus } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -53,6 +53,7 @@ const LoginForm: React.FC = () => {
     login(email, password).then(
       (res) => {
         setLoading(false);
+        setUserStatus(res.data.status);
         loginUser();
         toast({
           description: res.message,
