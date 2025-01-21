@@ -41,6 +41,8 @@ definitions:
         type: integer
       id:
         type: integer
+      is_saved:
+        type: boolean
       scheduled_at:
         type: string
       started_at:
@@ -55,6 +57,32 @@ definitions:
         type: integer
       views:
         type: integer
+    type: object
+  dto.SubscribeDto:
+    properties:
+      id:
+        type: integer
+      is_mute:
+        type: boolean
+      num_subscribed:
+        type: integer
+      num_video:
+        type: integer
+      streamer_avatar_url:
+        type: string
+      streamer_id:
+        type: integer
+      streamer_name:
+        type: string
+    type: object
+  dto.SubscribeMuteRequest:
+    properties:
+      is_mute:
+        type: boolean
+      streamer_id:
+        type: integer
+    required:
+    - streamer_id
     type: object
   model.RoleType:
     enum:
@@ -111,6 +139,116 @@ paths:
       summary: Login a user
       tags:
       - Auth
+  /api/notification/{id}/hidden:
+    put:
+      consumes:
+      - application/json
+      description: Update notification has been hidden by NotificationID
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Hidden Notification
+      tags:
+      - Notification
+  /api/notification/{id}/read:
+    put:
+      consumes:
+      - application/json
+      description: Update notification has been read by NotificationID
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Read Notification
+      tags:
+      - Notification
+  /api/notification/list:
+    get:
+      consumes:
+      - application/json
+      description: Get notification list
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Get Notifications
+      tags:
+      - Notification
+  /api/notification/num:
+    get:
+      consumes:
+      - application/json
+      description: Get the number of notifications
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Get Num-Notification
+      tags:
+      - Notification
+  /api/notification/reset-num:
+    put:
+      consumes:
+      - application/json
+      description: Reset the number of notifications
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Reset Num-Notification
+      tags:
+      - Notification
   /api/streams:
     get:
       consumes:
@@ -159,6 +297,18 @@ paths:
         in: query
         name: is_saved
         type: boolean
+      - description: Filter by streamer
+        in: query
+        name: streamer_id
+        type: integer
+      - description: Start date for filtering (yyyy-MM-dd)
+        in: query
+        name: from_date
+        type: string
+      - description: End date for filtering (yyyy-MM-dd)
+        in: query
+        name: to_date
+        type: string
       produces:
       - application/json
       responses:
@@ -239,6 +389,110 @@ paths:
       summary: Bookmark stream
       tags:
       - Stream
+  /api/streams/{id}/share:
+    post:
+      consumes:
+      - application/json
+      description: User adds 1 share
+      parameters:
+      - description: ID stream
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Add Share
+      tags:
+      - Stream
+  /api/streams/channel/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get channel insights and statistics
+      parameters:
+      - description: ID streamer
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Get Channel
+      tags:
+      - Stream
+  /api/subscribe/list:
+    get:
+      consumes:
+      - application/json
+      description: Fetch a list of subscribes with optional filters
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SubscribeDto'
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Get Subscribes
+      tags:
+      - Subscribe
+  /api/subscribe/mute:
+    put:
+      consumes:
+      - application/json
+      description: Mute subscriber notifications
+      parameters:
+      - description: Mute subscriber notifications
+        in: body
+        name: mute
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SubscribeMuteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid request
+      security:
+      - BearerAuth: []
+      summary: Mute
+      tags:
+      - Subscribe
 securityDefinitions:
   BearerAuth:
     in: header

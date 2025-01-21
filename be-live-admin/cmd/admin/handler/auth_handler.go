@@ -141,6 +141,12 @@ func (h *authHandler) logout(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
+	adminLog := h.srv.Admin.MakeAdminLogModel(currentUser.ID, model.LogoutAction, fmt.Sprintf("%s logout.", currentUser.Username))
+	err = h.srv.Admin.CreateLog(adminLog)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
+	}
+
 	return utils.BuildSuccessResponse(c, http.StatusOK, "Logout successful", nil)
 }
 

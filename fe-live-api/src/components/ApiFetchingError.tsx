@@ -16,7 +16,7 @@ const ApiFetchingError = (props: ComponentProps) => {
 
   return (
     <div className="child-center">
-      <div className="flex flex-col justify-center items-center space-y-3 ">
+      <div className="flex flex-col justify-center items-center space-y-3 text-center">
         <div className="bg-red-200 dark:bg-red-800 p-2 rounded-full">
           <AlertCircle className="text-red-500" />
         </div>

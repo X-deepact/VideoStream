@@ -1,5 +1,4 @@
 import useVideoDetails from '@/hooks/useVideoDetails';
-import AppLayout from '@/layouts/AppLayout';
 import { useNavigate, useParams } from 'react-router-dom';
 import LiveIndicator from '../LiveStream/Webcam/LiveIndicator';
 import {
@@ -27,9 +26,11 @@ import {
 } from '@/components/NotificationModal';
 import FullscreenLoading from '@/components/FullscreenLoading';
 import { useLiveChatWebSocket } from '@/hooks/webSocket/useLiveChatWebSocket';
-import { WATCH_VIDEO_PATH } from '@/data/route';
+import { getFEUrl, NOT_FOUND_PATH, WATCH_VIDEO_PATH } from '@/data/route';
 import { modalTexts } from '@/data/stream';
 import { fetchImageWithAuth } from '@/api/image';
+import { CONTENT_STATUS } from '@/data/types/stream';
+import { API_ERROR } from '@/data/api';
 
 const WatchLive = () => {
   const isMobile = useIsMobile();
@@ -38,7 +39,11 @@ const WatchLive = () => {
   const { id: videoId } = useParams<{ id: string }>();
 
   // fetch video details
-  const { videoDetails, isLoading: isFetching } = useVideoDetails({
+  const {
+    videoDetails,
+    isLoading: isFetching,
+    error: apiError,
+  } = useVideoDetails({
     id: videoId || null,
   });
   // work with live chat and reaction
@@ -126,6 +131,20 @@ const WatchLive = () => {
     fetchAuthThumbnail();
   }, [videoDetails, isFetching]);
 
+  // check if this id is still live, (for coming from noti click)
+  useEffect(() => {
+    if (
+      !videoId ||
+      (videoId && isNaN(Number(videoId))) ||
+      (apiError && apiError === API_ERROR.NOT_FOUND)
+    ) {
+      navigate(NOT_FOUND_PATH);
+    } else if (videoDetails && videoDetails?.status !== CONTENT_STATUS.LIVE) {
+      navigate(getFEUrl(WATCH_VIDEO_PATH, videoDetails?.id.toString()));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoDetails, apiError]);
+
   // Modal dialogs
   const openNotifyModal = (
     type: NotifyModalType,
@@ -158,7 +177,7 @@ const WatchLive = () => {
   if (isFetching) return <FullscreenLoading />;
 
   return (
-    <AppLayout>
+    <div>
       <div className="flex flex-col w-full h-full gap-3 overflow-hidden box-border">
         <div className="flex w-full lg:h-full items-center justify-center overflow-hidden">
           {/* Video and Chat Layout */}
@@ -309,7 +328,7 @@ const WatchLive = () => {
         description={notifyModal.description}
         onClose={closeNotifyModal}
       />
-    </AppLayout>
+    </div>
   );
 };
 

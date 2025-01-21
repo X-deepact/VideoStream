@@ -1,5 +1,4 @@
 import { SettingsTabs } from '@/data/types/ui/settingTabs';
-import AppLayout from '@/layouts/AppLayout';
 import LayoutHeading from '@/layouts/LayoutHeading';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AccountInformation from './AccountInformation';
@@ -47,7 +46,7 @@ const Settings = () => {
   };
 
   return (
-    <AppLayout>
+    <div>
       <LayoutHeading title={title} />
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
@@ -71,7 +70,7 @@ const Settings = () => {
             )
         )}
       </Tabs>
-    </AppLayout>
+    </div>
   );
 };
 

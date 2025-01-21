@@ -80,6 +80,7 @@ type User struct {
 	AvatarFileName      sql.NullString `gorm:"type:varchar(255)" json:"avatar_file_name,omitempty"`
 	Status              UserStatusType `gorm:"type:varchar(50);not null;default:'offline'" json:"status,omitempty"`
 	BlockedReason       string         `gorm:"type:text" json:"blocked_reason,omitempty"`
+	NumNotification     uint           `gorm:"not null;default:0"`
 	AdminLogs           []AdminLog     `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	CreatedByCategories []Category     `gorm:"foreignKey:CreatedByID"`
 	UpdatedByCategories []Category     `gorm:"foreignKey:UpdatedByID"`

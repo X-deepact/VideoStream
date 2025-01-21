@@ -171,6 +171,20 @@ func (r *InteractionRepository) FirstOrCreateBookmarkRecord(bookmark *model.Book
 	return r.db.Where("stream_id = ? and user_id = ?", bookmark.StreamID, bookmark.UserID).FirstOrCreate(&bookmark).Error
 }
 
-func (ir *InteractionRepository) DeleteBookmark(streamID, userID uint) error {
-	return ir.db.Where("stream_id = ? and user_id = ?", streamID, userID).Delete(&model.Bookmark{}).Error
+func (r *InteractionRepository) DeleteBookmark(streamID, userID uint) error {
+	return r.db.Where("stream_id = ? and user_id = ?", streamID, userID).Delete(&model.Bookmark{}).Error
+}
+
+func (r *InteractionRepository) FirstOrCreateShareRecord(share *model.Share) (int64, error) {
+	result := r.db.Where("stream_id = ? and user_id = ?", share.StreamID, share.UserID).FirstOrCreate(&share)
+
+	return result.RowsAffected, result.Error
+}
+
+func (r *InteractionRepository) CountSharesByStreamID(streamID uint) (int64, error) {
+	var count int64
+	if err := r.db.Model(&model.Share{}).Where("stream_id = ?", streamID).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
 }

@@ -35,19 +35,23 @@ const Reactions = (props: ComponentProps) => {
     let maxCount = 0;
     let popularReaction: Reaction | null = Reaction.HEART; // default reaction (if there is no reaction count yet)
 
-    reactions.forEach((reaction) => {
-      const count = stats.likeInfo[reaction] || 0;
-      if (count > maxCount) {
-        maxCount = count;
-        popularReaction = reaction;
-      }
-    });
+    if (stats.likeInfo) {
+      reactions.forEach((reaction) => {
+        const count = stats.likeInfo[reaction] || 0;
+        if (count > maxCount) {
+          maxCount = count;
+          popularReaction = reaction;
+        }
+      });
+    }
 
     return popularReaction;
   }, [stats.likeInfo, reactions]);
 
   const mostPopularCount = formatKMBCount(
-    mostPopularReaction ? stats.likeInfo[mostPopularReaction] : 0
+    stats.likeInfo && mostPopularReaction
+      ? stats.likeInfo[mostPopularReaction]
+      : 0
   );
 
   const currentReaction = stats.currentReactionType;
@@ -90,7 +94,9 @@ const Reactions = (props: ComponentProps) => {
             <div className="flex flex-wrap gap-2 items-center justify-center">
               {reactions.map((reaction) => {
                 const isActive = stats?.currentReactionType === reaction;
-                const reactionCount = formatKMBCount(stats.likeInfo[reaction]);
+                const reactionCount = stats.likeInfo
+                  ? formatKMBCount(stats.likeInfo[reaction])
+                  : 0;
 
                 return (
                   <Button
@@ -143,7 +149,9 @@ const Reactions = (props: ComponentProps) => {
       {reactions.map((reaction) => {
         const isActive = stats?.currentReactionType === reaction;
 
-        const reactionCount = formatKMBCount(stats.likeInfo[reaction]);
+        const reactionCount = stats.likeInfo
+          ? formatKMBCount(stats.likeInfo[reaction])
+          : 0;
 
         return (
           <Button

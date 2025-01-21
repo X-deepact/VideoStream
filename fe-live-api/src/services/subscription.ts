@@ -1,5 +1,8 @@
-import { apiFetchSubscriptionList } from '@/api/subscription';
-import { FindAndCountResponse } from '@/data/api';
+import {
+  apiFetchSubscriptionList,
+  apiToggleMuteNotificationsFromChannel,
+} from '@/api/subscription';
+import { FindAndCountResponse, SuccessResponse } from '@/data/api';
 import {
   SubscriptionListRequest,
   SubscriptionResponse,
@@ -12,4 +15,20 @@ export const fetchSubscriptionList = async (
   if (data && !error) return data;
 
   return [];
+};
+
+export const toggleMuteNotificationsFromChannel = async ({
+  isMute,
+  streamerId,
+}: {
+  isMute: boolean;
+  streamerId: number;
+}): Promise<SuccessResponse> => {
+  const { data } = await apiToggleMuteNotificationsFromChannel(
+    isMute,
+    streamerId
+  );
+  return {
+    success: data && data!.success,
+  };
 };

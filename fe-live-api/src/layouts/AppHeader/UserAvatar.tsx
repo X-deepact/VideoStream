@@ -22,6 +22,7 @@ import DefaultPf from '@/assets/images/pf.png';
 import { EVENT_EMITTER_NAME, EventEmitter } from '@/lib/event-emitter';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getAvatarFallbackText } from '@/lib/utils';
+import { USER_ROLE } from '@/data/types/role';
 
 const UserAvatar = React.memo(() => {
   const [isOpen, setIsOpen] = useState(false);
@@ -95,32 +96,51 @@ const UserAvatar = React.memo(() => {
               </div>
             </div>
             <Separator />
-            {profileNavItems.map((group, index) => (
-              <SidebarGroup
-                key={index}
-                className="border-b last:border-none pt-0"
-              >
-                <SidebarGroupContent className="gap-0">
-                  <SidebarMenu>
-                    {group.map((item, index) => (
-                      <DropdownMenu key={item.label}>
-                        <SidebarMenuItem key={index}>
-                          <SidebarMenuButton onClick={item?.action}>
-                            {item?.id === 'theme' ? (
-                              <ModeSwitcher label={item.label} />
-                            ) : (
-                              <React.Fragment>
-                                <item.icon /> <span>{item.label}</span>
-                              </React.Fragment>
-                            )}
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      </DropdownMenu>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            ))}
+            {profileNavItems.map((group, index) => {
+              if (
+                group.length === 1 &&
+                group[0].accessRoles.length !== 0 &&
+                !group[0].accessRoles.includes(
+                  currentUser.role_type as USER_ROLE
+                )
+              )
+                return;
+
+              return (
+                <SidebarGroup
+                  key={index}
+                  className="border-b last:border-none pt-0"
+                >
+                  <SidebarGroupContent className="gap-0">
+                    <SidebarMenu>
+                      {group.map((item, index) => {
+                        if (
+                          item.accessRoles.length === 0 ||
+                          item.accessRoles.includes(
+                            currentUser.role_type as USER_ROLE
+                          )
+                        )
+                          return (
+                            <DropdownMenu key={item.label}>
+                              <SidebarMenuItem key={index}>
+                                <SidebarMenuButton onClick={item?.action}>
+                                  {item?.id === 'theme' ? (
+                                    <ModeSwitcher label={item.label} />
+                                  ) : (
+                                    <React.Fragment>
+                                      <item.icon /> <span>{item.label}</span>
+                                    </React.Fragment>
+                                  )}
+                                </SidebarMenuButton>
+                              </SidebarMenuItem>
+                            </DropdownMenu>
+                          );
+                      })}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+              );
+            })}
           </SidebarContent>
         </Sidebar>
       </PopoverContent>

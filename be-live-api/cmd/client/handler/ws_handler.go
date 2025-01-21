@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os/exec"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -28,8 +29,10 @@ type wsHandler struct {
 	srv    *service.Service
 	wsPool *ConnectionPool
 
-	rtmpURL string
-	hlsURL  string
+	rtmpURL      string
+	hlsURL       string
+	avatarFolder string
+	ApiURL       string
 
 	wsWG               *sync.WaitGroup
 	mCtx               context.Context
@@ -39,6 +42,7 @@ type wsHandler struct {
 
 func newWsHandler(r *echo.Group, srv *service.Service, ctx context.Context, wg *sync.WaitGroup, wsNotificationPool *wsNotificationPool) *wsHandler {
 	streamConfig := conf.GetStreamServerConfig()
+	fileStorageCfg := conf.GetFileStorageConfig()
 
 	wsH := &wsHandler{
 		r:       r,
@@ -52,6 +56,8 @@ func newWsHandler(r *echo.Group, srv *service.Service, ctx context.Context, wg *
 
 		viewMap:            newViewCache(),
 		wsNotificationPool: wsNotificationPool,
+		avatarFolder:       fileStorageCfg.AvatarFolder,
+		ApiURL:             conf.GetApiFileConfig().Url,
 	}
 
 	wsH.register()
@@ -153,6 +159,9 @@ func (h *wsHandler) StreamLive(c echo.Context) error {
 		return err
 	}
 
+	//send notification live
+	h.sendNotificationLive(stream)
+
 	wsCloseChan := make(chan bool)
 
 	defer func() {
@@ -194,6 +203,8 @@ func (h *wsHandler) StreamLive(c echo.Context) error {
 				if err := h.srv.Stream.FinishLiveStream(stream, true); err != nil {
 					log.Println("Failed to finish live stream:", err)
 				}
+
+				_ = h.srv.Notification.UpdateEndStream(stream.ID)
 				return
 			case <-wsCloseChan:
 				log.Println("Live Stream ending by websocket")
@@ -201,6 +212,8 @@ func (h *wsHandler) StreamLive(c echo.Context) error {
 				if err := h.srv.Stream.FinishLiveStream(stream, false); err != nil {
 					log.Println("Failed to finish live stream:", err)
 				}
+
+				_ = h.srv.Notification.UpdateEndStream(stream.ID)
 				return
 			}
 		}
@@ -490,6 +503,40 @@ func (h *wsHandler) handlUserInteractioneMessage(c echo.Context, message []byte,
 			return
 		}
 
+	case dto.LiveShareType:
+		isBroadcast = true
+
+		shareM := model.Share{
+			UserID:   userID,
+			StreamID: streamID,
+		}
+
+		rowsAffected, err := h.srv.Interaction.AddShare(&shareM)
+		if err != nil {
+			log.Printf("Error creating share: %v", err)
+			return
+		}
+		if rowsAffected == 0 {
+			return
+		}
+
+		shareCount, err := h.srv.Interaction.CountSharesByStreamID(streamID)
+		if err != nil {
+			log.Printf("Error getting share count: %v", err)
+			return
+		}
+
+		liveInfoResp := dto.ShareDto{
+			Type:       dto.LiveShareType,
+			ShareCount: shareCount,
+		}
+
+		message, err = json.Marshal(liveInfoResp)
+		if err != nil {
+			log.Printf("Error marshaling share info: %v", err)
+			return
+		}
+
 	default:
 		log.Printf("Unknown message type: %s", baseMessage.Type)
 	}
@@ -524,10 +571,6 @@ func (h *wsHandler) handleNotification(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusUnauthorized, err, nil)
 	}
 
-	if claims.Status == model.BLOCKED {
-		return utils.BuildErrorResponse(c, http.StatusUnauthorized, errors.New("account is locked and can't be used"), nil)
-	}
-
 	conn, err := notificationUpgradeConnection.Upgrade(c.Response().Writer, c.Request(), nil)
 	if err != nil {
 		return err
@@ -537,17 +580,24 @@ func (h *wsHandler) handleNotification(c echo.Context) error {
 	h.wsNotificationPool.Add(conn, claims.ID)
 	defer h.wsNotificationPool.Remove(conn, claims.ID)
 
-	// send Initital Message
-	initialMessage := &dto.InitialLiveMessage{
-		LikeCount: 11,
-	}
+	user, err := h.srv.User.GetUserLogin(claims.Username)
 	if err != nil {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
-	if err = conn.WriteJSON(initialMessage); err != nil {
-		log.Printf("Error writing to WebSocket: %v", err)
-		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	if user.Status == model.BLOCKED {
+		// send Message Blocked
+		message := dto.NotificationDto{
+			Content:   "Your account is blocked. Please contact the administrator.",
+			Type:      model.NotificationTypeBlocked,
+			CreatedAt: time.Now(),
+			IsRead:    false,
+		}
+
+		if err = conn.WriteJSON(message); err != nil {
+			log.Printf("Error writing to WebSocket: %v", err)
+			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+		}
 	}
 
 	wsCloseChan := make(chan bool)
@@ -570,9 +620,11 @@ func (h *wsHandler) handleNotification(c echo.Context) error {
 			return
 		}
 
-		user.Status = model.ONLINE
-		if err := h.srv.User.UpdateUser(user); err != nil {
-			return
+		if user.Status != model.BLOCKED {
+			user.Status = model.ONLINE
+			if err := h.srv.User.UpdateUser(user); err != nil {
+				return
+			}
 		}
 
 		for {
@@ -583,9 +635,11 @@ func (h *wsHandler) handleNotification(c echo.Context) error {
 					return
 				}
 
-				user.Status = model.OFFLINE
-				if err := h.srv.User.UpdateUser(user); err != nil {
-					return
+				if user.Status != model.BLOCKED && !h.wsNotificationPool.CheckExist(user.ID) {
+					user.Status = model.OFFLINE
+					if err := h.srv.User.UpdateUser(user); err != nil {
+						return
+					}
 				}
 			case <-wsCloseChan:
 				log.Println("Notification ending by websocket")
@@ -594,9 +648,11 @@ func (h *wsHandler) handleNotification(c echo.Context) error {
 					return
 				}
 
-				user.Status = model.OFFLINE
-				if err := h.srv.User.UpdateUser(user); err != nil {
-					return
+				if user.Status != model.BLOCKED && !h.wsNotificationPool.CheckExist(user.ID) {
+					user.Status = model.OFFLINE
+					if err := h.srv.User.UpdateUser(user); err != nil {
+						return
+					}
 				}
 			}
 		}
@@ -615,4 +671,67 @@ func (h *wsHandler) handleNotification(c echo.Context) error {
 	}
 
 	return nil
+}
+
+func (h *wsHandler) sendNotificationLive(streamReq *model.Stream) {
+	stream, err := h.srv.Stream.GetStream(streamReq.ID, streamReq.UserID)
+	if err != nil {
+		return
+	}
+
+	subscriberIDs, err := h.srv.Subscribe.GetSubscriberIDs(stream.UserID)
+	if err != nil || len(subscriberIDs) == 0 {
+		return
+	}
+
+	notification := &model.Notification{
+		StreamID: stream.ID,
+		Type:     model.NotificationTypeSubscribeLive,
+		Content:  "{{streamer_name}} is live: {{stream_title}}",
+	}
+
+	avtURL := ""
+	thumbnailURL := ""
+	content := ""
+	if stream.User.AvatarFileName.String != "" {
+		avtURL = utils.GetFileUrl(h.avatarFolder, stream.User.AvatarFileName.String)
+	}
+
+	if stream.ThumbnailFileName != "" {
+		thumbnailURL = utils.MakeThumbnailURL(h.ApiURL, stream.ThumbnailFileName)
+	}
+
+	content = strings.ReplaceAll(notification.Content, "{{streamer_name}}", stream.User.DisplayName)
+	content = strings.ReplaceAll(content, "{{stream_title}}", stream.Title)
+
+	for _, subscriberID := range subscriberIDs {
+		notificationCreate := &model.Notification{
+			UserID:   subscriberID,
+			StreamID: notification.StreamID,
+			Type:     notification.Type,
+			Content:  notification.Content,
+		}
+
+		if err = h.srv.Notification.Create(notificationCreate); err != nil {
+			continue
+		}
+
+		if err = h.srv.User.AddNumNotification(notificationCreate.UserID); err != nil {
+			continue
+		}
+
+		message := dto.NotificationDto{
+			ID:           notificationCreate.ID,
+			AvatarURL:    avtURL,
+			Content:      content,
+			ThumbnailURL: thumbnailURL,
+			StreamID:     notificationCreate.StreamID,
+			Type:         notificationCreate.Type,
+			IsRead:       notificationCreate.ReadAt.Valid,
+			CreatedAt:    notificationCreate.CreatedAt,
+			StreamerID:   &stream.UserID,
+			IsMute:       false,
+		}
+		_ = h.wsNotificationPool.SendMessage(subscriberID, message)
+	}
 }

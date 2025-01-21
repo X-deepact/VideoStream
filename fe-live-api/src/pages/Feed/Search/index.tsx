@@ -1,4 +1,3 @@
-import AppLayout from '@/layouts/AppLayout';
 import { CATEGORY_FILTER_KEYWORD, SEARCH_QUERY_KEYWORD } from '@/data/route';
 import { DATA_API_LIMIT, DEFAULT_PAGE } from '@/data/validations';
 import useVideosList from '@/hooks/useVideosList';
@@ -64,7 +63,7 @@ const FeedSearch = () => {
   );
 
   return (
-    <AppLayout>
+    <div>
       <div className="md:container lg:px-[10rem] md:mx-auto flex flex-col justify-center gap-8 md:gap-4 mt-10">
         {!isFetchingError &&
           videos.length > 0 &&
@@ -105,7 +104,7 @@ const FeedSearch = () => {
           onRefetch={refetchVideos}
         />
       )}
-    </AppLayout>
+    </div>
   );
 };
 

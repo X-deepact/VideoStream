@@ -87,7 +87,11 @@ func (s *AdminRepository) GetAdminLogs(req *dto.AdminLogQuery) (*utils.Paginatio
 			}
 		}
 		if req.Sort != "" && req.SortBy != "" {
-			query = query.Order(fmt.Sprintf("admin_logs.%s %s", req.SortBy, req.Sort))
+			if req.SortBy == "username" {
+				query = query.Order(fmt.Sprintf("users.%s %s", req.SortBy, req.Sort))
+			} else {
+				query = query.Order(fmt.Sprintf("admin_logs.%s %s", req.SortBy, req.Sort))
+			}
 		}
 	}
 	query = query.Preload("User")

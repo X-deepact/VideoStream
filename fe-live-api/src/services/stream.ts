@@ -15,6 +15,7 @@ import {
   apiUnBookmarkVideo,
 } from '@/api/stream';
 import {
+  API_ERROR,
   ApiResult,
   FindAndCountResponse,
   ServiceResponse,
@@ -154,13 +155,13 @@ export const fetchVideosList = async (
 
 export const fetchVideoDetails = async (
   id: string
-): Promise<VideoDetailsResponse | null> => {
+): Promise<VideoDetailsResponse | API_ERROR> => {
   const response = await apiFetchVideoDetails(id);
   if (response && response?.data) {
     return response?.data;
   }
 
-  return null;
+  return response.error as API_ERROR;
 };
 
 export const subscribeUnsubscribe = async (

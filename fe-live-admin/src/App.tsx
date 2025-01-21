@@ -34,12 +34,12 @@ import {
   APP_UPCOMING_SESSION_PATH,
   APP_USER_STATISTICS_PATH,
 } from "@/router";
-import AccountLog from "./components/admin-management/AccountLog";
 import LiveCategory from "@/components/livestream-management/CategoryList";
 import LiveSession from "@/pages/live-management/LiveSession.tsx";
 import UpcomingSession from "@/pages/live-management/UpcomingSession.tsx";
 import LiveStatistic from "@/components/statistics-management/LiveStatistic";
 import UserStatistic from "./components/statistics-management/UserStatistic";
+import AccountLog from "@/components/admin-management/AccountLog";
 
 function RedirectHome() {
   const { isAuthenticated } = useAuth();

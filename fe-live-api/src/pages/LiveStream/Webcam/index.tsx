@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import AppLayout from '@/layouts/AppLayout';
 import { LetterText, MessageSquare } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import DetailsForm from './DetailsForm';
@@ -378,7 +377,7 @@ const LiveStreamWebcam = () => {
   }, [isLiveEndEventReceived, streamDetails, navigate, openNotifyModal]);
 
   return (
-    <AppLayout>
+    <div>
       {isResourcePermissionDenied ? (
         <ResourcePermissionDeniedOverlay
           onGoBack={handleClosePermissionOverlay}
@@ -565,7 +564,7 @@ const LiveStreamWebcam = () => {
         onConfirm={confirmModal.onConfirm}
         onCancel={closeConfirmationModal}
       />
-    </AppLayout>
+    </div>
   );
 };
 

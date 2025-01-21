@@ -94,3 +94,7 @@ func CreateTxtFile(folderPath string, fileName string) *os.File {
 
 	return file
 }
+
+func ConvertStringToDate(dateString string) (time.Time, error) {
+	return time.Parse("2006-01-02", dateString)
+}

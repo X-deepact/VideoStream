@@ -41,11 +41,22 @@ export function getAvatarFallbackText(str: string): string {
  */
 export function formatKMBCount(count: number | undefined): string {
   if (count === undefined) return '';
+  if (count >= 1_000_000_000) return `${(count / 1_000_000_000).toFixed(1)}B`;
   if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
   if (count >= 1_000) return `${(count / 1_000).toFixed(1)}k`;
   return count.toString();
 }
 
+/**
+ * Converts an object into a query string for use in a URL.
+ *
+ * @template T - A generic type extending Record<string, unknown>.
+ * @param payload - A partial object of type T containing key-value pairs to be mapped to query parameters.
+ * @returns A query string representation of the payload (e.g., `key1=value1&key2=value2`).
+ *
+ * - Handles arrays by appending the same key multiple times with different values (e.g., `key=value1&key=value2`).
+ * - Ignores `undefined` and `null` values.
+ */
 export const mapToQueryString = <T extends Record<string, unknown>>(
   payload: Partial<T>
 ): string => {
@@ -62,4 +73,9 @@ export const mapToQueryString = <T extends Record<string, unknown>>(
   });
 
   return queryParams.toString();
+};
+
+export const getCorrectUnit = (count: number, singleUnit: string) => {
+  if (count > 1) return ' ' + singleUnit + 's';
+  return ' ' + singleUnit;
 };

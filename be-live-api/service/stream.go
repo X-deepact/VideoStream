@@ -237,6 +237,13 @@ func (s *StreamService) analyzeStream(stream *model.Stream) error {
 		analytics.Duration = duration
 	}
 
+	shares, err := s.repo.Interaction.CountSharesByStreamID(stream.ID)
+	if err != nil {
+		log.Println("error counting shares", err)
+		return err
+	}
+	analytics.Shares = uint(shares)
+
 	return s.repo.Stream.UpdateStreamAnalytics(analytics)
 }
 
@@ -348,4 +355,8 @@ func (s *StreamService) IsEndByAdminWithCloseChan(id uint, ctx context.Context, 
 	if err = s.redisStore.Subscribe(ctx, handlerFunc, channelKey); err != nil {
 		log.Println(err)
 	}
+}
+
+func (s *StreamService) GetChannel(userId uint) (*dto.StreamChannelDto, error) {
+	return s.repo.Stream.GetChannel(userId)
 }

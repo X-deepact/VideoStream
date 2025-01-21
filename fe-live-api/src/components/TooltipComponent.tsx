@@ -22,7 +22,7 @@ const TooltipComponent = (props: ComponentProps) => {
           <TooltipContent
             arrowPadding={10}
             sideOffset={6}
-            className="TooltipContent bg-secondary dark:bg-white text-black dark:text-black"
+            className="TooltipContent bg-black text-white dark:bg-white dark:text-black"
             align={align || 'start'}
           >
             <p>{text}</p>

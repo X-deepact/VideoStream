@@ -29,6 +29,15 @@ definitions:
       id:
         type: integer
     type: object
+  dto.CategoryDTO:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
   dto.CategoryRequestDTO:
     properties:
       name:
@@ -80,6 +89,17 @@ definitions:
     - confirm_password
     - password
     type: object
+  dto.CreateStreamResponseDTO:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      thumbnail_url:
+        type: string
+      title:
+        type: string
+    type: object
   dto.DeactiveUserRequest:
     properties:
       reason:
@@ -108,6 +128,8 @@ definitions:
       description:
         type: string
       likes:
+        type: integer
+      shares:
         type: integer
       status:
         $ref: '#/definitions/model.StreamStatus'
@@ -140,6 +162,41 @@ definitions:
         items:
           $ref: '#/definitions/dto.BaseDTO'
         type: array
+    type: object
+  dto.LiveStreamBroadCastDTO:
+    properties:
+      broadcast_url:
+        description: generated from web
+        type: string
+      categories:
+        items:
+          $ref: '#/definitions/dto.CategoryDTO'
+        type: array
+      description:
+        type: string
+      ended_at:
+        type: string
+      id:
+        type: integer
+      live_stream_analytic:
+        $ref: '#/definitions/dto.LiveStreamRespDTO'
+      push_url:
+        description: generated from streaming server
+        type: string
+      schedule_stream:
+        $ref: '#/definitions/dto.ScheduleStreamDTO'
+      started_at:
+        type: string
+      status:
+        $ref: '#/definitions/model.StreamStatus'
+      stream_type:
+        $ref: '#/definitions/model.StreamType'
+      thumbnail_file_name:
+        type: string
+      title:
+        type: string
+      user:
+        $ref: '#/definitions/dto.UserResponseDTO'
     type: object
   dto.LiveStreamRespDTO:
     properties:
@@ -229,6 +286,15 @@ definitions:
         items:
           $ref: '#/definitions/dto.UserResponseDTO'
         type: array
+    type: object
+  dto.ScheduleStreamDTO:
+    properties:
+      scheduled_at:
+        type: string
+      video_name:
+        type: string
+      video_url:
+        type: string
     type: object
   dto.StatisticsTotalLiveStreamDTO:
     properties:
@@ -357,6 +423,18 @@ definitions:
     - STARTED
     - ENDED
     - UPCOMING
+  model.StreamType:
+    enum:
+    - camera
+    - software
+    - pre_record
+    type: string
+    x-enum-comments:
+      SOFTWARESTREAM: like obs
+    x-enum-varnames:
+    - CAMERASTREAM
+    - SOFTWARESTREAM
+    - PRERECORDSTREAM
   model.UserStatusType:
     enum:
     - online
@@ -451,6 +529,38 @@ definitions:
       page:
         items:
           $ref: '#/definitions/dto.LiveStatRespDTO'
+        type: array
+      page_size:
+        type: integer
+      previous:
+        type: integer
+      query:
+        type: string
+      route:
+        type: string
+      total_items:
+        type: integer
+    type: object
+  utils.PaginationModel-dto_LiveStreamBroadCastDTO:
+    properties:
+      current_page:
+        type: integer
+      exec_time:
+        type: number
+      index:
+        type: integer
+      is_new_filter:
+        type: boolean
+      length:
+        type: integer
+      next:
+        type: integer
+      obj:
+        additionalProperties: true
+        type: object
+      page:
+        items:
+          $ref: '#/definitions/dto.LiveStreamBroadCastDTO'
         type: array
       page_size:
         type: integer
@@ -676,6 +786,9 @@ paths:
         type: string
       - enum:
         - performed_at
+        - action
+        - details
+        - username
         in: query
         name: sort_by
         type: string
@@ -926,6 +1039,153 @@ paths:
       summary: Update a category
       tags:
       - Categories
+  /api/streams:
+    get:
+      consumes:
+      - application/json
+      description: Get live stream broadcast data with pagination
+      parameters:
+      - in: query
+        name: category
+        type: string
+      - in: query
+        name: end_ended_time
+        type: integer
+      - in: query
+        name: end_started_time
+        type: integer
+      - in: query
+        name: from_ended_time
+        type: integer
+      - in: query
+        name: from_started_time
+        type: integer
+      - in: query
+        name: keyword
+        type: string
+      - in: query
+        maximum: 20
+        minimum: 1
+        name: limit
+        required: true
+        type: integer
+      - in: query
+        minimum: 1
+        name: page
+        required: true
+        type: integer
+      - enum:
+        - DESC
+        - ASC
+        in: query
+        name: sort
+        type: string
+      - enum:
+        - title
+        - started_at
+        - ended_at
+        - views
+        - shares
+        - likes
+        - comments
+        - video_size
+        - duration
+        - shares
+        - created_at
+        in: query
+        name: sort_by
+        type: string
+      - collectionFormat: csv
+        in: query
+        items:
+          enum:
+          - pending
+          - started
+          - ended
+          - upcoming
+          type: string
+        name: status
+        type: array
+      - enum:
+        - camera
+        - software
+        - pre_record
+        in: query
+        name: type
+        type: string
+        x-enum-comments:
+          SOFTWARESTREAM: like obs
+        x-enum-varnames:
+        - CAMERASTREAM
+        - SOFTWARESTREAM
+        - PRERECORDSTREAM
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.PaginationModel-dto_LiveStreamBroadCastDTO'
+        "400":
+          description: Invalid request
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: Get live streams with pagination
+      tags:
+      - Streams
+    post:
+      consumes:
+      - multipart/form-data
+      description: Create a live stream by admin with thumbnail and video upload
+      parameters:
+      - description: User ID
+        in: formData
+        name: userID
+        required: true
+        type: integer
+      - description: Stream Title
+        in: formData
+        name: title
+        required: true
+        type: string
+      - description: Stream Description
+        in: formData
+        name: description
+        required: true
+        type: string
+      - description: Scheduled At
+        in: formData
+        name: scheduledAt
+        required: true
+        type: string
+      - description: Thumbnail image file
+        in: formData
+        name: thumbnail
+        required: true
+        type: file
+      - description: Video file
+        in: formData
+        name: video
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CreateStreamResponseDTO'
+        "400":
+          description: Invalid request
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: Create a live stream by admin
+      tags:
+      - Streams
   /api/streams/live-statistics:
     get:
       consumes:
@@ -957,10 +1217,11 @@ paths:
         - likes
         - comments
         - current_viewers
+        - shares
         - title
         - description
         in: query
-        name: sortBy
+        name: sort_by
         type: string
       produces:
       - application/json
@@ -1067,7 +1328,7 @@ paths:
       - Bearer: []
       summary: Get live stream statistics data in a day
       tags:
-      - streams
+      - Streams
   /api/streams/statistics/total:
     get:
       consumes:

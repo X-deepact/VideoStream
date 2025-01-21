@@ -155,6 +155,14 @@ func (h *userHandler) deleteByID(c echo.Context) error {
 	if err := h.srv.User.DeleteByID(uint(id), currentUser.ID); err != nil {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
+	currentToken, err := utils.GetTokenFromHeader(c)
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+	_, err = utils.PostAsync[dto.CommonResponseDTO](fmt.Sprintf("%s/api/notification/blocked-deleted", h.clientHost), currentToken, map[string]interface{}{"user_id": id, "type": "account_deleted"})
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
 
 	adminLog := h.srv.Admin.MakeAdminLogModel(currentUser.ID, model.DeleteUserAction, fmt.Sprintf("%s deleted %s.", currentUser.Username, deletedUser.Username))
 	err = h.srv.Admin.CreateLog(adminLog)
@@ -268,7 +276,7 @@ func (h *userHandler) deactiveUser(c echo.Context) error {
 	if err != nil {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
-	_, err = utils.PostAsync[dto.CommonResponseDTO](fmt.Sprintf("%s/api/notification/blocked", h.clientHost), currentToken, map[string]interface{}{"user_id": id})
+	_, err = utils.PostAsync[dto.CommonResponseDTO](fmt.Sprintf("%s/api/notification/blocked-deleted", h.clientHost), currentToken, map[string]interface{}{"user_id": id, "type": "account_blocked"})
 	if err != nil {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}

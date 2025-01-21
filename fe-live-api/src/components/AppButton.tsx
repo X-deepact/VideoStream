@@ -7,10 +7,17 @@ import { cn } from '@/lib/utils';
 interface ButtonProps {
   Icon: LucideIcon;
   label: string;
-  isIconActive: boolean;
+  isIconActive?: boolean;
   tooltipOnSmallScreens?: boolean;
   size?: 'sm' | 'lg' | 'default' | 'icon' | null | undefined;
-  variant?: 'default' | 'outline' | 'ghost' | 'destructive' | 'link';
+  variant?:
+    | 'default'
+    | 'outline'
+    | 'ghost'
+    | 'destructive'
+    | 'link'
+    | 'secondary';
+  className?: string;
   onClick: () => void;
 }
 
@@ -21,6 +28,7 @@ const AppButton: React.FC<ButtonProps> = ({
   isIconActive = false,
   size = 'default',
   variant = 'default',
+  className = '',
   onClick,
 }) => {
   const isMobile = useIsMobile();
@@ -30,18 +38,28 @@ const AppButton: React.FC<ButtonProps> = ({
       {Icon && (
         <Icon className={cn(isIconActive ? 'fill-primary text-primary' : '')} />
       )}
-      <span className="hidden md:inline">{label}</span>
+      {size !== 'icon' && <span className="hidden md:inline">{label}</span>}
     </>
   );
 
-  return tooltipOnSmallScreens && isMobile ? (
+  return (tooltipOnSmallScreens && isMobile) || size === 'icon' ? (
     <TooltipComponent text={label} align="center">
-      <ShadcnButton onClick={onClick} size={size} variant={variant}>
+      <ShadcnButton
+        onClick={onClick}
+        size={size}
+        variant={variant}
+        className={className}
+      >
         {buttonContent}
       </ShadcnButton>
     </TooltipComponent>
   ) : (
-    <ShadcnButton onClick={onClick} size={size} variant={variant}>
+    <ShadcnButton
+      onClick={onClick}
+      size={size}
+      variant={variant}
+      className={className}
+    >
       {Icon && (
         <Icon className={cn(isIconActive ? 'fill-primary text-primary' : '')} />
       )}{' '}

@@ -40,6 +40,15 @@ const (
 	ViewTypeRecordView ViewType = "record_view"
 )
 
+type NotificationType string
+
+const (
+	NotificationTypeSubscribeLive  NotificationType = "subscribe_live"
+	NotificationTypeSubscribeVideo NotificationType = "subscribe_video"
+	NotificationTypeBlocked        NotificationType = "account_blocked"
+	NotificationTypeDeleted        NotificationType = "account_deleted"
+)
+
 type Stream struct {
 	ID          uint         `gorm:"primaryKey"`
 	UserID      uint         `gorm:"not null"`
@@ -59,13 +68,16 @@ type Stream struct {
 }
 
 type Notification struct {
-	ID        uint      `gorm:"primaryKey"`
-	UserID    uint      `gorm:"not null"`
-	StreamID  uint      `gorm:"not null"`
-	Content   string    `gorm:"type:text;not null"`
-	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP;not null"`
-	Stream    Stream    `gorm:"foreignKey:StreamID;constraint:OnDelete:CASCADE"`
-	User      User      `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	ID        uint             `gorm:"primaryKey"`
+	UserID    uint             `gorm:"column:user_id;not null"`
+	StreamID  uint             `gorm:"column:stream_id"`
+	Type      NotificationType `gorm:"type:varchar(50);not null"`
+	Content   string           `gorm:"type:text;not null"`
+	CreatedAt time.Time        `gorm:"default:CURRENT_TIMESTAMP;not null"`
+	ReadAt    sql.NullTime     `gorm:"column:read_at"`
+	HiddenAt  sql.NullTime     `gorm:"column:hidden_at"`
+	Stream    Stream           `gorm:"foreignKey:StreamID;constraint:OnDelete:CASCADE"`
+	User      User             `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
 // type Chat struct {
@@ -83,6 +95,7 @@ type Subscription struct {
 	SubscriberID uint      `gorm:"not null;uniqueIndex:idx_streamer_subscriber"`
 	StreamerID   uint      `gorm:"not null;uniqueIndex:idx_streamer_subscriber"`
 	CreatedAt    time.Time `gorm:"default:CURRENT_TIMESTAMP;not null"`
+	IsMute       bool      `gorm:"not null;default:false"`
 	// StartDate      time.Time `gorm:"default:CURRENT_TIMESTAMP"`
 	// EndDate        time.Time `gorm:"not null"`
 	// AutoRenew      bool      `gorm:"not null"`
@@ -96,6 +109,7 @@ type StreamAnalytics struct {
 	Views     uint      `gorm:"not null"`
 	Likes     uint      `gorm:"not null"`
 	Comments  uint      `gorm:"not null"`
+	Shares    uint      `gorm:"not null;default:0"`
 	VideoSize uint      `gorm:"not null"`           // in bytes
 	Duration  uint      `gorm:"not null;default:0"` // in micro seconds
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP;not null"`
@@ -126,9 +140,10 @@ type Comment struct {
 }
 type Share struct {
 	ID        uint      `gorm:"primaryKey"`
-	UserID    uint      `gorm:"not null"`
-	StreamID  uint      `gorm:"not null"`
+	UserID    uint      `gorm:"not null;uniqueIndex:idx_share_user_stream"`
+	StreamID  uint      `gorm:"not null;uniqueIndex:idx_share_user_stream"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP;not null"`
+	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP;autoUpdateTime;not null"`
 	Stream    Stream    `gorm:"foreignKey:StreamID;constraint:OnDelete:CASCADE"`
 	User      User      `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }

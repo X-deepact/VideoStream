@@ -47,3 +47,11 @@ export enum USER_STATUS {
   OFFLINE = 'offline',
   BLOCKED = 'blocked',
 }
+
+export interface ActivityLogResponse {
+  id: number;
+  action: string;
+  details: string;
+  performed_at: string;
+  user: UserResponse;
+}

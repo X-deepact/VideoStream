@@ -15,6 +15,7 @@ const (
 	LikeInfoType    LiveMessageType = "like_info"
 	ViewInfoType    LiveMessageType = "view_info"
 	LiveEndType     LiveMessageType = "live_ended"
+	LiveShareType   LiveMessageType = "share"
 )
 
 type BaseMessage struct {
@@ -50,6 +51,7 @@ type InitialLiveMessage struct {
 	LikeInfo        *LikeInfo            `json:"like_info"`
 	CurrentLikeType *model.LikeEmoteType `json:"current_like_type,omitempty"`
 	StartedAt       time.Time            `json:"started_at"`
+	ShareCount      int64                `json:"share_count"`
 }
 
 type LiveCommentDto struct {
@@ -102,4 +104,9 @@ type UpdateRequest struct {
 	Title       string `json:"title" form:"title" validate:"required"`
 	Description string `json:"description" form:"description" validate:"required"`
 	CategoryIDs []uint `json:"category_ids" form:"category_ids" validate:"required,max=3,dive,required"`
+}
+
+type ShareDto struct {
+	Type       LiveMessageType `json:"type"`
+	ShareCount int64           `json:"share_count"`
 }

@@ -6,8 +6,9 @@ import {
   getTimeAgoFormat,
 } from '@/lib/date-time';
 import { Badge } from './ui/badge';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
+  RESOURCE_ID,
   STREAMER_PROFILE_PATH,
   WATCH_LIVE_PATH,
   WATCH_VIDEO_PATH,
@@ -24,7 +25,7 @@ import {
 } from './ui/dropdown-menu';
 import { LucideIcon, MoreVertical } from 'lucide-react';
 import { Button } from './ui/button';
-import { cn } from '@/lib/utils';
+import { cn, getAvatarFallbackText } from '@/lib/utils';
 
 interface VideoItemProps {
   video: StreamsResponse;
@@ -61,10 +62,7 @@ const VideoItem: React.FC<VideoItemProps> = ({
   };
 
   return (
-    <div
-      className="overflow-hidden relative cursor-pointer"
-      onClick={handleWatchVideo}
-    >
+    <div className="overflow-hidden relative cursor-pointer">
       <div
         className={cn(
           isSingleStyleMobile ? 'flex flex-col gap-4' : 'flex gap-4',
@@ -77,6 +75,7 @@ const VideoItem: React.FC<VideoItemProps> = ({
             'overflow-hidden aspect-video rounded-lg hover:rounded-none border border-transparent hover:border-primary hover:border-4 transition-all ease-in-out duration-300 relative',
             !isGrid && 'md:max-w-[350px] md:min-w-[240px]'
           )}
+          onClick={handleWatchVideo}
         >
           {/* live status */}
           {isLive && (
@@ -151,7 +150,18 @@ const VideoItem: React.FC<VideoItemProps> = ({
           )}
         >
           {(isSingleStyleMobile || isGrid) && (
-            <AppAvatar classes="w-10 h-10" url={video?.avatar_file_url} />
+            <Link
+              to={STREAMER_PROFILE_PATH.replace(
+                RESOURCE_ID,
+                video?.user_id?.toString()
+              )}
+            >
+              <AppAvatar
+                classes="w-10 h-10"
+                url={video?.avatar_file_url}
+                fallback={getAvatarFallbackText(video?.display_name)}
+              />
+            </Link>
           )}
           <div className="space-y-1 flex-1">
             {/* title - 2 lines at most */}
@@ -161,6 +171,7 @@ const VideoItem: React.FC<VideoItemProps> = ({
                 isSingleStyleMobile ? 'text-lg' : 'text-base md:text-lg',
                 'hover:text-primary font-bold line-clamp-2 text-ellipsis'
               )}
+              onClick={handleWatchVideo}
             >
               {video.title}
             </p>
@@ -168,16 +179,29 @@ const VideoItem: React.FC<VideoItemProps> = ({
             {/* avatar and streamer name */}
             <div className="flex gap-2 md:items-center">
               {!isGrid && (
-                <div className="hidden md:block md:mt-2">
-                  <AppAvatar classes="w-10 h-10" url={video?.avatar_file_url} />
-                </div>
+                <Link
+                  to={STREAMER_PROFILE_PATH.replace(
+                    RESOURCE_ID,
+                    video?.user_id?.toString()
+                  )}
+                >
+                  <div className="hidden md:block md:mt-2">
+                    <AppAvatar
+                      classes="w-10 h-10"
+                      url={video?.avatar_file_url}
+                    />
+                  </div>
+                </Link>
               )}
-              <NavLink
-                to={`${STREAMER_PROFILE_PATH}/${video.user_id}`}
-                className="text-sm font-medium text-muted-foreground"
+              <Link
+                to={STREAMER_PROFILE_PATH.replace(
+                  RESOURCE_ID,
+                  video?.user_id?.toString()
+                )}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
               >
                 {video.display_name}
-              </NavLink>
+              </Link>
             </div>
           </div>
           {!!actions && actions.length > 0 && (

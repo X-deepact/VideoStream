@@ -23,16 +23,21 @@ const (
 )
 
 type StreamQuery struct {
-	Page        int          `query:"page" validate:"omitempty,min=1"`
-	Limit       int          `query:"limit" validate:"omitempty,min=5,max=50"`
-	Title       string       `query:"title" validate:"omitempty,min=1,max=100"`
-	Status      StreamStatus `query:"status" validate:"omitempty,oneof=live video"`
-	IsMe        *bool        `query:"is_me" validate:"omitempty"`
-	UserID      uint         `query:"-"`
-	CategoryIDs []uint       `query:"category_ids" validate:"omitempty,max=3"`
-	IsLiked     *bool        `query:"is_liked" validate:"omitempty"`
-	IsHistory   *bool        `query:"is_history" validate:"omitempty"`
-	IsSaved     *bool        `query:"is_saved" validate:"omitempty"`
+	Page         int          `query:"page" validate:"omitempty,min=1"`
+	Limit        int          `query:"limit" validate:"omitempty,min=5,max=50"`
+	Title        string       `query:"title" validate:"omitempty,min=1,max=100"`
+	Status       StreamStatus `query:"status" validate:"omitempty,oneof=live video"`
+	IsMe         *bool        `query:"is_me" validate:"omitempty"`
+	UserID       uint         `query:"-"`
+	CategoryIDs  []uint       `query:"category_ids" validate:"omitempty,max=3"`
+	IsLiked      *bool        `query:"is_liked" validate:"omitempty"`
+	IsHistory    *bool        `query:"is_history" validate:"omitempty"`
+	IsSaved      *bool        `query:"is_saved" validate:"omitempty"`
+	StreamerID   uint         `query:"streamer_id" validate:"omitempty"`
+	FromDate     string       `query:"from_date" validate:"omitempty"`
+	ToDate       string       `query:"to_date" validate:"omitempty"`
+	FromDateTime *time.Time   `query:"_" validate:"omitempty"`
+	ToDateTime   *time.Time   `query:"_" validate:"omitempty"`
 }
 
 type StreamDto struct {
@@ -74,6 +79,7 @@ type StreamDetailDto struct {
 	Subscriptions   uint                 `json:"subscriptions"`
 	Views           uint                 `json:"views"`
 	Comments        uint                 `json:"comments"`
+	Shares          uint                 `json:"shares"`
 	LikeInfo        *LikeInfo            `json:"likes"`
 	CurrentLikeType *model.LikeEmoteType `json:"current_like_type"`
 	IsCurrentLike   bool                 `json:"is_current_like"`
@@ -83,4 +89,21 @@ type StreamDetailDto struct {
 	Categories      []CategoryDto        `json:"categories"`
 	ScheduledAt     *time.Time           `json:"scheduled_at"`
 	IsSaved         bool                 `json:"is_saved"`
+	IsMute          bool                 `json:"is_mute"`
+}
+
+type StreamChannelDto struct {
+	ID                uint      `json:"id"`
+	StreamerName      string    `json:"streamer_name"`
+	StreamerAvatarURL string    `json:"streamer_avatar_url"`
+	CreatedAt         time.Time `json:"created_at"`
+	IsSubscribed      bool      `json:"is_subscribed"`
+	IsMute            bool      `json:"is_mute"`
+	IsMe              bool      `json:"is_me"`
+	TotalLike         uint      `json:"total_like"`
+	TotalView         uint      `json:"total_view"`
+	TotalComment      uint      `json:"total_comment"`
+	TotalShare        uint      `json:"total_share"`
+	TotalSubscribe    uint      `json:"total_subscribe"`
+	TotalVideo        uint      `json:"total_video"`
 }

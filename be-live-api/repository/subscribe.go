@@ -27,14 +27,6 @@ func (r *SubscribeRepository) Delete(subscribe *model.Subscription) error {
 	return r.db.Where("subscriber_id = ? and streamer_id = ?", subscribe.SubscriberID, subscribe.StreamerID).Delete(&subscribe).Error
 }
 
-func (r *SubscribeRepository) CheckSubscribed(streamerID, subscriberID uint) (bool, error) {
-	var count int64
-	if err := r.db.Model(&model.Subscription{}).Where("streamer_id = ? and subscriber_id = ?", streamerID, subscriberID).Count(&count).Error; err != nil {
-		return false, err
-	}
-	return count > 0, nil
-}
-
 func (r *SubscribeRepository) GetSubscriptionCount(streamerID uint) (int64, error) {
 	var count int64
 	if err := r.db.Model(&model.Subscription{}).Where("streamer_id = ?", streamerID).Count(&count).Error; err != nil {
@@ -70,4 +62,30 @@ func (r *SubscribeRepository) GetSubscribes(filter *dto.SubscribeQuery) (*utils.
 		return nil, err
 	}
 	return utils.Create(pagination, filter.Page, filter.Limit)
+}
+
+func (r *SubscribeRepository) GetSubscriberIDs(streamerID uint) ([]uint, error) {
+	var subscriberIDs []uint
+
+	err := r.db.Model(&dto.Subscription{}).
+		Select("subscriber_id").
+		Where("streamer_id = ? and is_mute = false", streamerID).Find(&subscriberIDs).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return subscriberIDs, nil
+}
+
+func (r *SubscribeRepository) GetSubscription(streamerID uint, subscriberID uint) (*model.Subscription, error) {
+	var subscription model.Subscription
+	if err := r.db.Where("streamer_id = ? and subscriber_id = ?", streamerID, subscriberID).First(&subscription).Error; err != nil {
+		return nil, err
+	}
+	return &subscription, nil
+}
+
+func (r *SubscribeRepository) Update(subscription *model.Subscription) error {
+	return r.db.Save(subscription).Error
 }

@@ -5,6 +5,7 @@ export interface SubscriptionResponse {
   streamer_avatar_url: string;
   num_subscribed: number;
   num_video: number;
+  is_mute: false;
 }
 
 export type SubscriptionListRequest = {

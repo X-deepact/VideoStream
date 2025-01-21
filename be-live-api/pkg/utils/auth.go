@@ -4,6 +4,7 @@ import (
 	"errors"
 	"gitlab/live/be-live-api/model"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -58,6 +59,20 @@ func JWTMiddlewareStreamer() echo.MiddlewareFunc {
 			roleType := claims.RoleType
 			if model.STREAMER != roleType {
 				return BuildErrorResponse(c, http.StatusUnauthorized, errors.New("you haven't authorized the role streamer"), nil)
+			}
+			// Call the next handler
+			return next(c)
+		}
+	}
+}
+
+func JWTMiddlewareAdmin() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			claims := c.Get("user").(*Claims)
+			roleType := claims.RoleType
+			if !slices.Contains([]model.RoleType{model.ADMINROLE, model.SUPPERADMINROLE}, roleType) { // super admin and admin
+				return BuildErrorResponse(c, http.StatusUnauthorized, errors.New("you haven't authorized the role admin"), nil)
 			}
 			// Call the next handler
 			return next(c)

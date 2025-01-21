@@ -19,7 +19,7 @@ type LiveStreamRespDTO struct {
 }
 
 type LiveStatQuery struct {
-	SortBy  string `query:"sort_by" validate:"omitempty,oneof=total_viewers likes comments current_viewers title description"`
+	SortBy  string `json:"sort_by" query:"sort_by" validate:"omitempty,oneof=total_viewers likes comments current_viewers shares title description"`
 	Sort    string `query:"sort" validate:"omitempty,oneof=DESC ASC"`
 	Keyword string `query:"keyword" validate:"omitempty"`
 	Page    uint   `query:"page" validate:"required,min=1"`
@@ -32,6 +32,7 @@ type LiveStatRespDTO struct {
 	StreamID       uint               `json:"stream_id"`
 	Status         model.StreamStatus `json:"status"`
 	Likes          uint               `json:"likes"`
+	Shares         uint               `json:"shares"`
 	CurrentViewers uint               `json:"current_viewers"`
 	TotalViewers   uint               `json:"total_viewers"`
 	Comments       uint               `json:"comments"`
@@ -78,10 +79,10 @@ type StatisticsStreamInDayQuery struct {
 }
 
 type LiveStreamBroadCastQueryDTO struct {
-	SortBy          string               `json:"sort_by" query:"sort_by" validate:"omitempty,oneof=title started_at ended_at views likes comments video_size duration shares created_at"`
+	SortBy          string               `json:"sort_by" query:"sort_by" validate:"omitempty,oneof=title started_at ended_at views shares likes comments video_size duration shares created_at"`
 	Sort            string               `query:"sort" validate:"omitempty,oneof=DESC ASC"`
 	Status          []model.StreamStatus `query:"status" validate:"omitempty"`
-	Type            model.StreamType     `query:"type" validate:"omitempty,oneof=camera software"`
+	Type            model.StreamType     `query:"type" validate:"omitempty,oneof=camera software pre_record"`
 	Category        string               `query:"category" validate:"omitempty"`
 	FromStartedTime int64                `json:"from_started_time" query:"from_started_time" validate:"omitempty"`
 	EndStartedTime  int64                `json:"end_started_time" query:"end_started_time" validate:"omitempty"`

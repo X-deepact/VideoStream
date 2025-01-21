@@ -16,7 +16,7 @@ type CreateAdminResp struct {
 }
 
 type AdminLogQuery struct {
-	SortBy   string `json:"sort_by" query:"sort_by" validate:"omitempty,oneof=performed_at"`
+	SortBy   string `json:"sort_by" query:"sort_by" validate:"omitempty,oneof=performed_at action details username"`
 	Sort     string `json:"sort" query:"sort" validate:"omitempty,oneof=DESC ASC"`
 	FilterBy string `json:"filter_by" query:"filter_by" validate:"omitempty,oneof=details username email"`
 	Action   string `json:"action" query:"action" validate:"omitempty,max=255"`

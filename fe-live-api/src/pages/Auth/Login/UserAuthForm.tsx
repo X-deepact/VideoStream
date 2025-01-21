@@ -14,6 +14,7 @@ type LoginFormError = {
   loginFailure: boolean;
   usernameFailure: boolean;
   passwordFailure: boolean;
+  blocked: boolean;
 };
 
 const UserAuthForm = () => {
@@ -29,6 +30,7 @@ const UserAuthForm = () => {
     loginFailure: false,
     usernameFailure: false,
     passwordFailure: false,
+    blocked: false,
   });
 
   const onUserLogin = async (event: React.SyntheticEvent): Promise<void> => {
@@ -46,6 +48,7 @@ const UserAuthForm = () => {
         loginFailure: errors[LoginError.LOGIN_FAILED],
         usernameFailure: errors[LoginError.INVALID_USERNAME],
         passwordFailure: errors[LoginError.INVALID_PASSWORD],
+        blocked: errors[LoginError.ACCOUNT_BLOCKED],
       };
       onAuthenticateCredentialFail(loginError);
     }
@@ -68,12 +71,13 @@ const UserAuthForm = () => {
 
   const onAuthenticateCredentialFail = (error: LoginFormError): void => {
     if (_isMounted.current) {
-      const { usernameFailure, passwordFailure, loginFailure } = error;
+      const { usernameFailure, passwordFailure, loginFailure, blocked } = error;
       setFormError((prevError: LoginFormError) => ({
         ...prevError,
         usernameFailure,
         passwordFailure,
         loginFailure,
+        blocked,
       }));
       setIsLoading(false);
     }
@@ -94,6 +98,7 @@ const UserAuthForm = () => {
         loginFailure: false,
         usernameFailure: false,
         passwordFailure: false,
+        blocked: false,
       });
     };
   }, []);
@@ -126,16 +131,20 @@ const UserAuthForm = () => {
     }));
   };
 
-  const { loginFailure, usernameFailure, passwordFailure } = formError;
+  const { loginFailure, usernameFailure, passwordFailure, blocked } = formError;
   let invalidEmailError = null,
     invalidPasswordError = null,
-    wrongCredentialError = null;
+    wrongCredentialError = null,
+    blockedError = null;
   if (usernameFailure) invalidEmailError = <div>Email Required</div>;
   if (passwordFailure) invalidPasswordError = <div>Password Required</div>;
+  if (blocked)
+    blockedError = <div>You have been blocked. Try again later.</div>;
   if (loginFailure) {
     wrongCredentialError = <div>Invalid Email or Password!</div>;
     invalidEmailError = '';
     invalidPasswordError = '';
+    blockedError = '';
   }
 
   const emailInputInvalid = usernameFailure || loginFailure;
@@ -194,6 +203,7 @@ const UserAuthForm = () => {
             {invalidPasswordError && (
               <FormErrorMessage message={invalidPasswordError} />
             )}
+            {blockedError && <FormErrorMessage message={blockedError} />}
             {wrongCredentialError && (
               <FormErrorMessage message={wrongCredentialError} />
             )}

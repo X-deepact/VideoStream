@@ -369,6 +369,22 @@ func (h *streamHandler) updateThumbnailByAdmin(c echo.Context) error {
 	return utils.BuildSuccessResponse(c, http.StatusOK, "Successfully", nil)
 }
 
+// @Summary Create a live stream by admin
+// @Description Create a live stream by admin with thumbnail and video upload
+// @Tags Streams
+// @Accept  multipart/form-data
+// @Produce  json
+// @Param userID formData int true "User ID"
+// @Param title formData string true "Stream Title"
+// @Param description formData string true "Stream Description"
+// @Param scheduledAt formData string true "Scheduled At"
+// @Param thumbnail formData file true "Thumbnail image file"
+// @Param video formData file true "Video file"
+// @Success 201 {object} dto.CreateStreamResponseDTO
+// @Failure 400 "Invalid request"
+// @Failure 500 "Internal Server Error"
+// @Security Bearer
+// @Router /api/streams [post]
 func (h *streamHandler) createLiveStreamByAdmin(c echo.Context) error {
 	var req dto.StreamRequest
 	if err := utils.BindAndValidate(c, &req); err != nil {
@@ -491,11 +507,11 @@ func (h *streamHandler) createLiveStreamByAdmin(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to created admin log"})
 	}
 
-	return utils.BuildSuccessResponse(c, http.StatusCreated, "Successfully", map[string]any{
-		"id":            stream.ID,
-		"title":         stream.Title,
-		"description":   stream.Description,
-		"thumbnail_url": utils.MakeThumbnailURL(h.ApiURL, stream.ThumbnailFileName),
+	return utils.BuildSuccessResponse(c, http.StatusCreated, "Successfully", dto.CreateStreamResponseDTO{
+		ID:           stream.ID,
+		Title:        stream.Title,
+		Description:  stream.Description,
+		ThumbnailURL: utils.MakeThumbnailURL(h.ApiURL, stream.ThumbnailFileName),
 	})
 }
 
@@ -547,7 +563,7 @@ func (h *streamHandler) getLiveStreamStatisticsData(c echo.Context) error {
 
 // @Summary Get live stream statistics data in a day
 // @Description Get statistics data for live streams in a specific day
-// @Tags streams
+// @Tags Streams
 // @Accept  json
 // @Produce  json
 // @Param request query dto.StatisticsStreamInDayQuery true "Statistics Stream In Day Query"
@@ -599,6 +615,17 @@ func (h *streamHandler) getLiveStatData(c echo.Context) error {
 
 }
 
+// @Summary Get live streams with pagination
+// @Description Get live stream broadcast data with pagination
+// @Tags Streams
+// @Accept  json
+// @Produce  json
+// @Param request query dto.LiveStreamBroadCastQueryDTO true "Live Stream Broadcast Query"
+// @Success 200 {object} utils.PaginationModel[dto.LiveStreamBroadCastDTO]
+// @Failure 400 "Invalid request"
+// @Failure 500 "Internal Server Error"
+// @Security Bearer
+// @Router /api/streams [get]
 func (h *streamHandler) getLiveStreamWithPagination(c echo.Context) error {
 
 	var req dto.LiveStreamBroadCastQueryDTO

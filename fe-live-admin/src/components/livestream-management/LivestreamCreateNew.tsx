@@ -57,16 +57,17 @@ const FormSchema = z.object({
 });
 
 interface ComponentProps {
-	categories:{ label:string, value:string }[],
-	users:{ label:string, value:string }[],
-	onReset:() => void,
+	categories: { label: string, value: string }[],
+	users: { label: string, value: string }[],
+	onReset: () => void,
+	isDisabled: boolean
 }
 
-const LivestreamCreateNew = (props:ComponentProps) => {
-	const { categories, users, onReset } = props;
+const LivestreamCreateNew = (props: ComponentProps) => {
+	const {categories, users, onReset, isDisabled} = props;
 	
-	const videoFileRef = useRef<{ clear:() => void } | null>(null);
-	const imageFileRef = useRef<{ clear:() => void } | null>(null);
+	const videoFileRef = useRef<{ clear: () => void } | null>(null);
+	const imageFileRef = useRef<{ clear: () => void } | null>(null);
 	const triggerClear = () => {
 		videoFileRef.current?.clear(); // Call the `clear` method of ImageUpload
 		imageFileRef.current?.clear(); // Call the `clear` method of VideoUpload
@@ -82,15 +83,15 @@ const LivestreamCreateNew = (props:ComponentProps) => {
 	const [category, setCategory] = React.useState<string[]>([]);
 	const [startDate, setStartDate] = React.useState<Date>();
 	const [thumbnailImage, setThumbnailImage] = React.useState<{
-		file:null | File;
-		preview:null | string;
+		file: null | File;
+		preview: null | string;
 	}>({
 		file: null,
 		preview: null,
 	});
 	const [videoFile, setVideoFile] = React.useState<{
-		file:null | File;
-		name:null | string;
+		file: null | File;
+		name: null | string;
 	}>({
 		file: null,
 		name: null,
@@ -98,10 +99,10 @@ const LivestreamCreateNew = (props:ComponentProps) => {
 	
 	//Form Errors
 	const [errors, setErrors] = React.useState<{
-		[field:string]:string;
+		[field: string]: string;
 	}>({});
 	
-	function handleThumbnailChanges(file:File) {
+	function handleThumbnailChanges(file: File) {
 		FileUpload(
 			file,
 			(file, result) => {
@@ -119,7 +120,7 @@ const LivestreamCreateNew = (props:ComponentProps) => {
 		)
 	}
 	
-	function handleVideoUpload(file:File) {
+	function handleVideoUpload(file: File) {
 		FileUpload(
 			file,
 			(file) => {
@@ -137,7 +138,7 @@ const LivestreamCreateNew = (props:ComponentProps) => {
 		)
 	}
 	
-	async function handleCreateNewStream(e:React.FormEvent<HTMLFormElement>) {
+	async function handleCreateNewStream(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
 		
 		const data = {
@@ -150,10 +151,10 @@ const LivestreamCreateNew = (props:ComponentProps) => {
 		
 		const result = FormSchema.safeParse(data);
 		
-		if ( !result.success ) {
+		if (!result.success) {
 			// gather errors
-			const formErrors:{ [key:string]:string } = {};
-			for ( const issue of result.error.issues ) {
+			const formErrors: { [key: string]: string } = {};
+			for(const issue of result.error.issues) {
 				const fieldName = issue.path[0];
 				formErrors[fieldName] = issue.message;
 			}
@@ -191,8 +192,8 @@ const LivestreamCreateNew = (props:ComponentProps) => {
 				setOpenCreateNewDialog(false);
 				handleCancel();
 			});
-		} catch ( e ) {
-			if ( e instanceof Error ) {
+		} catch (e) {
+			if (e instanceof Error) {
 				toast({
 					description: e.message,
 					variant: "destructive"
@@ -229,7 +230,7 @@ const LivestreamCreateNew = (props:ComponentProps) => {
 	return (
 		<Dialog open={openCreateNewDialog} onOpenChange={setOpenCreateNewDialog}>
 			<DialogTrigger asChild>
-				<Button variant="outline">
+				<Button variant="outline" disabled={isDisabled}>
 					<Rss/>
 					New Stream
 				</Button>
@@ -257,7 +258,7 @@ const LivestreamCreateNew = (props:ComponentProps) => {
 										id="title"
 										placeholder="Livestream Title"
 										value={title}
-										onChange={(e:React.ChangeEvent<HTMLInputElement>) => {
+										onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
 											setTitle(e.target.value)
 										}}
 										disabled={isLoading}
@@ -277,7 +278,7 @@ const LivestreamCreateNew = (props:ComponentProps) => {
 										id="description"
 										placeholder="Livestream Description"
 										value={description}
-										onChange={(e:React.ChangeEvent<HTMLTextAreaElement>) => {
+										onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
 											setDescription(e.target.value)
 										}}
 										disabled={isLoading}
@@ -360,7 +361,7 @@ const LivestreamCreateNew = (props:ComponentProps) => {
 										width="w-full overflow-hidden"
 										height="h-24 lg:h-[12rem] xl:h-[15rem]"
 										onFileChange={(file) => {
-											if ( file ) handleThumbnailChanges(file)
+											if (file) handleThumbnailChanges(file)
 										}}
 										preview={thumbnailImage.preview || ""}
 										mode="image"
@@ -381,7 +382,7 @@ const LivestreamCreateNew = (props:ComponentProps) => {
 										width="w-full overflow-hidden"
 										height="h-24 lg:h-[12rem] xl:h-[15rem]"
 										onFileChange={(file) => {
-											if ( file ) handleVideoUpload(file)
+											if (file) handleVideoUpload(file)
 										}}
 										preview={videoFile.name || ""}
 										mode="video"

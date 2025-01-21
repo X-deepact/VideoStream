@@ -1,7 +1,6 @@
 import VideoItem from '@/components/VideoItem';
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '@/data/validations';
 import useVideosList from '@/hooks/useVideosList';
-import AppLayout from '@/layouts/AppLayout';
 import LayoutHeading from '@/layouts/LayoutHeading';
 import { useCallback, useRef, useState } from 'react';
 import EndOfResults from '../../components/EndOfResults';
@@ -72,72 +71,70 @@ const LikedVideos = () => {
   };
 
   return (
-    <AppLayout>
-      <div className="md:container lg:px-[10rem] md:mx-auto flex flex-col justify-center gap-4">
-        <div className="w-full">
-          <LayoutHeading title={`${title} (${totalItems})`} />
-        </div>
-
-        <div className="flex flex-col justify-center gap-8 md:gap-4">
-          {!isFetchingError &&
-            videos.length > 0 &&
-            videos.map((video, index) => {
-              if (videos.length === index + 1)
-                return (
-                  <div key={index} ref={lastVideoElementRef}>
-                    <VideoItem
-                      video={video}
-                      actions={[
-                        {
-                          Icon: Trash2,
-                          label: 'Remove from Liked videos',
-                          onClick: handleRemoveFromLikedVideos,
-                        },
-                      ]}
-                    />
-                  </div>
-                );
-              else
-                return (
-                  <div key={index}>
-                    <VideoItem
-                      video={video}
-                      actions={[
-                        {
-                          Icon: Trash2,
-                          label: 'Remove from Liked videos',
-                          onClick: handleRemoveFromLikedVideos,
-                        },
-                      ]}
-                    />
-                  </div>
-                );
-            })}
-        </div>
-
-        {!isFetchingError && !isLoading && !hasMore && videos?.length > 0 && (
-          <EndOfResults />
-        )}
-
-        {!isFetchingError && isLoading && <InlineLoading />}
-
-        {!isFetchingError && !isLoading && videos.length === 0 && (
-          <NotFoundCentered
-            Icon={<VideoOff className="text-white" />}
-            title="No Video Found!"
-            description="Liked videos will appear here."
-          />
-        )}
-
-        {isFetchingError && (
-          <ApiFetchingError
-            label="Sorry, can't fetch liked videos right now!"
-            isLoading={isLoading}
-            onRefetch={refetchVideos}
-          />
-        )}
+    <div className="md:container lg:px-[10rem] md:mx-auto flex flex-col justify-center gap-4">
+      <div className="w-full">
+        <LayoutHeading title={`${title} (${totalItems})`} />
       </div>
-    </AppLayout>
+
+      <div className="flex flex-col justify-center gap-8 md:gap-4">
+        {!isFetchingError &&
+          videos.length > 0 &&
+          videos.map((video, index) => {
+            if (videos.length === index + 1)
+              return (
+                <div key={index} ref={lastVideoElementRef}>
+                  <VideoItem
+                    video={video}
+                    actions={[
+                      {
+                        Icon: Trash2,
+                        label: 'Remove from Liked videos',
+                        onClick: handleRemoveFromLikedVideos,
+                      },
+                    ]}
+                  />
+                </div>
+              );
+            else
+              return (
+                <div key={index}>
+                  <VideoItem
+                    video={video}
+                    actions={[
+                      {
+                        Icon: Trash2,
+                        label: 'Remove from Liked videos',
+                        onClick: handleRemoveFromLikedVideos,
+                      },
+                    ]}
+                  />
+                </div>
+              );
+          })}
+      </div>
+
+      {!isFetchingError && !isLoading && !hasMore && videos?.length > 0 && (
+        <EndOfResults />
+      )}
+
+      {!isFetchingError && isLoading && <InlineLoading />}
+
+      {!isFetchingError && !isLoading && videos.length === 0 && (
+        <NotFoundCentered
+          Icon={<VideoOff className="text-white" />}
+          title="No Video Found!"
+          description="Liked videos will appear here."
+        />
+      )}
+
+      {isFetchingError && (
+        <ApiFetchingError
+          label="Sorry, can't fetch liked videos right now!"
+          isLoading={isLoading}
+          onRefetch={refetchVideos}
+        />
+      )}
+    </div>
   );
 };
 

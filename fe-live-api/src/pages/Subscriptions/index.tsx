@@ -3,7 +3,6 @@ import InlineLoading from '@/components/InlineLoading';
 import NotFoundCentered from '@/components/NotFoundCentered';
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '@/data/validations';
 import useSubscriptions from '@/hooks/useSubscriptions';
-import AppLayout from '@/layouts/AppLayout';
 import LayoutHeading from '@/layouts/LayoutHeading';
 import { UsersRound } from 'lucide-react';
 import { useState } from 'react';
@@ -97,7 +96,7 @@ const Subscriptions = () => {
   };
 
   return (
-    <AppLayout>
+    <div>
       <div className="flex flex-col justify-center items-center max-w-4xl mx-auto">
         <div className="w-full">
           <LayoutHeading title={`${title} (${totalItems})`} />
@@ -161,7 +160,7 @@ const Subscriptions = () => {
         onConfirm={confirmModal.onConfirm}
         onCancel={closeConfirmationModal}
       />
-    </AppLayout>
+    </div>
   );
 };
 

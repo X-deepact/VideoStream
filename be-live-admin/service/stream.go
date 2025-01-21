@@ -258,6 +258,7 @@ func (s *StreamService) toLiveStreamBroadCastDto(v *model.Stream, apiUrl, rtmpUR
 		liveStreamDto.LiveStreamAnalytic.VideoSize = int64(streamAnalytic.VideoSize)
 		liveStreamDto.LiveStreamAnalytic.Viewers = streamAnalytic.Views
 		liveStreamDto.LiveStreamAnalytic.Comments = streamAnalytic.Comments
+		liveStreamDto.LiveStreamAnalytic.Shares = streamAnalytic.Shares
 		liveStreamDto.LiveStreamAnalytic.StreamID = v.ID
 	}
 
@@ -433,6 +434,7 @@ func (s *StreamService) toLiveStatDto(v *model.StreamAnalytics, currentViewers u
 	live.CurrentViewers = currentViewers
 	live.TotalViewers = v.Views
 	live.Likes = v.Likes
+	live.Shares = v.Shares
 	live.StreamID = v.StreamID
 	live.Title = v.Stream.Title
 	live.Status = v.Stream.Status

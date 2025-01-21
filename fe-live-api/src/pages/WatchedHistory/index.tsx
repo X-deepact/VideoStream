@@ -5,7 +5,6 @@ import NotFoundCentered from '@/components/NotFoundCentered';
 import VideoItem from '@/components/VideoItem';
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '@/data/validations';
 import useVideosList from '@/hooks/useVideosList';
-import AppLayout from '@/layouts/AppLayout';
 import LayoutHeading from '@/layouts/LayoutHeading';
 import { VideoOff } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
@@ -44,7 +43,7 @@ const WatchedHistory = () => {
   );
 
   return (
-    <AppLayout>
+    <div>
       <div className="md:container lg:px-[10rem] md:mx-auto flex flex-col justify-center gap-4">
         <div className="w-full">
           <LayoutHeading title={`${title} (${totalItems})`} />
@@ -91,7 +90,7 @@ const WatchedHistory = () => {
           />
         )}
       </div>
-    </AppLayout>
+    </div>
   );
 };
 

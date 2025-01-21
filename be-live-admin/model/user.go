@@ -10,6 +10,7 @@ import (
 type AdminAction string
 
 const (
+	LogoutAction                 AdminAction = "logout"
 	LoginAction                  AdminAction = "login"
 	CreateUserAction             AdminAction = "create_user"
 	UpdateUserAction             AdminAction = "update_user"
@@ -53,6 +54,7 @@ var Actions = map[AdminAction]string{
 	CreateAdmin:                  "create_admin",
 	DeleteCategory:               "delete_category",
 	UpdateCategory:               "update_category",
+	LogoutAction:                 "logout",
 }
 
 type RoleType string

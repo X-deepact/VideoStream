@@ -14,6 +14,7 @@ type Service struct {
 	Interaction  *interactionService
 	Category     *CategoryService
 	Subscribe    *SubscribeService
+	Notification *NotificationService
 }
 
 func NewService(repo *repository.Repository, redis cache.RedisStore) *Service {
@@ -28,5 +29,6 @@ func NewService(repo *repository.Repository, redis cache.RedisStore) *Service {
 		Interaction:  newInteractionService(repo),
 		Category:     newCategoryService(repo),
 		Subscribe:    newSubscribeService(repo),
+		Notification: newNotificationService(repo),
 	}
 }

@@ -85,6 +85,12 @@ func (s *interactionService) GetInitialLiveMessage(streamID, userID uint) (*dto.
 		message.CurrentLikeType = &currentEmote
 	}
 
+	shareCount, err := s.CountSharesByStreamID(streamID)
+	if err != nil {
+		return nil, err
+	}
+	message.ShareCount = shareCount
+
 	return message, nil
 
 }
@@ -272,4 +278,32 @@ func (s *interactionService) Bookmark(streamID uint, userID uint) error {
 
 func (s *interactionService) DeleteBookmark(streamID, userID uint) error {
 	return s.repo.Interaction.DeleteBookmark(streamID, userID)
+}
+
+func (s *interactionService) AddShare(share *model.Share) (int64, error) {
+	return s.repo.Interaction.FirstOrCreateShareRecord(share)
+}
+
+func (s *interactionService) UpdateStreamAnalyticsShare(streamID uint) error {
+	shares, err := s.CountSharesByStreamID(streamID)
+	if err != nil {
+		return err
+	}
+
+	analytics, err := s.repo.Stream.GetStreamAnalyticsByStreamID(streamID)
+	if err != nil {
+		return err
+	}
+
+	analytics.Shares = uint(shares)
+
+	if err := s.repo.Stream.UpdateStreamAnalytics(analytics); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *interactionService) CountSharesByStreamID(streamID uint) (int64, error) {
+	return s.repo.Interaction.CountSharesByStreamID(streamID)
 }

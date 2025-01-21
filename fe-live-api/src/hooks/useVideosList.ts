@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { fetchVideosList } from '@/services/stream';
 import { StreamsResponse, VideosListRequest } from '@/data/dto/stream';
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '@/data/validations';
+import { isNaN } from 'lodash';
 
 const useVideosList = (payload: VideosListRequest = {}) => {
   const {
@@ -16,6 +17,7 @@ const useVideosList = (payload: VideosListRequest = {}) => {
     is_liked = undefined,
     is_history = undefined,
     is_saved = undefined,
+    streamer_id = undefined,
   } = payload;
 
   const [videos, setVideos] = useState<StreamsResponse[]>([]);
@@ -31,6 +33,8 @@ const useVideosList = (payload: VideosListRequest = {}) => {
 
   useEffect(() => {
     const fetchContentsData = async () => {
+      if (streamer_id && isNaN(streamer_id)) return;
+
       try {
         setIsLoading(true);
         setError(null);
@@ -47,6 +51,7 @@ const useVideosList = (payload: VideosListRequest = {}) => {
           categoryId1,
           categoryId2,
           categoryId3,
+          streamer_id,
         };
 
         const response = await fetchVideosList(params);

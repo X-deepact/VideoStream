@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"github.com/labstack/echo/v4"
 	"gitlab/live/be-live-api/conf"
 	"gitlab/live/be-live-api/dto"
@@ -35,6 +36,7 @@ func (h *subscribeHandler) register() {
 
 	group.POST("", h.subscribe)
 	group.GET("/list", h.getSubscribes)
+	group.PUT("/mute", h.mute)
 }
 
 func (h *subscribeHandler) subscribe(c echo.Context) error {
@@ -64,6 +66,17 @@ func (h *subscribeHandler) subscribe(c echo.Context) error {
 	return utils.BuildSuccessResponse(c, http.StatusOK, nil)
 }
 
+// @Summary      Get Subscribes
+// @Description  Fetch a list of subscribes with optional filters
+// @Tags         Subscribe
+// @Accept       json
+// @Produce      json
+// @Param        page          query    int     false  "Page number"            default(1)
+// @Param        limit         query    int     false  "Number of items per page" default(10)
+// @Security     BearerAuth
+// @Success      200  {object}  dto.SubscribeDto
+// @Failure      401  "Unauthorized"
+// @Router       /api/subscribe/list [get]
 func (h *subscribeHandler) getSubscribes(c echo.Context) error {
 	var req dto.SubscribeQuery
 	if err := utils.BindAndValidate(c, &req); err != nil {
@@ -101,8 +114,46 @@ func (h *subscribeHandler) getSubscribes(c echo.Context) error {
 			StreamerAvatarURL: avtURL,
 			NumSubscribed:     e.NumSubscribed,
 			NumVideo:          e.NumVideo,
+			IsMute:            e.IsMute,
 		}
 	})
 
 	return utils.BuildSuccessResponse(c, http.StatusOK, newPage)
+}
+
+// @Summary Mute
+// @Description Mute subscriber notifications
+// @Tags Subscribe
+// @Accept json
+// @Produce json
+// @Param mute body dto.SubscribeMuteRequest true "Mute subscriber notifications"
+// @Security     BearerAuth
+// @Success 200 {object} nil
+// @Failure 400  "Invalid request"
+// @Router /api/subscribe/mute [put]
+func (h *subscribeHandler) mute(c echo.Context) error {
+	var mute dto.SubscribeMuteRequest
+	if err := utils.BindAndValidate(c, &mute); err != nil {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+	}
+
+	claims := c.Get("user").(*utils.Claims)
+
+	subscription, err := h.srv.Subscribe.GetSubscription(mute.StreamerID, claims.ID)
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	if subscription == nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, errors.New("you have not subscribed to the above channel, you can't update"), nil)
+	}
+
+	subscription.IsMute = mute.IsMute
+	if err := h.srv.Subscribe.Update(subscription); err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	return utils.BuildSuccessResponse(c, http.StatusOK, map[string]interface{}{
+		"is_mute": subscription.IsMute,
+	})
 }

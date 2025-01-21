@@ -44,3 +44,19 @@ func (ur *UserRepository) UpdateUser(user *model.User) error {
 	}
 	return nil
 }
+
+func (ur *UserRepository) AddNumNotification(id uint) error {
+	return ur.db.Model(&model.User{}).
+		Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"num_notification": gorm.Expr("num_notification + ?", 1),
+		}).Error
+}
+
+func (ur *UserRepository) GetUser(id uint) (*model.User, error) {
+	var user model.User
+	if err := ur.db.Preload("Role").First(&user, id).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}

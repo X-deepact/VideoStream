@@ -25,7 +25,9 @@ const NotFoundCentered = (props: ComponentProps) => {
         </div>
         <p className="text-base font-medium">{title}</p>
         {description && (
-          <span className="text-sm text-center">{description}</span>
+          <span className="text-sm text-center text-muted-foreground">
+            {description}
+          </span>
         )}
         {redirectTo && (
           <Button size="sm" onClick={() => navigate(redirectTo.link)}>

@@ -8,15 +8,15 @@ import { LiveStatisticsResponse } from "@/type/statistic.ts";
 import StatusBadge from "@/components/common/StatusBadge.tsx";
 
 interface ColumnsProps {
-	sort:{
-		setSortBy:(field:string) => void;
-		setSortOrder:(order:SORT_ORDER) => void;
-		sortBy:string;
-		sortOrder:SORT_ORDER;
+	sort: {
+		setSortBy: (field: string) => void;
+		setSortOrder: (order: SORT_ORDER) => void;
+		sortBy: string;
+		sortOrder: SORT_ORDER;
 	}
 }
 
-export const getLiveStatisticTableColumns = ({ sort }:ColumnsProps):ColumnDef<LiveStatisticsResponse>[] => [
+export const getLiveStatisticTableColumns = ({sort}: ColumnsProps): ColumnDef<LiveStatisticsResponse>[] => [
 	{
 		accessorKey: 'title',
 		header: () => (
@@ -31,8 +31,8 @@ export const getLiveStatisticTableColumns = ({ sort }:ColumnsProps):ColumnDef<Li
 				}}
 			/>
 		),
-		cell: ({ row }) => {
-			const { title } = row.original;
+		cell: ({row}) => {
+			const {title} = row.original;
 			return (
 				<div>
 					<p >{title}</p>
@@ -47,10 +47,10 @@ export const getLiveStatisticTableColumns = ({ sort }:ColumnsProps):ColumnDef<Li
 				title={ColumnNames.status.label}
 			/>
 		),
-		cell: ({ row }) => {
-			const { status } = row.original;
+		cell: ({row}) => {
+			const {status} = row.original;
 			return (
-				<StatusBadge status={status} style="badge" />
+				<StatusBadge status={status} style="badge"/>
 			)
 		}
 	},
@@ -61,11 +61,11 @@ export const getLiveStatisticTableColumns = ({ sort }:ColumnsProps):ColumnDef<Li
 				title={ColumnNames.currentViewers.label}
 			/>
 		),
-		cell: ({ row }) => {
-			const { current_viewers } = row.original;
+		cell: ({row}) => {
+			const {current_viewers} = row.original;
 			return (
 				<div>
-					<p >{current_viewers} views</p>
+					<p >{current_viewers}</p>
 				</div>
 			)
 		},
@@ -77,11 +77,11 @@ export const getLiveStatisticTableColumns = ({ sort }:ColumnsProps):ColumnDef<Li
 				title={ColumnNames.totalViewers.label}
 			/>
 		),
-		cell: ({ row }) => {
-			const { total_viewers } = row.original;
+		cell: ({row}) => {
+			const {total_viewers} = row.original;
 			return (
 				<div>
-					<p >{total_viewers} views</p>
+					<p >{total_viewers}</p>
 				</div>
 			)
 		},
@@ -93,11 +93,11 @@ export const getLiveStatisticTableColumns = ({ sort }:ColumnsProps):ColumnDef<Li
 				title={ColumnNames.likes.label}
 			/>
 		),
-		cell: ({ row }) => {
-			const { likes } = row.original;
+		cell: ({row}) => {
+			const {likes} = row.original;
 			return (
 				<div>
-					<p >{likes} likes</p>
+					<p >{likes}</p>
 				</div>
 			)
 		},
@@ -109,11 +109,11 @@ export const getLiveStatisticTableColumns = ({ sort }:ColumnsProps):ColumnDef<Li
 				title={ColumnNames.comments.label}
 			/>
 		),
-		cell: ({ row }) => {
-			const { comments } = row.original;
+		cell: ({row}) => {
+			const {comments} = row.original;
 			return (
 				<div>
-					<p >{comments} comments</p>
+					<p >{comments}</p>
 				</div>
 			)
 		},

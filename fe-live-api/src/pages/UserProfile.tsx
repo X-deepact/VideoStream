@@ -1,14 +1,13 @@
-import AppLayout from '@/layouts/AppLayout';
 import LayoutHeading from '@/layouts/LayoutHeading';
 
 const title = 'User Profile';
 
 const UserProfile = () => {
   return (
-    <AppLayout>
+    <div>
       <LayoutHeading title={title} />
       User Profile
-    </AppLayout>
+    </div>
   );
 };
 

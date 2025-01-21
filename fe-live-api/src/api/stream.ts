@@ -139,6 +139,7 @@ export const apiFetchVideosList = async (
     categoryId1,
     categoryId2,
     categoryId3,
+    streamer_id,
   } = payload;
   const queryString = mapToQueryString<VideosListRequest>({
     page,
@@ -149,6 +150,7 @@ export const apiFetchVideosList = async (
     is_liked,
     is_history,
     is_saved,
+    streamer_id,
   });
 
   const categoriesFilter = _.compact([categoryId1, categoryId2, categoryId3])
@@ -195,14 +197,24 @@ export const apiFetchVideoDetails = async (
   const { success, data: responseData, code, message } = apiResponse;
 
   let rp: VideoDetailsResponse | null = null;
+  let error: API_ERROR | undefined = undefined;
   if (success) {
     rp = responseData?.data;
+  } else {
+    switch (code) {
+      case 404:
+        error = API_ERROR.NOT_FOUND;
+        break;
+      default:
+        error = API_ERROR.SERVER_ERROR;
+    }
   }
 
   return {
     data: rp,
     message,
     code,
+    error,
   };
 };
 

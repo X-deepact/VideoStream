@@ -46,6 +46,7 @@ const (
 	NotificationTypeSubscribeLive  NotificationType = "subscribe_live"
 	NotificationTypeSubscribeVideo NotificationType = "subscribe_video"
 	NotificationTypeBlocked        NotificationType = "account_blocked"
+	NotificationTypeDeleted        NotificationType = "account_deleted"
 )
 
 type Stream struct {

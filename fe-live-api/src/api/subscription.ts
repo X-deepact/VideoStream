@@ -4,6 +4,7 @@ import {
   ApiResult,
   ApiService,
   FindAndCountResponse,
+  SuccessResponse,
 } from '@/data/api';
 import {
   SubscriptionListRequest,
@@ -14,6 +15,7 @@ import { liveStreamApi } from './utils';
 
 const SUBSCRIPTION_API = '/subscribe';
 const SUBSCRIPTION_LIST_API = SUBSCRIPTION_API + '/list';
+const NOTIFICATION_MUTE_API = `${SUBSCRIPTION_API}/mute`;
 
 export const apiFetchSubscriptionList = async (
   payload: SubscriptionListRequest
@@ -42,6 +44,28 @@ export const apiFetchSubscriptionList = async (
 
   return {
     data: rp,
+    message,
+    code,
+  };
+};
+
+export const apiToggleMuteNotificationsFromChannel = async (
+  isMute: boolean,
+  streamerId: number
+): Promise<ApiResult<SuccessResponse>> => {
+  const request: ApiRequest = {
+    service: ApiService.liveStream,
+    url: NOTIFICATION_MUTE_API,
+    method: API_METHOD.PUT,
+    data: { is_mute: isMute, streamer_id: streamerId },
+    authToken: true,
+  };
+
+  const apiResponse = await liveStreamApi(request);
+  const { code, message } = apiResponse; // success -> data: { message: 'Successful', code: 200 }
+
+  return {
+    data: { success: code === 200 },
     message,
     code,
   };

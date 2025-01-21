@@ -49,7 +49,7 @@ export const login = async (
   let msg: string = '';
   if (!usernameFailure && !passwordFailure) {
     const { data, message, error } = await apiLogin(emailOrUsername, pwd);
-    if (!error && !_.isEmpty(data)) {
+    if (!error && !_.isEmpty(data) && message === null) {
       errors = {};
       const {
         id,
@@ -85,7 +85,8 @@ export const login = async (
       };
     } else {
       msg = message;
-      errors[LoginError.LOGIN_FAILED] = true;
+      if (msg?.includes('block')) errors[LoginError.ACCOUNT_BLOCKED] = true;
+      else errors[LoginError.LOGIN_FAILED] = true;
     }
   } else {
     errors[LoginError.INVALID_USERNAME] = usernameFailure;

@@ -123,3 +123,11 @@ export const getApiErrorMessage = (errorCode: string) => {
       return 'An unknown error occurred.';
   }
 };
+
+export interface CommonFilters extends Record<string, unknown> {
+  page?: number;
+  limit?: number;
+  isInfiniteList?: boolean;
+}
+
+export type CommonFiltersType = CommonFilters;

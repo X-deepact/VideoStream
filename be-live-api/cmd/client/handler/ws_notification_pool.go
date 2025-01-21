@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"errors"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"sync"
@@ -62,7 +61,7 @@ func (pool *wsNotificationPool) SendMessage(userID uint, message any) error {
 
 	connections, exists := pool.Connections[userID]
 	if !exists {
-		return errors.New("no active connections for user")
+		return nil
 	}
 
 	var lastError error
@@ -73,4 +72,12 @@ func (pool *wsNotificationPool) SendMessage(userID uint, message any) error {
 	}
 
 	return lastError
+}
+
+func (pool *wsNotificationPool) CheckExist(userID uint) bool {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	_, exists := pool.Connections[userID]
+	return exists
 }

@@ -43,6 +43,14 @@ func (us *UserService) UpdateUser(user *model.User) error {
 	return us.repo.User.UpdateUser(user)
 }
 
+func (us *UserService) AddNumNotification(id uint) error {
+	return us.repo.User.AddNumNotification(id)
+}
+
+func (us *UserService) GetUser(id uint) (*model.User, error) {
+	return us.repo.User.GetUser(id)
+}
+
 //func (us *UserService) ForgotPassword(user *model.User, newPassword string) (*model.User, error) {
 //	user.PasswordHash, _ = utils.HashPassword(newPassword)
 //	return us.repo.User.ForgotPassword(user)

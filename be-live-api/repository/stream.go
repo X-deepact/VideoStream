@@ -168,6 +168,10 @@ func (r *StreamRepository) GetStreams(filter *dto.StreamQuery) (*utils.Paginatio
 			}
 		}
 
+		if filter.StreamerID > 0 {
+			query = query.Where("streams.user_id = ?", filter.StreamerID)
+		}
+
 		if len(filter.CategoryIDs) > 0 {
 			query = query.Where("streams.id IN (?)", r.db.Table("stream_categories").
 				Select("stream_id").Where("category_id IN ?", filter.CategoryIDs))
@@ -194,9 +198,18 @@ func (r *StreamRepository) GetStreams(filter *dto.StreamQuery) (*utils.Paginatio
 		if !((filter.IsMe != nil && *filter.IsMe) ||
 			(filter.IsLiked != nil && *filter.IsLiked) ||
 			(filter.IsHistory != nil && *filter.IsHistory) ||
-			(filter.IsSaved != nil && *filter.IsSaved)) {
+			(filter.IsSaved != nil && *filter.IsSaved) ||
+			filter.StreamerID > 0) {
 			query = query.Joins("LEFT JOIN subscriptions sub on sub.streamer_id = streams.user_id and sub.subscriber_id = ?", filter.UserID).
 				Order("sub.streamer_id is null")
+		}
+
+		if filter.FromDateTime != nil {
+			if filter.ToDateTime == nil {
+				filter.ToDateTime = filter.FromDateTime
+			}
+
+			query = query.Where("streams.started_at is not null and streams.started_at::date >= ? and streams.started_at::date <= ?", filter.FromDateTime, filter.ToDateTime)
 		}
 	}
 
@@ -349,4 +362,23 @@ func (r *StreamRepository) GetStreamByStreamKey(streamKey string) (*model.Stream
 		return nil, err
 	}
 	return &stream, nil
+}
+
+func (r *StreamRepository) GetChannel(userID uint) (*dto.StreamChannelDto, error) {
+	var streamChannel dto.StreamChannelDto
+	query := `
+		WITH user_streams AS (
+			SELECT * FROM streams WHERE user_id = ?
+		)
+		SELECT 
+			(SELECT COUNT(1) FROM user_streams INNER JOIN views v ON v.stream_id = user_streams.id) AS total_view,
+			(SELECT COUNT(1) FROM user_streams INNER JOIN likes l ON l.stream_id = user_streams.id) AS total_like,
+			(SELECT COUNT(1) FROM user_streams INNER JOIN comments c ON c.stream_id = user_streams.id) AS total_comment,
+			(SELECT COUNT(1) FROM user_streams INNER JOIN shares s ON s.stream_id = user_streams.id) AS total_share,
+			(SELECT COUNT(1) FROM user_streams WHERE status = ?) AS total_video,
+			(SELECT COUNT(1) FROM subscriptions WHERE streamer_id = ?) AS total_subscribe
+	`
+
+	err := r.db.Raw(query, userID, model.ENDED, userID).Scan(&streamChannel).Error
+	return &streamChannel, err
 }

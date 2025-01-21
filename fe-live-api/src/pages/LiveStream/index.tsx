@@ -10,7 +10,6 @@ import {
   LIVE_STREAM_SOFTWARE_PATH,
   LIVE_STREAM_WEBCAM_PATH,
 } from '@/data/route';
-import AppLayout from '@/layouts/AppLayout';
 import LayoutHeading from '@/layouts/LayoutHeading';
 import { useNavigate } from 'react-router-dom';
 import { Blocks, Camera, LucideIcon, MoveRight } from 'lucide-react';
@@ -56,7 +55,7 @@ const LiveStream = () => {
   }));
 
   return (
-    <AppLayout>
+    <div>
       <LayoutHeading title={title} />
 
       <div className="flex justify-center items-center">
@@ -88,7 +87,7 @@ const LiveStream = () => {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </div>
   );
 };
 

@@ -55,6 +55,7 @@ func (h *streamHandler) register() {
 	group.GET("", h.getStreams)
 	group.GET("/:id", h.getStream)
 	group.GET("/:id/comments", h.getComments)
+	group.GET("/channel/:id", h.getChannel)
 
 	// interact
 	group.POST("/:id/create-comment", h.createComment)
@@ -64,6 +65,7 @@ func (h *streamHandler) register() {
 	group.POST("/:id/like", h.actionLike)
 	group.POST("/:id/bookmark", h.bookmark)
 	group.DELETE("/:id/bookmark", h.deleteBookmark)
+	group.POST("/:id/share", h.addShare)
 
 	// middleware will come here
 	group.Use(utils.JWTMiddlewareStreamer())
@@ -161,6 +163,9 @@ func (h *streamHandler) initializeStream(c echo.Context) error {
 // @Param        is_liked      query    bool    false  "Filter by liked streams" default(nil)
 // @Param        is_history    query    bool    false  "Filter by history streams" default(nil)
 // @Param        is_saved      query    bool    false  "Filter by saved streams" default(nil)
+// @Param        streamer_id   query    int     false  "Filter by streamer"
+// @Param        from_date     query    string  false  "Start date for filtering (yyyy-MM-dd)"
+// @Param        to_date       query    string  false  "End date for filtering (yyyy-MM-dd)"
 // @Security     BearerAuth
 // @Success      200  {object}  dto.StreamDto
 // @Failure      401  "Unauthorized"
@@ -171,6 +176,22 @@ func (h *streamHandler) getStreams(c echo.Context) error {
 	var req dto.StreamQuery
 	if err := utils.BindAndValidate(c, &req); err != nil {
 		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+	}
+
+	if req.FromDate != "" {
+		fromDate, err := utils.ConvertStringToDate(req.FromDate)
+		if err != nil {
+			return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+		}
+		req.FromDateTime = &fromDate
+	}
+
+	if req.ToDate != "" {
+		toDate, err := utils.ConvertStringToDate(req.ToDate)
+		if err != nil {
+			return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+		}
+		req.ToDateTime = &toDate
 	}
 
 	if req.Page <= 0 {
@@ -278,7 +299,12 @@ func (h *streamHandler) getStream(c echo.Context) error {
 	claims := c.Get("user").(*utils.Claims)
 
 	stream, err := h.srv.Stream.GetStream(uint(streamID), claims.ID)
+
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return utils.BuildErrorResponse(c, http.StatusNotFound, err, nil)
+		}
+
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
@@ -288,8 +314,8 @@ func (h *streamHandler) getStream(c echo.Context) error {
 	avtURL := ""
 	var likeInfo *dto.LikeInfo
 	var categories []dto.CategoryDto
-	var views, comments, duration uint
-	var isOwner, isSubscribed bool
+	var views, comments, duration, shares uint
+	var isOwner, isSubscribed, isMute bool
 	var startedAt *time.Time
 	status := dto.UPCOMING
 
@@ -302,6 +328,7 @@ func (h *streamHandler) getStream(c echo.Context) error {
 			views = stream.StreamAnalytics[0].Views
 			comments = stream.StreamAnalytics[0].Comments
 			duration = stream.StreamAnalytics[0].Duration
+			shares = stream.StreamAnalytics[0].Shares
 		}
 
 		status = dto.VIDEO
@@ -320,6 +347,12 @@ func (h *streamHandler) getStream(c echo.Context) error {
 			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 		}
 		comments = uint(countComment)
+
+		countShare, err := h.srv.Interaction.CountSharesByStreamID(stream.ID)
+		if err != nil {
+			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+		}
+		shares = uint(countShare)
 	} else {
 		countView, err := h.srv.Interaction.CountViewsByStream(stream.ID)
 		if err != nil {
@@ -332,6 +365,12 @@ func (h *streamHandler) getStream(c echo.Context) error {
 			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 		}
 		comments = uint(countComment)
+
+		countShare, err := h.srv.Interaction.CountSharesByStreamID(stream.ID)
+		if err != nil {
+			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+		}
+		shares = uint(countShare)
 	}
 
 	subscriptions, err := h.srv.Subscribe.GetSubscriptionCount(stream.UserID)
@@ -361,8 +400,11 @@ func (h *streamHandler) getStream(c echo.Context) error {
 	isOwner = claims.ID == stream.UserID
 
 	if !isOwner {
-		if isSubscribed, err = h.srv.Subscribe.CheckSubscribed(stream.UserID, claims.ID); err != nil {
-			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+		subscription, _ := h.srv.Subscribe.GetSubscription(stream.UserID, claims.ID)
+
+		if subscription != nil {
+			isSubscribed = true
+			isMute = subscription.IsMute
 		}
 	}
 
@@ -391,10 +433,12 @@ func (h *streamHandler) getStream(c echo.Context) error {
 		IsSubscribed:    isSubscribed,
 		Views:           views,
 		Comments:        comments,
+		Shares:          shares,
 		Duration:        duration,
 		Categories:      categories,
 		ScheduledAt:     stream.ScheduledAt,
 		IsSaved:         stream.IsSaved,
+		IsMute:          isMute,
 	}
 
 	return utils.BuildSuccessResponse(c, http.StatusOK, streamDetailDto)
@@ -805,4 +849,111 @@ func (h *streamHandler) deleteBookmark(c echo.Context) error {
 	}
 
 	return utils.BuildSuccessResponse(c, http.StatusOK, nil)
+}
+
+// @Summary      Add Share
+// @Description  User adds 1 share
+// @Tags         Stream
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int     true  "ID stream"
+// @Security     BearerAuth
+// @Success      200  {object}  object
+// @Failure 	 401  "Unauthorized"
+// @Router       /api/streams/{id}/share [post]
+func (h *streamHandler) addShare(c echo.Context) error {
+	strID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("invalid id parameter"), nil)
+	}
+	streamID := uint(strID)
+
+	claims := c.Get("user").(*utils.Claims)
+
+	stream, err := h.srv.Stream.GetStream(streamID, claims.ID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("stream not found"), nil)
+		}
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	if stream.Status != model.ENDED {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("this isn't a video, you can't add shares"), nil)
+	}
+
+	rowsAffected, err := h.srv.Interaction.AddShare(&model.Share{
+		UserID:   claims.ID,
+		StreamID: streamID,
+	})
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	if rowsAffected == 1 {
+		if err := h.srv.Interaction.UpdateStreamAnalyticsShare(streamID); err != nil {
+			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+		}
+	}
+
+	return utils.BuildSuccessResponse(c, http.StatusOK, map[string]interface{}{
+		"is_added": rowsAffected > 0,
+	})
+}
+
+// @Summary      Get Channel
+// @Description  Get channel insights and statistics
+// @Tags         Stream
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int     true  "ID streamer"
+// @Security     BearerAuth
+// @Success      200  {object}  object
+// @Failure 	 401  "Unauthorized"
+// @Router       /api/streams/channel/{id} [get]
+func (h *streamHandler) getChannel(c echo.Context) error {
+	strID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("invalid id parameter"), nil)
+	}
+	streamerID := uint(strID)
+
+	claims := c.Get("user").(*utils.Claims)
+
+	user, err := h.srv.User.GetUser(streamerID)
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	if user.Role.Type != model.STREAMER {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, errors.New("this isn't a streamer"), nil)
+	}
+
+	channel, err := h.srv.Stream.GetChannel(streamerID)
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	channel.ID = user.ID
+	channel.StreamerName = user.DisplayName
+	channel.CreatedAt = user.CreatedAt
+	channel.IsMe = claims.ID == user.ID
+
+	if !channel.IsMe {
+		subscription, err := h.srv.Subscribe.GetSubscription(streamerID, claims.ID)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+		}
+
+		if subscription != nil {
+			channel.IsSubscribed = true
+			channel.IsMute = subscription.IsMute
+		}
+	}
+
+	if user.AvatarFileName.Valid {
+		channel.StreamerAvatarURL = utils.GetFileUrl(h.AvatarFolder, user.AvatarFileName.String)
+	}
+
+	return utils.BuildSuccessResponse(c, http.StatusOK, channel)
 }

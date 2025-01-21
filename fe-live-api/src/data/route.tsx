@@ -9,6 +9,8 @@ import {
   ThumbsUp,
 } from 'lucide-react';
 
+export const RESOURCE_ID = ':id';
+
 export const RESULTS_PATH_KEYWORD = 'results';
 export const SEARCH_QUERY_KEYWORD = 'q';
 export const CATEGORY_FILTER_KEYWORD = 'category';
@@ -30,15 +32,16 @@ export const LIVE_STREAM_PATH = APP_PREFIX_PATH + '/live';
 export const LIVE_STREAM_WEBCAM_PATH = LIVE_STREAM_PATH + '/webcam';
 export const LIVE_STREAM_SOFTWARE_PATH = LIVE_STREAM_PATH + '/software';
 
-export const STREAMER_PROFILE_PATH = APP_PREFIX_PATH + '/s';
+export const STREAMER_PROFILE_PATH =
+  APP_PREFIX_PATH + '/channel/' + RESOURCE_ID;
 
-export const WATCH_VIDEO_PATH = APP_PREFIX_PATH + '/watch/:id';
-export const WATCH_LIVE_PATH = APP_PREFIX_PATH + '/watch/live/:id';
+export const WATCH_VIDEO_PATH = APP_PREFIX_PATH + '/watch/' + RESOURCE_ID;
+export const WATCH_LIVE_PATH = APP_PREFIX_PATH + '/watch/live/' + RESOURCE_ID;
 
 export const SETTINGS_PATH = APP_PREFIX_PATH + '/settings';
 
-// Testings
-export const TEST_LIVE_STREAM_PATH = APP_PREFIX_PATH + '/test-live-stream';
+export const NOT_FOUND_PATH = 'not-found';
+
 export const PUBLIC_PATH = '/p';
 export const PRIVACY_DOCS_PATH = PUBLIC_PATH + '/privacy';
 export const TERMS_OF_SERVICES_DOCS_PATH = PUBLIC_PATH + '/terms-of-services';
@@ -145,3 +148,8 @@ export const ROUTE_PATH_INFO = {
 
 export const GLOBAL_CONTENT_UNSEARCHABLE_PAGES = [SETTINGS_PATH];
 export const GLOBAL_CATEGORY_FILTERABLE_PAGES = [FEED_PATH, FEED_SEARCH_PATH];
+
+export const getFEUrl = (path: string, id: string) => {
+  if (path && id) return path.replace(RESOURCE_ID, id);
+  return path;
+};

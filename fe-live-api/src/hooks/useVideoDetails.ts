@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { VideoDetailsResponse } from '@/data/dto/stream';
 import { fetchVideoDetails } from '@/services/stream';
+import { API_ERROR } from '@/data/api';
 
 interface ComponentProps {
   id: string | null;
@@ -17,7 +18,7 @@ const useVideoDetails = ({
     null
   );
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | API_ERROR | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -27,15 +28,16 @@ const useVideoDetails = ({
         setIsLoading(true);
         setError(null);
 
-        if (!id) return;
-
         const response = await fetchVideoDetails(id);
 
-        if (!response) {
-          throw new Error('Failed to fetch video details!');
+        if (
+          response &&
+          Object.values(API_ERROR).includes(response as API_ERROR)
+        ) {
+          setError(response as API_ERROR);
         }
 
-        setVideoDetails(response);
+        setVideoDetails(response as VideoDetailsResponse);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : 'An unknown error occurred.'
