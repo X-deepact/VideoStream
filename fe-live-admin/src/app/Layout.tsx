@@ -8,9 +8,9 @@ export const Layout: React.FC = ()  => {
     return (
         <SidebarProvider className="w-screen h-screen">
             <AppSidebar />
-            <SidebarInset className="flex flex-col">
+            <SidebarInset className="flex flex-col h-screen overflow-hidden">
                 <AppHeader />
-                <main className="flex-1 overflow-auto">
+                <main className="flex-1 overflow-y-auto">
                     <Outlet />
                 </main>
             </SidebarInset>

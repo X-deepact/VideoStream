@@ -6,6 +6,8 @@ import {
 } from "@/components/statistics-management/LiveStatistic/columnData.ts";
 import { LiveStatisticsResponse } from "@/type/statistic.ts";
 import StatusBadge from "@/components/common/StatusBadge.tsx";
+import { createCenteredColumn } from "@/lib/table-formated";
+import { formatKMBCount } from "@/lib/utils";
 
 interface ColumnsProps {
 	sort: {
@@ -54,68 +56,29 @@ export const getLiveStatisticTableColumns = ({sort}: ColumnsProps): ColumnDef<Li
 			)
 		}
 	},
-	{
-		accessorKey: 'currentViewers',
-		header: () => (
-			<DataTableColumnHeader
-				title={ColumnNames.currentViewers.label}
-			/>
-		),
-		cell: ({row}) => {
-			const {current_viewers} = row.original;
-			return (
-				<div>
-					<p >{current_viewers}</p>
-				</div>
-			)
-		},
-	},
-	{
-		accessorKey: 'totalViewers',
-		header: () => (
-			<DataTableColumnHeader
-				title={ColumnNames.totalViewers.label}
-			/>
-		),
-		cell: ({row}) => {
-			const {total_viewers} = row.original;
-			return (
-				<div>
-					<p >{total_viewers}</p>
-				</div>
-			)
-		},
-	},
-	{
+	createCenteredColumn({
+		accessorKey: "current_viewers",
+		columnName: ColumnNames.currentViewers,
+		formatValue: formatKMBCount,
+		sort: sort
+	}),
+	createCenteredColumn({
+		accessorKey: 'total_viewers',
+		columnName: ColumnNames.totalViewers,
+		formatValue: formatKMBCount,
+		sort: sort
+	}),
+
+	createCenteredColumn({
 		accessorKey: 'likes',
-		header: () => (
-			<DataTableColumnHeader
-				title={ColumnNames.likes.label}
-			/>
-		),
-		cell: ({row}) => {
-			const {likes} = row.original;
-			return (
-				<div>
-					<p >{likes}</p>
-				</div>
-			)
-		},
-	},
-	{
+		columnName: ColumnNames.likes,
+		formatValue: formatKMBCount,
+		sort: sort
+	}),
+	createCenteredColumn({
 		accessorKey: 'comments',
-		header: () => (
-			<DataTableColumnHeader
-				title={ColumnNames.comments.label}
-			/>
-		),
-		cell: ({row}) => {
-			const {comments} = row.original;
-			return (
-				<div>
-					<p >{comments}</p>
-				</div>
-			)
-		},
-	},
+		columnName: ColumnNames.comments,
+		formatValue: formatKMBCount,
+		sort: sort
+	}),
 ];

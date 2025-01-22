@@ -1,10 +1,12 @@
-import LivestreamSessions from "@/components/livestream-management/LivestreamSessions.tsx";
+import LivestreamSessions
+	from "@/components/livestream-management/LivestreamSessions.tsx";
+import { LIVESTREAM_STATUS } from "@/lib/interface.tsx";
 
 const UpcomingSession = () => {
 	return (
 		<>
 			<LivestreamSessions
-				defaultStatus={["upcoming"]}
+				defaultStatus={[LIVESTREAM_STATUS.UPCOMING]}
 				pageTitle="Upcoming Sessions"
 			/>
 		</>

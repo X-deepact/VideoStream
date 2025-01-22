@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { APP_LOGIN_PATH, APP_PROFILE_PATH } from '@/router';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -14,10 +14,12 @@ import { toast } from '@/hooks/use-toast';
 import { getAvatarFallbackText } from '@/lib/utils';
 import RoleBadge from '../common/RoleBadge';
 import { ROLE } from '@/type/role';
+import { ConfirmLogout } from "@/components/layout/modals/ConfirmLogout.tsx";
 
 const MyProfile: React.FC = () => {
 	const navigate = useNavigate();
 	const {logoutUser} = useAuth();
+	const [isConfirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
 	
 	const user = JSON.parse(localStorage.getItem('user') || '');
 	if (!user) return;
@@ -26,6 +28,21 @@ const MyProfile: React.FC = () => {
 	const name = user.username.substring(0, 2).toUpperCase();
 	const displayName = user.display_name;
 	const role = user.role;
+	
+	const onLogout = () => {
+		setConfirmLogoutOpen(true);
+		
+	}
+	
+	const handleLogout = () => {
+		logout().then(() => {
+			logoutUser();
+			toast({
+				description: 'Logout successfully.',
+			});
+			navigate(APP_LOGIN_PATH);
+		});
+	}
 	
 	return (
 		<div className="flex justify-center items-center">
@@ -49,20 +66,21 @@ const MyProfile: React.FC = () => {
 					<DropdownMenuItem onClick={() => navigate(APP_PROFILE_PATH)}>
 						Profile
 					</DropdownMenuItem>
-					<DropdownMenuItem
-						onClick={() => {
-							logout();
-							logoutUser();
-							toast({
-								description: 'Logout successfully.',
-							});
-							navigate(APP_LOGIN_PATH);
-						}}
-					>
+					<DropdownMenuItem onClick={() => onLogout()}>
 						Log out
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
+			
+			{
+				isConfirmLogoutOpen && (
+					<ConfirmLogout
+						isOpen={isConfirmLogoutOpen}
+						setOpen={setConfirmLogoutOpen}
+						onConfirm={handleLogout}
+					/>
+				)
+			}
 		</div>
 	);
 };

@@ -5,6 +5,8 @@ import { ColumnNames } from "./columnData";
 import { formatKMBCount } from "@/lib/utils.ts";
 import { formatDate } from "@/lib/date-formated";
 import { formatDuration,  formatFileSize} from "@/lib/utils";
+import { createCenteredColumn } from "@/lib/table-formated.tsx";
+
 export type VideoStatistic = {
   title: string;
   viewers: number;
@@ -46,91 +48,45 @@ export const getVideoStatisticsTableColumns = ({
       return <div>{row.original.title}</div>;
     },
   },
-  {
+  createCenteredColumn({
     accessorKey: "viewers",
-    header: () => (
-      <DataTableColumnHeader
-        title={ColumnNames.viewers.label}
-        sort={{
-          sortKey: ColumnNames.viewers.sortKey,
-          sortBy: sort.sortBy,
-          sortOrder: sort.sortOrder,
-          setSortBy: sort.setSortBy,
-          setSortOrder: sort.setSortOrder,
-        }}
-      />
-    ),
-    cell: ({ row }) => {
-      return <div>{formatKMBCount(row.original.viewers)}</div>;
-    },
-  },
-  {
-    accessorKey: "likes",
-    header: () => (
-      <DataTableColumnHeader
-        title={ColumnNames.likes.label}
-        sort={{
-          sortKey: ColumnNames.likes.sortKey,
-          sortBy: sort.sortBy,
-          sortOrder: sort.sortOrder,
-          setSortBy: sort.setSortBy,
-          setSortOrder: sort.setSortOrder,
-        }}
-      />
-    ),
-    cell: ({ row }) => {
-      return <div>{formatKMBCount(row.original.likes)}</div>;
-    },
-  },
-  {
+    columnName: ColumnNames.viewers,
+    formatValue: formatKMBCount,
+    sort: sort
+  }), 
+  createCenteredColumn({
+    accessorKey: "likes", 
+    columnName: ColumnNames.likes,
+    formatValue: formatKMBCount,
+    sort: sort
+  }),
+  createCenteredColumn({
     accessorKey: "comments",
-    header: () => (
-      <DataTableColumnHeader
-        title={ColumnNames.comments.label}
-        sort={{
-          sortKey: ColumnNames.comments.sortKey,
-          sortBy: sort.sortBy,
-          sortOrder: sort.sortOrder,
-          setSortBy: sort.setSortBy,
-          setSortOrder: sort.setSortOrder,
-        }}
-      />
-    ),
-    cell: ({ row }) => {
-      return <div>{formatKMBCount(row.original.comments)}</div>;
-    },
-  },
-  {
+    columnName: ColumnNames.comments, 
+    formatValue: formatKMBCount,
+    sort: sort
+  }),
+  createCenteredColumn({
     accessorKey: "shares",
-    header: () => (
-      <DataTableColumnHeader
-        title={ColumnNames.shares.label}
-        sort={{
-          sortKey: ColumnNames.shares.sortKey,
-          sortBy: sort.sortBy,
-          sortOrder: sort.sortOrder,
-          setSortBy: sort.setSortBy,
-          setSortOrder: sort.setSortOrder,
-        }}
-      />
-    ),
-    cell: ({ row }) => {
-      return <div>{formatKMBCount(row.original.shares)}</div>;
-    },
-  },
+    columnName: ColumnNames.shares,
+    formatValue: formatKMBCount,
+    sort: sort
+  }),
   {
     accessorKey: "duration",
     header: () => (
-      <DataTableColumnHeader
-        title={ColumnNames.duration.label}
-        sort={{
-          sortKey: ColumnNames.duration.sortKey,
-          sortBy: sort.sortBy,
-          sortOrder: sort.sortOrder,
-          setSortBy: sort.setSortBy,
+      <div>
+        <DataTableColumnHeader
+          title={ColumnNames.duration.label}
+          sort={{
+            sortKey: ColumnNames.duration.sortKey,
+            sortBy: sort.sortBy,
+            sortOrder: sort.sortOrder,
+            setSortBy: sort.setSortBy,
           setSortOrder: sort.setSortOrder,
         }}
       />
+      </div>
     ),
     cell: ({ row }) => {
       return <div>{formatDuration(Number(row.original.duration))}</div>;
@@ -139,16 +95,18 @@ export const getVideoStatisticsTableColumns = ({
   {
     accessorKey: "video_size",
     header: () => (
-      <DataTableColumnHeader
-        title={ColumnNames.videoSize.label}
-        sort={{
-          sortKey: ColumnNames.videoSize.sortKey,
-          sortBy: sort.sortBy,
-          sortOrder: sort.sortOrder,
-          setSortBy: sort.setSortBy,
+      <div>
+        <DataTableColumnHeader
+          title={ColumnNames.videoSize.label}
+          sort={{
+            sortKey: ColumnNames.videoSize.sortKey,
+            sortBy: sort.sortBy,
+            sortOrder: sort.sortOrder,
+            setSortBy: sort.setSortBy,
           setSortOrder: sort.setSortOrder,
         }}
       />
+      </div>
     ),
     cell: ({ row }) => {
       return <div>{formatFileSize(Number(row.original.video_size))}</div>;

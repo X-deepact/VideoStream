@@ -15,8 +15,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { formatDuration, formatFileSize } from "@/lib/utils";
+import { formatDuration, formatFileSize, formatKMBCount } from "@/lib/utils";
 import { GeneralColumnsProps } from "@/type/columns";
+import { createCenteredColumn } from "@/lib/table-formated";
 
 interface ColumnsProps extends GeneralColumnsProps {}
 export const getVideosTableColumns = ({ sort }: ColumnsProps) => [
@@ -68,7 +69,7 @@ export const getVideosTableColumns = ({ sort }: ColumnsProps) => [
           <div className="relative">
             <ImageWithAuth
               url={thumbnail_file_name}
-              className="min-w-[150px] h-[100px] border-t-[8px] border-b-[8px] border-black"
+              className="w-[150px] h-[100px] border-t-[8px] border-b-[8px] border-black"
             />
             <Button
               className="bg-transparent absolute inset-0 w-[30px] h-[30px] self-center place-self-center"
@@ -126,7 +127,8 @@ export const getVideosTableColumns = ({ sort }: ColumnsProps) => [
             {started_at ? formatDate(started_at, true) : ""}
           </p>
           <p className="text-xs text-muted-foreground">
-            {started_at ? getTimeAgo(started_at) : ""}
+            {started_at ? getTimeAgo(started_at) : <span className="text-gray-900" style={{fontSize: "15px"}}>N/A</span>}
+            
           </p>
         </div>
       );
@@ -154,7 +156,7 @@ export const getVideosTableColumns = ({ sort }: ColumnsProps) => [
             {ended_at ? formatDate(ended_at, true) : ""}
           </p>
           <p className="text-xs text-muted-foreground">
-            {ended_at ? getTimeAgo(ended_at) : ""}
+            {ended_at ? getTimeAgo(ended_at) : <span className="text-gray-900" style={{fontSize: "15px"}}>N/A</span>}
           </p>
         </div>
       );
@@ -180,7 +182,7 @@ export const getVideosTableColumns = ({ sort }: ColumnsProps) => [
       const { stream_type } = row.original;
       return (
         <Badge variant="secondary" className="rounded-full">
-          {stream_type || "—"}
+          {stream_type}
         </Badge>
       );
     },
@@ -200,7 +202,7 @@ export const getVideosTableColumns = ({ sort }: ColumnsProps) => [
                   </Badge>
                 </p>
               ))
-            : "—"}
+            : <span className="text-gray-900" style={{fontSize: "15px"}}>"-"</span>}
         </div>
       );
     },
@@ -223,7 +225,7 @@ export const getVideosTableColumns = ({ sort }: ColumnsProps) => [
       const { live_stream_analytic } = row.original;
       return (
         <div className="flex flex-row items-center">
-          <Label>{formatFileSize(live_stream_analytic?.video_size)}</Label>
+          <Label>{formatFileSize(live_stream_analytic?.video_size) || <span className="text-gray-900" style={{fontSize: "15px"}}>Na</span>}</Label>
         </div>
       );
     },
@@ -246,11 +248,12 @@ export const getVideosTableColumns = ({ sort }: ColumnsProps) => [
       const { live_stream_analytic } = row.original;
       return (
         <div className="flex flex-row items-center">
-          <Label>{formatDuration(live_stream_analytic?.duration)}</Label>
+          <Label>{formatDuration(live_stream_analytic?.duration) || <span className="text-gray-900" style={{fontSize: "15px"}}>Na</span>}</Label>
         </div>
       );
     },
   },
+  
   {
     accessorKey: "likes",
     header: () => (
@@ -292,7 +295,7 @@ export const getVideosTableColumns = ({ sort }: ColumnsProps) => [
       const { live_stream_analytic } = row.original;
       return (
         <Badge className="p-0.5 bg-green-500 text-white rounded-full">
-          Viewers: {live_stream_analytic?.viewers}
+          Viewers: {live_stream_analytic?.viewers }
         </Badge>
       );
     },
@@ -315,7 +318,7 @@ export const getVideosTableColumns = ({ sort }: ColumnsProps) => [
       const { live_stream_analytic } = row.original;
       return (
         <Badge className="p-0.5 bg-yellow-500 text-white rounded-full">
-          Shares: {live_stream_analytic?.shares}
+          Shares: {live_stream_analytic?.shares }
         </Badge>
       );
     },

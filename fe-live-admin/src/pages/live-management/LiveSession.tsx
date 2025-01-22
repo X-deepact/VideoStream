@@ -1,10 +1,12 @@
-import LivestreamSessions from "@/components/livestream-management/LivestreamSessions.tsx";
+import LivestreamSessions
+	from "@/components/livestream-management/LivestreamSessions.tsx";
+import { LIVESTREAM_STATUS } from "@/lib/interface.tsx";
 
 const LiveSession = () => {
 	return (
 		<>
 			<LivestreamSessions
-				defaultStatus={["started"]}
+				defaultStatus={[LIVESTREAM_STATUS.STARTED]}
 				pageTitle="Live Sessions"
 			/>
 		</>
