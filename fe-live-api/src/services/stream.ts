@@ -13,6 +13,7 @@ import {
   apiUpdateStreamDetails,
   apiBookmarkVideo,
   apiUnBookmarkVideo,
+  apiShareVideo,
 } from '@/api/stream';
 import {
   API_ERROR,
@@ -31,6 +32,7 @@ import {
   CreateCommentRequest,
   UpdateCommentRequest,
   AddViewResponse,
+  AddShareResponse,
 } from '@/data/dto/stream';
 import { STREAM_TYPE, StreamDetailsUpdateRequest } from '@/data/types/stream';
 import { MAX_CATEGORY_COUNT, StreamDetailsRules } from '@/data/validations';
@@ -256,4 +258,12 @@ export const unBookmarkVideo = async (
   return {
     success: data && data!.success,
   };
+};
+
+export const addShare = async (
+  videoId: number
+): Promise<AddShareResponse | null> => {
+  const { data } = await apiShareVideo(videoId);
+  if (data) return data;
+  return null;
 };

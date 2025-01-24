@@ -1,35 +1,42 @@
 import { Button } from '@/components/ui/button';
+import { STREAM_TYPE } from '@/data/types/stream';
 import { Ban, CircleSlash, Mic, MicOff, Radio } from 'lucide-react';
 
 interface ComponentProps {
-  isMicOn: boolean;
+  type: STREAM_TYPE;
+  isMicOn?: boolean;
   isStreamStarted: boolean;
-  onToggleMic: () => void;
+  onToggleMic?: () => void;
   onEndStream: () => void;
-  onInitializeStreamModalToggle: () => void;
+  onInitializeStreamModalOpen: () => void;
   onInitializeStreamCancel: () => void;
 }
 
 const ControlButtons = (props: ComponentProps) => {
   const {
+    type,
     isMicOn,
     isStreamStarted,
     onToggleMic,
     onEndStream,
-    onInitializeStreamModalToggle,
+    onInitializeStreamModalOpen,
     onInitializeStreamCancel,
   } = props;
 
   return (
     <div className="flex gap-2">
-      <Button
-        onClick={onToggleMic}
-        variant="ghost"
-        size="sm"
-        className="rounded-full px-2.5"
-      >
-        {isMicOn ? <Mic /> : <MicOff />}
-      </Button>
+      {type === STREAM_TYPE.CAMERA && (
+        <Button
+          onClick={() => {
+            if (onToggleMic) onToggleMic();
+          }}
+          variant="ghost"
+          size="sm"
+          className="rounded-full px-2.5"
+        >
+          {isMicOn ? <Mic /> : <MicOff />}
+        </Button>
+      )}
       {isStreamStarted ? (
         <Button
           size="sm"
@@ -44,7 +51,7 @@ const ControlButtons = (props: ComponentProps) => {
           <Button
             size="sm"
             className="rounded-full"
-            onClick={onInitializeStreamModalToggle}
+            onClick={onInitializeStreamModalOpen}
           >
             <Radio /> Start Stream
           </Button>

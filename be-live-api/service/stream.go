@@ -360,3 +360,7 @@ func (s *StreamService) IsEndByAdminWithCloseChan(id uint, ctx context.Context, 
 func (s *StreamService) GetChannel(userId uint) (*dto.StreamChannelDto, error) {
 	return s.repo.Stream.GetChannel(userId)
 }
+
+func (r *StreamService) CheckScheduledStreamExist(streamID uint) (bool, error) {
+	return r.repo.Stream.CheckScheduledStreamExist(streamID)
+}

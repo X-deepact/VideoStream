@@ -32,6 +32,7 @@ import {
 import { useCallback, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import NotFound from '../NotFound';
 
 const StreamerProfile = () => {
   const currentUser = getLoggedInUserInfo();
@@ -125,6 +126,9 @@ const StreamerProfile = () => {
     [isLoading, hasMore]
   );
 
+  if (streamerDetails === null && !isStreamerDetailsFetching)
+    return <NotFound />;
+
   return (
     <div className="md:container lg:px-[10rem] md:mx-auto flex flex-col justify-center">
       <div className="w-full mb-3">
@@ -163,25 +167,6 @@ const StreamerProfile = () => {
                 {getCorrectUnit(streamerDetails.total_video, 'video')}
               </p>
             </div>
-            {/* stats */}
-            {/* <div className="flex gap-3 bg-muted/50 rounded-lg px-3 py-2 mt-2">
-              <div className="flex gap-1 items-center justify-center text-xs">
-                <ThumbsUp className="w-3 h-3" />
-                {formatKMBCount(streamerDetails.total_like)} likes
-              </div>
-              <div className="flex gap-1 items-center justify-center text-xs">
-                <MessageSquare className="w-3 h-3" />
-                {formatKMBCount(streamerDetails.total_comment)} comments
-              </div>
-              <div className="flex gap-1 items-center justify-center text-xs">
-                <Eye className="w-3 h-3" />
-                {formatKMBCount(streamerDetails.total_view)} views
-              </div>
-              <div className="flex gap-1 items-center justify-center text-xs">
-                <Share2 className="w-3 h-3" />
-                {formatKMBCount(streamerDetails.total_share)} shares
-              </div>
-            </div> */}
             {/* subscribe and noti */}
             <div className="flex gap-2 mt-3 ml-0">
               {!streamerDetails?.is_me && (

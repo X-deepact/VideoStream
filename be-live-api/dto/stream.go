@@ -53,6 +53,7 @@ type StreamDto struct {
 	Duration      uint               `json:"duration"`
 	ScheduledAt   *time.Time         `json:"scheduled_at"`
 	IsSaved       bool               `json:"is_saved"`
+	BroadCastURL  string             `json:"-"`
 }
 
 type Stream struct {
@@ -106,4 +107,8 @@ type StreamChannelDto struct {
 	TotalShare        uint      `json:"total_share"`
 	TotalSubscribe    uint      `json:"total_subscribe"`
 	TotalVideo        uint      `json:"total_video"`
+}
+
+type StreamAddShareResponse struct {
+	IsAdded bool `json:"is_added"`
 }

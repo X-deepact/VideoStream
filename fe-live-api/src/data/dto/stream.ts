@@ -68,6 +68,7 @@ export interface VideoDetailsResponse {
 
   views: number;
   comments: number;
+  shares: number;
   likes: ReactionStats;
   current_like_type: Reaction | null;
   is_current_like: boolean;
@@ -107,5 +108,9 @@ export type UpdateCommentRequest = {
 };
 
 export interface AddViewResponse {
+  is_added: boolean;
+}
+
+export interface AddShareResponse {
   is_added: boolean;
 }

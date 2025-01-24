@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { LetterText, MessageSquare } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import DetailsForm from './DetailsForm';
+import DetailsForm from '../DetailsForm';
 import { useNavigate } from 'react-router-dom';
 import { LIVE_STREAM_PATH, WATCH_VIDEO_PATH } from '@/data/route';
 import {
@@ -14,11 +14,10 @@ import {
 } from '@/components/ConfirmationModal';
 import { NotifyModalType } from '@/components/UITypes';
 import { modalTexts } from '@/data/stream';
-import LiveIndicator from './LiveIndicator';
+import LiveIndicator from '../LiveIndicator';
 import ResourcePermissionDeniedOverlay from './ResourcePermissionDeniedOverlay';
 import { StreamDetailsResponse } from '@/data/dto/stream';
 import useUserAccount from '@/hooks/useUserAccount';
-import ControlButtons from './ControlButtons';
 import StreamerAvatar from '@/components/StreamerAvatar';
 import Chat from '@/components/Chat';
 import { useIsMobile } from '@/hooks/useMobile';
@@ -31,6 +30,8 @@ import { useLiveStreamWebSocket } from '@/hooks/webSocket/useLiveStreamWebSocket
 import logger from '@/lib/logger';
 import { FORM_MODE } from '@/data/types/ui/form';
 import VideoDescriptionBox from '@/components/VideoDescriptionBox';
+import ControlButtons from '../ControlButtons';
+import { STREAM_TYPE } from '@/data/types/stream';
 
 const LiveStreamWebcam = () => {
   const navigate = useNavigate();
@@ -92,6 +93,7 @@ const LiveStreamWebcam = () => {
     isLiveEndEventReceived,
     liveInitialStats,
     liveViewersCount,
+    liveSharesCount,
     toggleChat,
     openChat,
     sendReaction,
@@ -103,8 +105,10 @@ const LiveStreamWebcam = () => {
   );
 
   // toggle stream initialize modal to start a stream. Without this step, can't stream.
-  const handleStreamDetailsModalToggle = (): void =>
-    setIsStreamDetailsModalOpen(!isStreamDetailsModalOpen);
+  const handleStreamDetailsModalOpen = (): void =>
+    setIsStreamDetailsModalOpen(true);
+  const handleStreamDetailsModalClose = (): void =>
+    setIsStreamDetailsModalOpen(false);
 
   // show success modal and start streaming after submitting stream initialization steps
   const handleStreamSaveSuccess = (
@@ -388,6 +392,7 @@ const LiveStreamWebcam = () => {
         <>
           {!isStreamStarted && (
             <DetailsForm
+              type={STREAM_TYPE.CAMERA}
               mode={FORM_MODE.CREATE}
               isOpen={isStreamDetailsModalOpen}
               categories={streamCategories?.map((cat) => ({
@@ -397,7 +402,7 @@ const LiveStreamWebcam = () => {
               onSuccess={(data: StreamDetailsResponse) =>
                 handleStreamSaveSuccess(data, FORM_MODE.CREATE)
               }
-              onClose={handleStreamDetailsModalToggle}
+              onClose={handleStreamDetailsModalClose}
             />
           )}
 
@@ -415,19 +420,21 @@ const LiveStreamWebcam = () => {
                         likeCount={liveInitialStats.like_count}
                         commentCount={liveInitialStats.comments?.length}
                         viewerCount={liveViewersCount}
+                        sharedCount={
+                          liveSharesCount || liveInitialStats.share_count || 0
+                        }
                       />
                     </div>
                   )}
                   {/* sm: Control buttons */}
                   <div className="absolute bottom-3 z-10 inline md:hidden">
                     <ControlButtons
+                      type={STREAM_TYPE.CAMERA}
                       isMicOn={isMicOn}
                       isStreamStarted={isStreamStarted}
                       onToggleMic={handleToggleMic}
                       onEndStream={handleEndStream}
-                      onInitializeStreamModalToggle={
-                        handleStreamDetailsModalToggle
-                      }
+                      onInitializeStreamModalOpen={handleStreamDetailsModalOpen}
                       onInitializeStreamCancel={handleInitializeStreamCancel}
                     />
                   </div>
@@ -468,13 +475,14 @@ const LiveStreamWebcam = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={handleStreamDetailsModalToggle}
+                      onClick={handleStreamDetailsModalOpen}
                     >
                       <LetterText />
                       Details
                     </Button>
                     {isStreamStarted && (
                       <DetailsForm
+                        type={STREAM_TYPE.CAMERA}
                         mode={FORM_MODE.VIEW}
                         isOpen={isStreamDetailsModalOpen}
                         data={streamDetails}
@@ -485,7 +493,7 @@ const LiveStreamWebcam = () => {
                         onSuccess={(data: StreamDetailsResponse) =>
                           handleStreamSaveSuccess(data, FORM_MODE.EDIT)
                         }
-                        onClose={handleStreamDetailsModalToggle}
+                        onClose={handleStreamDetailsModalClose}
                       />
                     )}
                   </div>
@@ -529,11 +537,12 @@ const LiveStreamWebcam = () => {
               {/* md: Control buttons */}
               <div className="hidden md:inline-block">
                 <ControlButtons
+                  type={STREAM_TYPE.CAMERA}
                   isMicOn={isMicOn}
                   isStreamStarted={isStreamStarted}
                   onToggleMic={handleToggleMic}
                   onEndStream={handleEndStream}
-                  onInitializeStreamModalToggle={handleStreamDetailsModalToggle}
+                  onInitializeStreamModalOpen={handleStreamDetailsModalOpen}
                   onInitializeStreamCancel={handleInitializeStreamCancel}
                 />
               </div>

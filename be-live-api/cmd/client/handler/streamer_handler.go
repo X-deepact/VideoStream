@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -167,7 +168,7 @@ func (h *streamHandler) initializeStream(c echo.Context) error {
 // @Param        from_date     query    string  false  "Start date for filtering (yyyy-MM-dd)"
 // @Param        to_date       query    string  false  "End date for filtering (yyyy-MM-dd)"
 // @Security     BearerAuth
-// @Success      200  {object}  dto.StreamDto
+// @Success      200  {array}  dto.StreamDto
 // @Failure      401  "Unauthorized"
 // @Router       /api/streams [get]
 func (h *streamHandler) getStreams(c echo.Context) error {
@@ -211,6 +212,7 @@ func (h *streamHandler) getStreams(c echo.Context) error {
 	}
 
 	var newPage = new(utils.PaginationModel[dto.StreamDto])
+	softwareStarted := []dto.StreamDto{}
 	newPage.Page = utils.Map(pagination.Page, func(e dto.Stream) dto.StreamDto {
 		thumbnailURL := ""
 		avtURL := ""
@@ -240,7 +242,7 @@ func (h *streamHandler) getStreams(c echo.Context) error {
 			startedAt = &e.StartedAt.Time
 		}
 
-		return dto.StreamDto{
+		resDto := dto.StreamDto{
 			ID:            e.ID,
 			Title:         e.Title,
 			Status:        e.Status,
@@ -254,11 +256,49 @@ func (h *streamHandler) getStreams(c echo.Context) error {
 			ScheduledAt:   e.ScheduledAt,
 			IsSaved:       e.IsSaved,
 		}
+
+		if e.Status == model.StreamStatus(dto.LIVE) && e.StreamType == model.SOFTWARESTREAM {
+			resDto.BroadCastURL = utils.MakeBroadcastURL(h.hlsURL, e.StreamKey)
+			softwareStarted = append(softwareStarted, resDto)
+		}
+
+		return resDto
 	})
 
 	if req.IsHistory != nil && *req.IsHistory {
 		newPage.BasePaginationModel = pagination.BasePaginationModel
 		return utils.BuildSuccessResponse(c, http.StatusOK, newPage)
+	}
+
+	if len(softwareStarted) > 0 {
+		results := []dto.StreamDto{}
+
+		var wg sync.WaitGroup
+
+		for _, stream := range softwareStarted {
+			wg.Add(1)
+			go func(streamCheck dto.StreamDto) {
+				defer wg.Done()
+				streamData := checkStreamStatus(streamCheck)
+
+				if streamData != nil {
+					results = append(results, *streamData)
+				}
+			}(stream)
+		}
+
+		wg.Wait()
+
+		if len(results) > 0 {
+			for i := 0; i < len(newPage.Page); {
+				if containsStream(results, newPage.Page[i]) {
+					newPage.Page = append(newPage.Page[:i], newPage.Page[i+1:]...)
+				} else {
+					i++
+				}
+			}
+
+		}
 	}
 
 	liveStreams := []dto.StreamDto{}
@@ -288,6 +328,7 @@ func (h *streamHandler) getStreams(c echo.Context) error {
 // @Produce      json
 // @Param        id   path      int     true  "Stream ID"
 // @Security     BearerAuth
+// @Success      200  {object}  dto.StreamDetailDto
 // @Failure      401  "Unauthorized"
 // @Router       /api/streams/{id} [get]
 func (h *streamHandler) getStream(c echo.Context) error {
@@ -336,6 +377,13 @@ func (h *streamHandler) getStream(c echo.Context) error {
 	} else if stream.Status == model.STARTED {
 		status = dto.LIVE
 		broadcastURL = utils.MakeBroadcastURL(h.hlsURL, stream.StreamKey)
+
+		if stream.StreamType == model.SOFTWARESTREAM {
+			if streamCheck := checkStreamStatus(dto.StreamDto{BroadCastURL: broadcastURL}); streamCheck != nil {
+				return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("streamer is not live yet"), nil)
+			}
+		}
+
 		countView, err := h.srv.Interaction.CountViewsByStreamLive(stream.ID)
 		if err != nil {
 			return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
@@ -858,7 +906,7 @@ func (h *streamHandler) deleteBookmark(c echo.Context) error {
 // @Produce      json
 // @Param        id   path      int     true  "ID stream"
 // @Security     BearerAuth
-// @Success      200  {object}  object
+// @Success      200  {object}  dto.StreamAddShareResponse
 // @Failure 	 401  "Unauthorized"
 // @Router       /api/streams/{id}/share [post]
 func (h *streamHandler) addShare(c echo.Context) error {
@@ -896,8 +944,8 @@ func (h *streamHandler) addShare(c echo.Context) error {
 		}
 	}
 
-	return utils.BuildSuccessResponse(c, http.StatusOK, map[string]interface{}{
-		"is_added": rowsAffected > 0,
+	return utils.BuildSuccessResponse(c, http.StatusOK, dto.StreamAddShareResponse{
+		IsAdded: rowsAffected > 0,
 	})
 }
 
@@ -908,7 +956,7 @@ func (h *streamHandler) addShare(c echo.Context) error {
 // @Produce      json
 // @Param        id   path      int     true  "ID streamer"
 // @Security     BearerAuth
-// @Success      200  {object}  object
+// @Success      200  {object}  dto.StreamChannelDto
 // @Failure 	 401  "Unauthorized"
 // @Router       /api/streams/channel/{id} [get]
 func (h *streamHandler) getChannel(c echo.Context) error {
@@ -956,4 +1004,27 @@ func (h *streamHandler) getChannel(c echo.Context) error {
 	}
 
 	return utils.BuildSuccessResponse(c, http.StatusOK, channel)
+}
+
+func checkStreamStatus(stream dto.StreamDto) *dto.StreamDto {
+	client := http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	resp, err := client.Get(stream.BroadCastURL)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return &stream
+	}
+	defer resp.Body.Close()
+
+	return nil
+}
+
+func containsStream(streams []dto.StreamDto, target dto.StreamDto) bool {
+	for _, stream := range streams {
+		if stream.ID == target.ID {
+			return true
+		}
+	}
+	return false
 }

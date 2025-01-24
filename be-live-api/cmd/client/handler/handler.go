@@ -14,6 +14,7 @@ type Handler struct {
 	mCtx           context.Context
 	wsWG           *sync.WaitGroup
 	wsNotification *wsNotificationPool
+	wsPool         *ConnectionPool
 }
 
 func NewHandler(r *echo.Group, srv *service.Service, ctx context.Context, wg *sync.WaitGroup) *Handler {
@@ -23,16 +24,17 @@ func NewHandler(r *echo.Group, srv *service.Service, ctx context.Context, wg *sy
 		mCtx:           ctx,
 		wsWG:           wg,
 		wsNotification: NewWSNotificationPool(),
+		wsPool:         NewConnectionPool(),
 	}
 }
 
 func (h *Handler) Register() {
 	newAuthHandler(h.r, h.srv)
-	newWsHandler(h.r, h.srv, h.mCtx, h.wsWG, h.wsNotification)
+	newWsHandler(h.r, h.srv, h.mCtx, h.wsWG, h.wsNotification, h.wsPool)
 	newStreamHandler(h.r, h.srv)
 	newUserHandler(h.r, h.srv)
 	newCategoryHandler(h.r, h.srv)
 	newSubscribeHandler(h.r, h.srv)
-	newNotificationHandler(h.r, h.srv, h.wsNotification)
+	newNotificationHandler(h.r, h.srv, h.wsNotification, h.wsPool)
 	// newUserInteractionHandler(h.r, h.srv)
 }

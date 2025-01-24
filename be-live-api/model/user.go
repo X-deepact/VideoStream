@@ -30,6 +30,12 @@ const (
 
 type RoleType string
 
+type Action struct {
+	ID        uint      `gorm:"primaryKey"`
+	Name      string    `gorm:"type:varchar(50);not null;unique"`
+	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP;not null"`
+}
+
 const (
 	SUPPERADMINROLE RoleType = "super_admin"
 	ADMINROLE       RoleType = "admin"

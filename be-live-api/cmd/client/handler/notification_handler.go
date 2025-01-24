@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/labstack/echo/v4"
 	"gitlab/live/be-live-api/conf"
+	"gitlab/live/be-live-api/cron"
 	"gitlab/live/be-live-api/dto"
 	"gitlab/live/be-live-api/model"
 	"gitlab/live/be-live-api/pkg/utils"
@@ -16,21 +17,23 @@ import (
 )
 
 type notificationHandler struct {
-	r            *echo.Group
-	srv          *service.Service
-	wsPool       *wsNotificationPool
-	avatarFolder string
-	ApiURL       string
+	r             *echo.Group
+	srv           *service.Service
+	wsPool        *wsNotificationPool
+	avatarFolder  string
+	ApiURL        string
+	wsInteraction *ConnectionPool
 }
 
-func newNotificationHandler(r *echo.Group, srv *service.Service, wsPool *wsNotificationPool) *notificationHandler {
+func newNotificationHandler(r *echo.Group, srv *service.Service, wsPool *wsNotificationPool, wsInteraction *ConnectionPool) *notificationHandler {
 	fileStorageCfg := conf.GetFileStorageConfig()
 	notification := &notificationHandler{
-		r:            r,
-		srv:          srv,
-		wsPool:       wsPool,
-		avatarFolder: fileStorageCfg.AvatarFolder,
-		ApiURL:       conf.GetApiFileConfig().Url,
+		r:             r,
+		srv:           srv,
+		wsPool:        wsPool,
+		avatarFolder:  fileStorageCfg.AvatarFolder,
+		ApiURL:        conf.GetApiFileConfig().Url,
+		wsInteraction: wsInteraction,
 	}
 
 	notification.register()
@@ -50,6 +53,7 @@ func (h *notificationHandler) register() {
 	// middleware will come here
 	group.Use(utils.JWTMiddlewareAdmin())
 	group.POST("/blocked-deleted", h.sendMessageBlockedDeleted)
+	group.POST("/end-stream", h.adminEndStream)
 }
 
 func (h *notificationHandler) sendMessageBlockedDeleted(c echo.Context) error {
@@ -80,13 +84,37 @@ func (h *notificationHandler) sendMessageBlockedDeleted(c echo.Context) error {
 	return utils.BuildSuccessResponse(c, http.StatusOK, nil)
 }
 
+func (h *notificationHandler) adminEndStream(c echo.Context) error {
+	var req dto.AdminEndStreamRequest
+	if err := utils.BindAndValidate(c, &req); err != nil {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
+	}
+
+	exist, err := h.srv.Stream.CheckScheduledStreamExist(req.StreamID)
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	if exist {
+		cron.StopStream(req.StreamID)
+	}
+
+	endMessage := dto.LiveEndDto{
+		Type: dto.LiveEndType,
+	}
+
+	h.wsInteraction.BroadcastJSON(req.StreamID, &endMessage)
+
+	return utils.BuildSuccessResponse(c, http.StatusOK, nil)
+}
+
 // @Summary      Get Num-Notification
 // @Description  Get the number of notifications
 // @Tags         Notification
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
-// @Success      200  {object}  object
+// @Success      200  {object} dto.NotificationNumResponse
 // @Failure 	 401  "Unauthorized"
 // @Router       /api/notification/num [get]
 func (h *notificationHandler) getNumNotification(c echo.Context) error {
@@ -96,8 +124,8 @@ func (h *notificationHandler) getNumNotification(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, errors.New("can't get user information"), nil)
 	}
 
-	return utils.BuildSuccessResponse(c, http.StatusOK, map[string]interface{}{
-		"num": user.NumNotification,
+	return utils.BuildSuccessResponse(c, http.StatusOK, dto.NotificationNumResponse{
+		Num: user.NumNotification,
 	})
 }
 
@@ -107,7 +135,7 @@ func (h *notificationHandler) getNumNotification(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
-// @Success      200  {object}  object
+// @Success      200  {object}  dto.NotificationNumResponse
 // @Failure 	 401  "Unauthorized"
 // @Router       /api/notification/reset-num [put]
 func (h *notificationHandler) resetNumNotification(c echo.Context) error {
@@ -122,8 +150,8 @@ func (h *notificationHandler) resetNumNotification(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
-	return utils.BuildSuccessResponse(c, http.StatusOK, map[string]interface{}{
-		"num": user.NumNotification,
+	return utils.BuildSuccessResponse(c, http.StatusOK, dto.NotificationNumResponse{
+		Num: user.NumNotification,
 	})
 }
 
@@ -135,7 +163,7 @@ func (h *notificationHandler) resetNumNotification(c echo.Context) error {
 // @Security     BearerAuth
 // @Param        page   query   int    true  "Page number"
 // @Param        limit  query   int    true  "Number of items per page"
-// @Success      200  {object}  object
+// @Success      200  {array} dto.NotificationDto
 // @Failure 	 401  "Unauthorized"
 // @Router       /api/notification/list [get]
 func (h *notificationHandler) getNotifications(c echo.Context) error {
@@ -210,6 +238,7 @@ func (h *notificationHandler) getNotifications(c echo.Context) error {
 // @Produce      json
 // @Param        id   path      int     true  "Notification ID"
 // @Security     BearerAuth
+// @Success      200  {object}  dto.NotificationReadResponse
 // @Failure      401  "Unauthorized"
 // @Router       /api/notification/{id}/read [put]
 func (h *notificationHandler) readNotification(c echo.Context) error {
@@ -236,8 +265,8 @@ func (h *notificationHandler) readNotification(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
-	return utils.BuildSuccessResponse(c, http.StatusOK, map[string]interface{}{
-		"is_read": notification.ReadAt.Valid,
+	return utils.BuildSuccessResponse(c, http.StatusOK, dto.NotificationReadResponse{
+		IsRead: notification.ReadAt.Valid,
 	})
 }
 
@@ -248,6 +277,7 @@ func (h *notificationHandler) readNotification(c echo.Context) error {
 // @Produce      json
 // @Param        id   path      int     true  "Notification ID"
 // @Security     BearerAuth
+// @Success      200  {object}  nil
 // @Failure      401  "Unauthorized"
 // @Router       /api/notification/{id}/hidden [put]
 func (h *notificationHandler) hiddenNotification(c echo.Context) error {

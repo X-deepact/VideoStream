@@ -1,18 +1,29 @@
 import useVideoDetails from '@/hooks/useVideoDetails';
-import { useNavigate, useParams } from 'react-router-dom';
-import LiveIndicator from '../LiveStream/Webcam/LiveIndicator';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import LiveIndicator from '../LiveStream/LiveIndicator';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { LetterText, MessageSquare } from 'lucide-react';
+import {
+  BellOff,
+  BellRing,
+  LetterText,
+  MessageSquare,
+  Share2,
+  Sparkles,
+} from 'lucide-react';
 import StreamDetailsCard from '../LiveStream/Webcam/StreamDetailsCard';
 import { Fragment, useEffect, useState } from 'react';
-import StreamerAvatar from '@/components/StreamerAvatar';
 import { getFormattedDate } from '@/lib/date-time';
-import { convertToHashtagStyle } from '@/lib/utils';
+import {
+  convertToHashtagStyle,
+  formatKMBCount,
+  getAvatarFallbackText,
+  getCorrectUnit,
+} from '@/lib/utils';
 import VideoCategory from '@/components/VideoCategory';
 import VideoPlayerFLV from '@/components/VideoPlayerFLV';
 import { retrieveAuthToken } from '@/data/model/userAccount';
@@ -26,11 +37,25 @@ import {
 } from '@/components/NotificationModal';
 import FullscreenLoading from '@/components/FullscreenLoading';
 import { useLiveChatWebSocket } from '@/hooks/webSocket/useLiveChatWebSocket';
-import { getFEUrl, NOT_FOUND_PATH, WATCH_VIDEO_PATH } from '@/data/route';
+import {
+  getFEUrl,
+  NOT_FOUND_PATH,
+  RESOURCE_ID,
+  STREAMER_PROFILE_PATH,
+  WATCH_LIVE_PATH,
+  WATCH_VIDEO_PATH,
+} from '@/data/route';
 import { modalTexts } from '@/data/stream';
 import { fetchImageWithAuth } from '@/api/image';
 import { CONTENT_STATUS } from '@/data/types/stream';
 import { API_ERROR } from '@/data/api';
+import AppAvatar from '@/components/AppAvatar';
+import { subscribeUnsubscribe } from '@/services/stream';
+import { toggleMuteNotificationsFromChannel } from '@/services/subscription';
+import { toast } from 'sonner';
+import AppButton from '@/components/AppButton';
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
+import DefaultThumbnail from '@/assets/images/video-thumbnail.jpg';
 
 const WatchLive = () => {
   const isMobile = useIsMobile();
@@ -38,6 +63,9 @@ const WatchLive = () => {
   const currentUser = useUserAccount();
   const { id: videoId } = useParams<{ id: string }>();
 
+  const [subscribedCount, setSubscribedCount] = useState(0);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isNotiMuted, setIsNotiMuted] = useState(true);
   const [isStreamStarted, setIsStreamStarted] = useState(false);
   const [thumbnailSrc, setThumbnailSrc] = useState<string>('');
   const [videoDimensions, setVideoDimensions] = useState<{
@@ -55,6 +83,8 @@ const WatchLive = () => {
     onClose: undefined,
   });
 
+  const [copiedText, copy] = useCopyToClipboard();
+
   // fetch video details
   const {
     videoDetails,
@@ -70,15 +100,73 @@ const WatchLive = () => {
     isLiveEndEventReceived,
     liveInitialStats,
     liveViewersCount,
+    liveSharesCount,
     setIsChatVisible,
     toggleChat,
     sendReaction,
     sendComment,
+    sendShare,
   } = useLiveChatWebSocket(
     videoId || null,
     isStreamStarted,
     setIsStreamStarted
   );
+
+  const handleSubscribeUnsubscribe = async () => {
+    if (videoDetails && videoDetails?.user_id) {
+      const isSuccess = await subscribeUnsubscribe(videoDetails?.user_id);
+      if (isSuccess) {
+        if (isSubscribed) {
+          setSubscribedCount((prev) => prev - 1);
+        } else {
+          setSubscribedCount((prev) => prev + 1);
+        }
+
+        setIsSubscribed(!isSubscribed);
+      }
+    }
+  };
+
+  const handleToggleMuteNotifications = async () => {
+    const oldData = isNotiMuted;
+    const newData = !oldData;
+    setIsNotiMuted(newData);
+
+    try {
+      const isSuccess = await toggleMuteNotificationsFromChannel({
+        isMute: newData,
+        streamerId: Number(videoDetails?.user_id),
+      });
+
+      if (isSuccess?.success) {
+        const action = newData ? 'muted' : 'turned on';
+        toast.success(`Notification ${action}!`);
+      } else {
+        setIsNotiMuted(oldData);
+        toast.error(
+          `Failed to ${newData ? 'mute' : 'turn on'} the notification.`
+        );
+      }
+    } catch {
+      setIsNotiMuted(oldData);
+      toast.error(
+        `An error occurred while ${
+          newData ? 'muting' : 'unmuting'
+        } the notification.`
+      );
+    }
+  };
+
+  const handleAddShareWs = async () => {
+    if (videoDetails && videoDetails?.id) {
+      sendShare();
+      copy(
+        window.location.origin +
+          getFEUrl(WATCH_LIVE_PATH, videoDetails.id.toString())
+      );
+      if (copiedText) toast.success('Copied to clipboard!');
+    }
+  };
 
   // calculate video width and height
   useEffect(() => {
@@ -156,6 +244,9 @@ const WatchLive = () => {
       if (videoDetails?.status === CONTENT_STATUS.LIVE) {
         setIsStreamStarted(true);
         setIsChatVisible(true);
+        setSubscribedCount(videoDetails?.subscriptions);
+        setIsSubscribed(videoDetails?.is_subscribed);
+        setIsNotiMuted(videoDetails?.is_mute);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -217,6 +308,7 @@ const WatchLive = () => {
                       0
                     }
                     viewerCount={liveViewersCount || videoDetails?.views || 0}
+                    sharedCount={liveSharesCount || videoDetails?.shares || 0}
                   />
                 </div>
               )}
@@ -228,12 +320,17 @@ const WatchLive = () => {
                 }}
               >
                 <VideoPlayerFLV
-                  videoDetails={videoDetails || null}
-                  // scheduledAt={videoDetails?.scheduled_at}
-                  // status={videoDetails?.status}
-                  // url={videoDetails?.broadcast_url}
+                  videoDetails={
+                    videoDetails
+                      ? {
+                          url: videoDetails?.broadcast_url,
+                          status: videoDetails?.status,
+                          scheduledAt: videoDetails?.scheduled_at || '',
+                        }
+                      : null
+                  }
                   token={retrieveAuthToken() || ''}
-                  poster={thumbnailSrc}
+                  poster={thumbnailSrc || DefaultThumbnail}
                   videoWidth={videoDimensions.width}
                   videoHeight={videoDimensions.height}
                 />
@@ -260,38 +357,182 @@ const WatchLive = () => {
           {/* Stream details card */}
           {isStreamStarted && videoDetails?.id && (
             <>
-              <div className="hidden md:inline-block absolute left-5">
-                <Popover>
-                  <PopoverTrigger>
-                    <Button variant="ghost" size="sm">
-                      <LetterText />
-                      Details
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent side="bottom">
-                    <StreamDetailsCard
-                      data={{
-                        id: videoDetails?.id,
-                        title: videoDetails?.title,
-                        description: videoDetails?.description,
-                        thumbnail_url: videoDetails?.thumbnail_url,
-                        broadcast_url: videoDetails?.broadcast_url,
-                        push_url: null,
-                        started_at: videoDetails?.started_at,
-                        category_ids: videoDetails?.categories?.map(
-                          (category) => category.id
-                        ),
-                      }}
-                      categories={videoDetails?.categories}
-                    />
-                  </PopoverContent>
-                </Popover>
+              <div className="hidden md:inline-block absolute left-5 mt-2">
+                <div className="flex gap-3 items-center">
+                  <div className="flex items-center space-x-2 flex-1">
+                    <Link
+                      to={STREAMER_PROFILE_PATH.replace(
+                        RESOURCE_ID,
+                        videoDetails?.user_id?.toString() || ''
+                      )}
+                    >
+                      <AppAvatar
+                        url={videoDetails?.avatar_file_url || 'Unknown'}
+                        fallback={getAvatarFallbackText(
+                          videoDetails?.display_name || 'PF'
+                        )}
+                        classes="w-10 h-10"
+                      />
+                    </Link>
+                    <div>
+                      <Link
+                        to={STREAMER_PROFILE_PATH.replace(
+                          RESOURCE_ID,
+                          videoDetails?.user_id?.toString() || ''
+                        )}
+                      >
+                        <h3 className="text-md font-medium">
+                          {videoDetails?.display_name}
+                        </h3>
+                      </Link>
+                      <p className="text-muted-foreground text-xs">
+                        {formatKMBCount(subscribedCount)} Subscribers
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      {!videoDetails?.is_owner && (
+                        <Button
+                          onClick={handleSubscribeUnsubscribe}
+                          variant={`${isSubscribed ? 'secondary' : 'default'}`}
+                          className="px-4 py-2 ml-2 rounded-full"
+                        >
+                          {isSubscribed ? (
+                            <>
+                              <Sparkles className="fill-primary text-primary" />
+                              Subscribed
+                            </>
+                          ) : (
+                            'Subscribe'
+                          )}
+                        </Button>
+                      )}
+                      {isSubscribed && (
+                        <AppButton
+                          className="rounded-full"
+                          Icon={isNotiMuted ? BellOff : BellRing}
+                          isIconActive={false}
+                          label={
+                            isNotiMuted
+                              ? 'Unmute Notification'
+                              : 'Mute Notification'
+                          }
+                          tooltipOnSmallScreens
+                          size="icon"
+                          variant="secondary"
+                          onClick={() => handleToggleMuteNotifications()}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  <Popover>
+                    <PopoverTrigger>
+                      <Button variant="outline" size="sm">
+                        <LetterText />
+                        Details
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent side="bottom">
+                      <StreamDetailsCard
+                        data={{
+                          id: videoDetails?.id,
+                          title: videoDetails?.title,
+                          description: videoDetails?.description,
+                          thumbnail_url: videoDetails?.thumbnail_url,
+                          broadcast_url: videoDetails?.broadcast_url,
+                          push_url: null,
+                          started_at: videoDetails?.started_at,
+                          category_ids: videoDetails?.categories?.map(
+                            (category) => category.id
+                          ),
+                        }}
+                        categories={videoDetails?.categories}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <AppButton
+                    Icon={Share2}
+                    label={`${
+                      liveSharesCount > 0 ? liveSharesCount : ''
+                    } ${getCorrectUnit(liveSharesCount || 0, 'Share')}`}
+                    tooltipOnSmallScreens
+                    size="sm"
+                    variant="outline"
+                    onClick={handleAddShareWs}
+                  />
+                </div>
               </div>
               {/* Start - Mobile stream details card */}
               {!isChatVisible && isStreamStarted && (
                 <div className="block w-full md:hidden">
                   <div className="flex justify-between items-start">
-                    <StreamerAvatar />
+                    {/* Streamer info */}
+                    <div className="flex items-center space-x-2 flex-1">
+                      <Link
+                        to={STREAMER_PROFILE_PATH.replace(
+                          RESOURCE_ID,
+                          videoDetails?.user_id?.toString() || ''
+                        )}
+                      >
+                        <AppAvatar
+                          url={videoDetails?.avatar_file_url || 'Unknown'}
+                          fallback={getAvatarFallbackText(
+                            videoDetails?.display_name || 'PF'
+                          )}
+                          classes="w-10 h-10"
+                        />
+                      </Link>
+                      <div>
+                        <Link
+                          to={STREAMER_PROFILE_PATH.replace(
+                            RESOURCE_ID,
+                            videoDetails?.user_id?.toString() || ''
+                          )}
+                        >
+                          <h3 className="text-md font-medium">
+                            {videoDetails?.display_name}
+                          </h3>
+                        </Link>
+                        <p className="text-muted-foreground text-xs">
+                          {formatKMBCount(subscribedCount)} Subscribers
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        {!videoDetails?.is_owner && (
+                          <Button
+                            onClick={handleSubscribeUnsubscribe}
+                            variant={`${
+                              isSubscribed ? 'secondary' : 'default'
+                            }`}
+                            className="px-4 py-2 ml-2 rounded-full"
+                          >
+                            {isSubscribed ? (
+                              <>
+                                <Sparkles className="fill-primary text-primary" />
+                                Subscribed
+                              </>
+                            ) : (
+                              'Subscribe'
+                            )}
+                          </Button>
+                        )}
+                        {isSubscribed && (
+                          <AppButton
+                            className="rounded-full"
+                            Icon={isNotiMuted ? BellOff : BellRing}
+                            isIconActive={false}
+                            label={
+                              isNotiMuted
+                                ? 'Unmute Notification'
+                                : 'Mute Notification'
+                            }
+                            tooltipOnSmallScreens
+                            size="icon"
+                            variant="secondary"
+                            onClick={() => handleToggleMuteNotifications()}
+                          />
+                        )}
+                      </div>
+                    </div>
                     <Button onClick={toggleChat} variant="outline" size="sm">
                       <MessageSquare /> Show Chat
                     </Button>

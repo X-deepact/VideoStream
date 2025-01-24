@@ -28,3 +28,15 @@ type Notification struct {
 	StreamerID *uint `json:"streamer_id"`
 	IsMute     bool  `json:"is_mute"`
 }
+
+type NotificationNumResponse struct {
+	Num uint `json:"num"`
+}
+
+type NotificationReadResponse struct {
+	IsRead bool `json:"is_read"`
+}
+
+type AdminEndStreamRequest struct {
+	StreamID uint `json:"stream_id" validate:"required"`
+}

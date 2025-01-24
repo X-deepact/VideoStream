@@ -382,3 +382,11 @@ func (r *StreamRepository) GetChannel(userID uint) (*dto.StreamChannelDto, error
 	err := r.db.Raw(query, userID, model.ENDED, userID).Scan(&streamChannel).Error
 	return &streamChannel, err
 }
+
+func (r *StreamRepository) CheckScheduledStreamExist(streamID uint) (bool, error) {
+	var count int64
+	if err := r.db.Model(&model.ScheduleStream{}).Where("stream_id = ?", streamID).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}

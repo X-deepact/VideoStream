@@ -1,4 +1,4 @@
-import { Heart, MessageSquare, Users } from 'lucide-react';
+import { Heart, MessageSquare, Share2, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { calculateElapsedTime, getFormattedElapsedTime } from '@/lib/date-time';
 
@@ -7,12 +7,19 @@ interface ComponentProps {
   viewerCount: number;
   likeCount: number; // here, like means all types of emotions
   commentCount: number;
+  sharedCount: number;
   startedAt?: string;
 }
 
 const LiveIndicator = (props: ComponentProps) => {
-  const { isStreamStarted, viewerCount, likeCount, commentCount, startedAt } =
-    props;
+  const {
+    isStreamStarted,
+    viewerCount,
+    likeCount,
+    commentCount,
+    sharedCount,
+    startedAt,
+  } = props;
 
   const [seconds, setSeconds] = useState(0);
 
@@ -65,6 +72,15 @@ const LiveIndicator = (props: ComponentProps) => {
           {commentCount || 0}{' '}
           <span className="hidden md:inline">
             Comment{commentCount > 1 ? 's' : ''}
+          </span>
+        </span>
+      </div>
+      <div className="flex items-center space-x-2 bg-white/70 backdrop-blur-md rounded-sm px-2 py-1 text-sm text-gray-800 shadow-md">
+        <Share2 className="w-3 h-3" />
+        <span className="font-medium text-xs">
+          {sharedCount || 0}{' '}
+          <span className="hidden md:inline">
+            Share{sharedCount > 1 ? 's' : ''}
           </span>
         </span>
       </div>

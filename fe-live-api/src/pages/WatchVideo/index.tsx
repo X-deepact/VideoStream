@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import DefaultPf from '@/assets/images/pf.png';
 import { Button } from '@/components/ui/button';
 import VideoDescriptionBox from '@/components/VideoDescriptionBox';
 import useVideoDetails from '@/hooks/useVideoDetails';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { formatKMBCount, getAvatarFallbackText } from '@/lib/utils';
+import {
+  formatKMBCount,
+  getAvatarFallbackText,
+  getCorrectUnit,
+} from '@/lib/utils';
 import Reactions from '@/components/Chat/Reactions';
 import { Reaction, ReactionStats } from '@/data/chat';
 import {
+  addShare,
   addView,
   bookmarkVideo,
   reactOnVideo,
@@ -20,15 +24,18 @@ import {
   BellOff,
   BellRing,
   Bookmark,
+  Share2,
   Sparkles,
   SquarePlay,
   VideoOff,
 } from 'lucide-react';
 import {
   FEED_PATH,
+  getFEUrl,
   NOT_FOUND_PATH,
   RESOURCE_ID,
   STREAMER_PROFILE_PATH,
+  WATCH_VIDEO_PATH,
 } from '@/data/route';
 import NotFoundCentered from '@/components/NotFoundCentered';
 import FullscreenLoading from '@/components/FullscreenLoading';
@@ -39,6 +46,7 @@ import AppButton from '@/components/AppButton';
 import { toast } from 'sonner';
 import { API_ERROR } from '@/data/api';
 import { toggleMuteNotificationsFromChannel } from '@/services/subscription';
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 
 const WatchVideo = () => {
   const navigate = useNavigate();
@@ -51,6 +59,7 @@ const WatchVideo = () => {
   } = useVideoDetails({
     id: videoId || null,
   });
+  const [copiedText, copy] = useCopyToClipboard();
 
   const titleRef = useRef<HTMLHeadingElement | null>(null);
   const streamerAvatarRef = useRef<HTMLDivElement | null>(null);
@@ -67,6 +76,7 @@ const WatchVideo = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isNotiMuted, setIsNotiMuted] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
+  const [sharedCount, setSharedCount] = useState(0);
   const [subscribedCount, setSubscribedCount] = useState(0);
   // view
   const [viewsCount, setViewsCount] = useState(0);
@@ -156,6 +166,20 @@ const WatchVideo = () => {
     }
   };
 
+  const handleShare = async () => {
+    if (videoDetails && videoDetails?.id) {
+      const data = await addShare(videoDetails?.id);
+      if (data?.is_added) {
+        setSharedCount((prev) => prev + 1);
+      }
+      copy(
+        window.location.origin +
+          getFEUrl(WATCH_VIDEO_PATH, videoDetails.id.toString())
+      );
+      if (copiedText) toast.success('Copied to clipboard!');
+    }
+  };
+
   // check if this id is existed
   useEffect(() => {
     if (
@@ -233,6 +257,7 @@ const WatchVideo = () => {
       if (videoDetails && typeof videoDetails?.is_mute !== 'undefined')
         setIsNotiMuted(videoDetails?.is_mute);
       setSubscribedCount(videoDetails?.subscriptions);
+      setSharedCount(videoDetails?.shares);
 
       setViewsCount(videoDetails?.views);
 
@@ -332,7 +357,7 @@ const WatchVideo = () => {
               )}
             >
               <AppAvatar
-                url={videoDetails?.avatar_file_url || DefaultPf}
+                url={videoDetails?.avatar_file_url || ''}
                 fallback={getAvatarFallbackText(
                   videoDetails?.display_name || 'PF'
                 )}
@@ -388,6 +413,17 @@ const WatchVideo = () => {
             </div>
           </div>
           <div className="flex space-x-2 items-center">
+            <AppButton
+              Icon={Share2}
+              label={`${sharedCount > 0 ? sharedCount : ''} ${getCorrectUnit(
+                sharedCount || 0,
+                'Share'
+              )}`}
+              tooltipOnSmallScreens
+              size="sm"
+              variant="outline"
+              onClick={handleShare}
+            />
             <AppButton
               Icon={Bookmark}
               isIconActive={isSaved}

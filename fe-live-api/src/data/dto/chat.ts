@@ -8,6 +8,7 @@ export enum LiveInteractionType {
   'LIKE_INFO' = 'like_info',
   'VIEW_INFO' = 'view_info',
   'LIVE_ENDED' = 'live_ended',
+  'SHARE' = 'share',
 }
 
 export interface LiveComment {
@@ -20,6 +21,7 @@ export interface LiveInitialStatsResponse {
   like_count: number;
   like_info: ReactionStats;
   current_like_type?: Reaction;
+  share_count: number;
 }
 
 export interface LiveReactionRequest {
@@ -37,6 +39,10 @@ export interface LiveCommentRequest {
   data: {
     content: string;
   };
+}
+
+export interface LiveShareRequest {
+  type: LiveInteractionType.SHARE;
 }
 
 export const LiveCommentInfoSchema = z.object({
@@ -63,4 +69,9 @@ export interface LiveViewResponse {
 
 export interface LiveEndedResponse {
   type: LiveInteractionType.LIVE_ENDED;
+}
+
+export interface LiveShareResponse {
+  type: LiveInteractionType.SHARE;
+  share_count: number;
 }

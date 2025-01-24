@@ -32,3 +32,7 @@ type SubscribeMuteRequest struct {
 	StreamerID uint `json:"streamer_id" form:"streamer_id" validate:"required"`
 	IsMute     bool `json:"is_mute" form:"is_mute"`
 }
+
+type SubscribeMuteResponse struct {
+	IsMute bool `json:"is_mute"`
+}

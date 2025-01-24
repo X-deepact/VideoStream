@@ -40,14 +40,14 @@ type wsHandler struct {
 	wsNotificationPool *wsNotificationPool
 }
 
-func newWsHandler(r *echo.Group, srv *service.Service, ctx context.Context, wg *sync.WaitGroup, wsNotificationPool *wsNotificationPool) *wsHandler {
+func newWsHandler(r *echo.Group, srv *service.Service, ctx context.Context, wg *sync.WaitGroup, wsNotificationPool *wsNotificationPool, wsPool *ConnectionPool) *wsHandler {
 	streamConfig := conf.GetStreamServerConfig()
 	fileStorageCfg := conf.GetFileStorageConfig()
 
 	wsH := &wsHandler{
 		r:       r,
 		srv:     srv,
-		wsPool:  NewConnectionPool(),
+		wsPool:  wsPool,
 		rtmpURL: streamConfig.RTMPURL,
 		hlsURL:  streamConfig.HLSURL,
 
@@ -71,7 +71,6 @@ func (h *wsHandler) register() {
 	group.GET("/stream_live/:id", h.StreamLive)
 	group.GET("/stream_live/:id/interaction", h.handleUserInteraction)
 	group.GET("/notification", h.handleNotification)
-
 }
 
 func (h *wsHandler) StreamLive(c echo.Context) error {

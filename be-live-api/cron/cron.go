@@ -28,6 +28,11 @@ type Cron struct {
 	wsWG                  *sync.WaitGroup
 }
 
+var (
+	streamStopChannels = make(map[uint]chan bool)
+	mu                 sync.Mutex
+)
+
 func NewCron(srv *service.Service, ctx context.Context, wg *sync.WaitGroup) *Cron {
 	c := &Cron{
 		srv:                   srv,
@@ -73,6 +78,20 @@ func (c *Cron) checkScheduledStream() {
 }
 
 func (c *Cron) streamVideo(scheduledStream *model.ScheduleStream) {
+	streamID := scheduledStream.Stream.ID
+
+	mu.Lock()
+	stopChan := make(chan bool)
+	streamStopChannels[streamID] = stopChan
+	mu.Unlock()
+
+	defer func() {
+		mu.Lock()
+		delete(streamStopChannels, streamID)
+		mu.Unlock()
+		close(stopChan)
+	}()
+
 	token, err := c.srv.StreamServer.GetChannelKey(scheduledStream.Stream.StreamKey)
 	if err != nil {
 		log.Println(err)
@@ -180,7 +199,22 @@ func (c *Cron) streamVideo(scheduledStream *model.ScheduleStream) {
 	}()
 
 	// Wait for the command to complete
-	err = ffmpegCmd.Wait()
+	//err = ffmpegCmd.Wait()
+
+	select {
+	case <-stopChan:
+		log.Printf("Stream %s stopped by API", streamID)
+		if err := ffmpegCmd.Process.Kill(); err != nil {
+			log.Printf("Failed to kill FFmpeg process for stream %s: %v", streamID, err)
+		}
+	case err := <-waitForProcess(ffmpegCmd):
+		if err != nil {
+			log.Printf("FFmpeg exited with error for stream %s: %v", streamID, err)
+		} else {
+			log.Printf("FFmpeg process completed successfully for stream %s.", streamID)
+		}
+	}
+
 	if err != nil {
 		log.Println("FFmpeg process exited with error:", err)
 		// log.Println("FFmpeg stderr:", stderr.String())
@@ -194,6 +228,28 @@ func (c *Cron) streamVideo(scheduledStream *model.ScheduleStream) {
 
 	log.Println("Video streaming process finished.")
 
+}
+
+// Helper: Wait FFmpeg process
+func waitForProcess(cmd *exec.Cmd) <-chan error {
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- cmd.Wait()
+	}()
+	return errChan
+}
+
+func StopStream(streamID uint) {
+	mu.Lock()
+	stopChan, exists := streamStopChannels[streamID]
+	mu.Unlock()
+
+	if exists {
+		log.Printf("Stopping stream %s...", streamID)
+		stopChan <- true
+	} else {
+		log.Printf("No active stream found for ID %s", streamID)
+	}
 }
 
 func (c *Cron) cleanupScheduledVideos() {

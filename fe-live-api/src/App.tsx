@@ -23,6 +23,7 @@ import {
   WATCH_VIDEO_PATH,
   WATCH_LIVE_PATH,
   FEED_SEARCH_PATH,
+  LIVE_STREAM_SOFTWARE_PATH,
 } from './data/route';
 import Register from './pages/Auth/Register';
 import Login from './pages/Auth/Login';
@@ -40,6 +41,7 @@ import WatchLive from './pages/WatchLive';
 import FeedSearch from './pages/Feed/Search';
 import ProtectedLayout from './layouts/ProtectedLayout';
 import StreamerProfile from './pages/StreamerProfile';
+import LiveStreamSoftware from './pages/LiveStream/Software';
 
 function App() {
   return (
@@ -74,6 +76,10 @@ function App() {
                 <Route
                   path={LIVE_STREAM_WEBCAM_PATH}
                   element={<LiveStreamWebcam />}
+                />
+                <Route
+                  path={LIVE_STREAM_SOFTWARE_PATH}
+                  element={<LiveStreamSoftware />}
                 />
                 <Route path={SETTINGS_PATH} element={<Settings />} />
                 <Route path={WATCH_VIDEO_PATH} element={<WatchVideo />} />

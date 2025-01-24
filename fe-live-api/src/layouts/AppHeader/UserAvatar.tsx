@@ -18,7 +18,6 @@ import { DropdownMenu } from '@/components/ui/dropdown-menu';
 import { ModeSwitcher } from '@/components/ModeSwitcher';
 import { getLoggedInUserInfo } from '@/data/model/userAccount';
 import { useProfileNavItems } from '@/hooks/useProfileNavItems';
-import DefaultPf from '@/assets/images/pf.png';
 import { EVENT_EMITTER_NAME, EventEmitter } from '@/lib/event-emitter';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getAvatarFallbackText } from '@/lib/utils';
@@ -37,7 +36,7 @@ const UserAvatar = React.memo(() => {
   }>({
     username: currentUser.username || 'unknown',
     displayName: currentUser.display_name || 'Unknown',
-    avatarUrl: currentUser.avatar_file_name || DefaultPf,
+    avatarUrl: currentUser.avatar_file_name || '',
   });
 
   const handleAccountChange = () => {
@@ -46,7 +45,7 @@ const UserAvatar = React.memo(() => {
       setUser({
         username: updatedUser.username || 'unknown',
         displayName: updatedUser.display_name || 'Unknown',
-        avatarUrl: updatedUser.avatar_file_name || DefaultPf,
+        avatarUrl: updatedUser.avatar_file_name || '',
       });
     }
   };

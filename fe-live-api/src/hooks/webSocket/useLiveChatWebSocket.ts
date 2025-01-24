@@ -8,6 +8,7 @@ import {
   LiveReactionResponse,
   isLiveCommentInfoObj,
   LiveCommentInfo,
+  LiveShareRequest,
 } from '@/data/dto/chat';
 import { retrieveAuthToken } from '@/data/model/userAccount';
 import { useIsMobile } from '../useMobile';
@@ -30,6 +31,7 @@ export function useLiveChatWebSocket(
     !isMobile || isStreamStarted
   );
   const [liveViewersCount, setLiveViewersCount] = useState(0);
+  const [liveSharesCount, setLiveSharesCount] = useState(0);
   const [liveInitialStats, setLiveInitialStats] =
     useState<LiveInitialStatsResponse>({
       type: LiveInteractionType.INITIAL,
@@ -37,6 +39,7 @@ export function useLiveChatWebSocket(
       like_info: {},
       current_like_type: undefined,
       comments: [],
+      share_count: 0,
     });
 
   const sendReaction = ({ reaction }: OnReactOnLiveParams) => {
@@ -59,6 +62,16 @@ export function useLiveChatWebSocket(
       const message: LiveCommentRequest = {
         type: LiveInteractionType.COMMENT,
         data: { content },
+      };
+
+      chatWsRef.current.send(JSON.stringify(message));
+    }
+  };
+
+  const sendShare = () => {
+    if (chatWsRef.current?.readyState === WebSocket.OPEN) {
+      const message: LiveShareRequest = {
+        type: LiveInteractionType.SHARE,
       };
 
       chatWsRef.current.send(JSON.stringify(message));
@@ -139,6 +152,10 @@ export function useLiveChatWebSocket(
         else if (response?.type === LiveInteractionType.VIEW_INFO) {
           setLiveViewersCount(response.data.total);
         }
+        // On getting share count update
+        else if (response?.type === LiveInteractionType.SHARE) {
+          setLiveSharesCount(response.share_count);
+        }
         // On getting stream ended event
         else if (response?.type === LiveInteractionType.LIVE_ENDED) {
           setIsStreamStarted(false);
@@ -184,6 +201,7 @@ export function useLiveChatWebSocket(
 
     liveInitialStats,
     liveViewersCount,
+    liveSharesCount,
 
     openChat,
     closeChat,
@@ -191,6 +209,7 @@ export function useLiveChatWebSocket(
 
     sendReaction,
     sendComment,
+    sendShare,
 
     setIsChatVisible,
   };

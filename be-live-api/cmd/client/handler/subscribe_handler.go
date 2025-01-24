@@ -74,7 +74,7 @@ func (h *subscribeHandler) subscribe(c echo.Context) error {
 // @Param        page          query    int     false  "Page number"            default(1)
 // @Param        limit         query    int     false  "Number of items per page" default(10)
 // @Security     BearerAuth
-// @Success      200  {object}  dto.SubscribeDto
+// @Success      200  {array}  dto.SubscribeDto
 // @Failure      401  "Unauthorized"
 // @Router       /api/subscribe/list [get]
 func (h *subscribeHandler) getSubscribes(c echo.Context) error {
@@ -128,7 +128,7 @@ func (h *subscribeHandler) getSubscribes(c echo.Context) error {
 // @Produce json
 // @Param mute body dto.SubscribeMuteRequest true "Mute subscriber notifications"
 // @Security     BearerAuth
-// @Success 200 {object} nil
+// @Success 200 {object} dto.SubscribeMuteResponse
 // @Failure 400  "Invalid request"
 // @Router /api/subscribe/mute [put]
 func (h *subscribeHandler) mute(c echo.Context) error {
@@ -153,7 +153,7 @@ func (h *subscribeHandler) mute(c echo.Context) error {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
-	return utils.BuildSuccessResponse(c, http.StatusOK, map[string]interface{}{
-		"is_mute": subscription.IsMute,
+	return utils.BuildSuccessResponse(c, http.StatusOK, dto.SubscribeMuteResponse{
+		IsMute: subscription.IsMute,
 	})
 }

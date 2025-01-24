@@ -53,7 +53,7 @@ const CategoryPills: React.FC<ComponentProps> = React.memo(
                   ? 'destructive'
                   : 'secondary'
               }
-              className="py-1 px-3 whitespace-nowrap"
+              className="py-1 px-3 whitespace-nowrap capitalize"
               onClick={() => onSelect(category)}
             >
               {category.name}

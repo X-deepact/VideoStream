@@ -1,5 +1,5 @@
 import { memo, useEffect } from 'react';
-import { CheckCheck, CircleX } from 'lucide-react';
+import { CheckCheck, CircleX, Info } from 'lucide-react';
 
 import {
   AlertDialog,
@@ -59,6 +59,7 @@ const NotificationModal = (props: NotificationModalProps): JSX.Element => {
           >
             <div className={`flex gap-3 items-center `}>
               {type === NotifyModalType.SUCCESS && <CheckCheck />}
+              {type === NotifyModalType.INFO && <Info />}
               {type === NotifyModalType.ERROR && <CircleX />}
               {title}
             </div>

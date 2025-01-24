@@ -1,14 +1,17 @@
 import AppAvatar from '@/components/AppAvatar';
 import { Button } from '@/components/ui/button';
-import { CheckCheck } from 'lucide-react';
+import { BellOff, BellRing, CheckCheck } from 'lucide-react';
 import { formatKMBCount } from '@/lib/utils';
+import AppButton from '@/components/AppButton';
 
 interface ComponentProps {
   avatarUrl: string;
   displayName: string;
   subscriptionsCount: number;
   videosCount: number;
+  isNotiMute: boolean;
   onSubUnsub: () => void;
+  onToggleMuteNotifications: () => void;
 }
 
 const SubscriptionItem = ({
@@ -16,7 +19,9 @@ const SubscriptionItem = ({
   displayName,
   subscriptionsCount,
   videosCount,
+  isNotiMute,
   onSubUnsub,
+  onToggleMuteNotifications,
 }: ComponentProps) => {
   return (
     <div className="flex justify-between items-center gap-x-6 gap-y-4 py-4 border-b">
@@ -36,15 +41,27 @@ const SubscriptionItem = ({
           </p>
         </div>
       </div>
-      <Button
-        onClick={onSubUnsub}
-        size="sm"
-        variant="secondary"
-        className="px-4 py-3 text-sm rounded-full"
-      >
-        <CheckCheck />
-        Subscribed
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          onClick={onSubUnsub}
+          size="sm"
+          variant="secondary"
+          className="px-4 py-3 text-sm rounded-full"
+        >
+          <CheckCheck />
+          Subscribed
+        </Button>
+        <AppButton
+          className="rounded-full"
+          Icon={isNotiMute ? BellOff : BellRing}
+          isIconActive={false}
+          label={isNotiMute ? 'Unmute Notification' : 'Mute Notification'}
+          tooltipOnSmallScreens
+          size="icon"
+          variant="secondary"
+          onClick={onToggleMuteNotifications}
+        />
+      </div>
     </div>
   );
 };

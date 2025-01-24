@@ -90,7 +90,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.NotificationDto"
+                            }
                         }
                     },
                     "401": {
@@ -121,7 +124,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/dto.NotificationNumResponse"
                         }
                     },
                     "401": {
@@ -152,7 +155,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/dto.NotificationNumResponse"
                         }
                     },
                     "401": {
@@ -189,6 +192,9 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
                     "401": {
                         "description": "Unauthorized"
                     }
@@ -223,6 +229,12 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.NotificationReadResponse"
+                        }
+                    },
                     "401": {
                         "description": "Unauthorized"
                     }
@@ -332,7 +344,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.StreamDto"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.StreamDto"
+                            }
                         }
                     },
                     "401": {
@@ -372,7 +387,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/dto.StreamChannelDto"
                         }
                     },
                     "401": {
@@ -409,6 +424,12 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.StreamDetailDto"
+                        }
+                    },
                     "401": {
                         "description": "Unauthorized"
                     }
@@ -518,7 +539,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/dto.StreamAddShareResponse"
                         }
                     },
                     "401": {
@@ -565,7 +586,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.SubscribeDto"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.SubscribeDto"
+                            }
                         }
                     },
                     "401": {
@@ -605,7 +629,10 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SubscribeMuteResponse"
+                        }
                     },
                     "400": {
                         "description": "Invalid request"
@@ -615,6 +642,43 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.CategoryDto": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.LikeInfo": {
+            "type": "object",
+            "properties": {
+                "dislike": {
+                    "type": "integer"
+                },
+                "heart": {
+                    "type": "integer"
+                },
+                "laugh": {
+                    "type": "integer"
+                },
+                "like": {
+                    "type": "integer"
+                },
+                "sad": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "wow": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.LoginRequest": {
             "type": "object",
             "required": [
@@ -661,6 +725,195 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.NotificationDto": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_mute": {
+                    "type": "boolean"
+                },
+                "is_read": {
+                    "type": "boolean"
+                },
+                "stream_id": {
+                    "type": "integer"
+                },
+                "streamer_id": {
+                    "type": "integer"
+                },
+                "thumbnail_url": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/model.NotificationType"
+                }
+            }
+        },
+        "dto.NotificationNumResponse": {
+            "type": "object",
+            "properties": {
+                "num": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.NotificationReadResponse": {
+            "type": "object",
+            "properties": {
+                "is_read": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "dto.StreamAddShareResponse": {
+            "type": "object",
+            "properties": {
+                "is_added": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "dto.StreamChannelDto": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_me": {
+                    "type": "boolean"
+                },
+                "is_mute": {
+                    "type": "boolean"
+                },
+                "is_subscribed": {
+                    "type": "boolean"
+                },
+                "streamer_avatar_url": {
+                    "type": "string"
+                },
+                "streamer_name": {
+                    "type": "string"
+                },
+                "total_comment": {
+                    "type": "integer"
+                },
+                "total_like": {
+                    "type": "integer"
+                },
+                "total_share": {
+                    "type": "integer"
+                },
+                "total_subscribe": {
+                    "type": "integer"
+                },
+                "total_video": {
+                    "type": "integer"
+                },
+                "total_view": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.StreamDetailDto": {
+            "type": "object",
+            "properties": {
+                "avatar_file_url": {
+                    "type": "string"
+                },
+                "broadcast_url": {
+                    "type": "string"
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.CategoryDto"
+                    }
+                },
+                "comments": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "current_like_type": {
+                    "$ref": "#/definitions/model.LikeEmoteType"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_current_like": {
+                    "type": "boolean"
+                },
+                "is_mute": {
+                    "type": "boolean"
+                },
+                "is_owner": {
+                    "type": "boolean"
+                },
+                "is_saved": {
+                    "type": "boolean"
+                },
+                "is_subscribed": {
+                    "type": "boolean"
+                },
+                "likes": {
+                    "$ref": "#/definitions/dto.LikeInfo"
+                },
+                "scheduled_at": {
+                    "type": "string"
+                },
+                "shares": {
+                    "type": "integer"
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/dto.StreamStatus"
+                },
+                "subscriptions": {
+                    "type": "integer"
+                },
+                "thumbnail_url": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "video_url": {
+                    "type": "string"
+                },
+                "views": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.StreamDto": {
             "type": "object",
             "properties": {
@@ -702,6 +955,19 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.StreamStatus": {
+            "type": "string",
+            "enum": [
+                "live",
+                "video",
+                "upcoming"
+            ],
+            "x-enum-varnames": [
+                "LIVE",
+                "VIDEO",
+                "UPCOMING"
+            ]
+        },
         "dto.SubscribeDto": {
             "type": "object",
             "properties": {
@@ -741,6 +1007,48 @@ const docTemplate = `{
                     "type": "integer"
                 }
             }
+        },
+        "dto.SubscribeMuteResponse": {
+            "type": "object",
+            "properties": {
+                "is_mute": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "model.LikeEmoteType": {
+            "type": "string",
+            "enum": [
+                "like",
+                "dislike",
+                "laugh",
+                "sad",
+                "wow",
+                "heart"
+            ],
+            "x-enum-varnames": [
+                "LikeEmoteTypeLike",
+                "LikeEmoteTypeDislike",
+                "LikeEmoteTypeLaugh",
+                "LikeEmoteTypeSad",
+                "LikeEmoteTypeWow",
+                "LikeEmoteTypeHeart"
+            ]
+        },
+        "model.NotificationType": {
+            "type": "string",
+            "enum": [
+                "subscribe_live",
+                "subscribe_video",
+                "account_blocked",
+                "account_deleted"
+            ],
+            "x-enum-varnames": [
+                "NotificationTypeSubscribeLive",
+                "NotificationTypeSubscribeVideo",
+                "NotificationTypeBlocked",
+                "NotificationTypeDeleted"
+            ]
         },
         "model.RoleType": {
             "type": "string",

@@ -11,6 +11,7 @@ import {
   CreateCommentRequest,
   UpdateCommentRequest,
   AddViewResponse,
+  AddShareResponse,
 } from '@/data/dto/stream';
 import {
   API_ERROR,
@@ -36,6 +37,7 @@ const COMMENT_CREATE_API = STREAM_API + '/:videoId/create-comment';
 const COMMENT_DELETE_API = STREAM_API + '/delete-comment/:commentId';
 const COMMENT_UPDATE_API = STREAM_API + '/update-comment';
 const BOOKMARK_API = STREAM_API + '/:videoId/bookmark';
+const SHARE_API = STREAM_API + '/:videoId/share';
 
 export const apiCreateStream = async ({
   title,
@@ -455,6 +457,31 @@ export const apiUnBookmarkVideo = async (
 
   return {
     data: { success: data?.code === 200 },
+    message,
+    code,
+  };
+};
+
+export const apiShareVideo = async (
+  videoId: number
+): Promise<ApiResult<AddShareResponse | null>> => {
+  const request: ApiRequest = {
+    service: ApiService.liveStream,
+    url: SHARE_API.replace(':videoId', videoId.toString()),
+    method: API_METHOD.POST,
+    authToken: true,
+  };
+
+  const apiResponse = await liveStreamApi(request);
+  const { success, data: responseData, code, message } = apiResponse;
+
+  let rp: AddViewResponse | null = null;
+  if (success) {
+    rp = responseData?.data;
+  }
+
+  return {
+    data: rp,
     message,
     code,
   };

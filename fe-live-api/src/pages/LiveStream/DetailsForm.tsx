@@ -14,7 +14,7 @@ import RequiredInput from '@/components/RequiredInput';
 import FormErrorMessage from '@/components/FormErrorMsg';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Blocks, Camera, Pencil, Radio, Save } from 'lucide-react';
+import { Blocks, Camera, Check, Copy, Pencil, Radio, Save } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import { Separator } from '@/components/ui/separator';
 import { DialogClose } from '@radix-ui/react-dialog';
@@ -30,8 +30,12 @@ import AuthImage from '@/components/AuthImage';
 import VideoCategory from '@/components/VideoCategory';
 import { cn, convertToHashtagStyle } from '@/lib/utils';
 import { fetchImageWithAuth } from '@/api/image';
+import TooltipComponent from '@/components/TooltipComponent';
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
+import { toast } from 'sonner';
 
 interface ComponentProps {
+  type: STREAM_TYPE;
   isOpen: boolean;
   mode: FORM_MODE;
   data?: StreamDetailsResponse;
@@ -66,6 +70,7 @@ const DetailsForm = (props: ComponentProps) => {
   const { open: isSidebarOpen, setOpen: setSidebarOpen } = useSidebar();
 
   const {
+    type: streamType,
     isOpen,
     mode = FORM_MODE.CREATE,
     data,
@@ -73,6 +78,8 @@ const DetailsForm = (props: ComponentProps) => {
     onSuccess,
     onClose,
   } = props;
+
+  const [streamServer, streamKey] = getStreamCrendentials(data?.push_url || '');
 
   const [_mode, setMode] = useState<FORM_MODE>(mode);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -98,6 +105,10 @@ const DetailsForm = (props: ComponentProps) => {
   const isCreateMode = mode === FORM_MODE.CREATE;
   const isEditMode = _mode === FORM_MODE.EDIT;
 
+  const [isStreamServerCopied, setIsStreamServerCopied] = useState(false);
+  const [isStreamKeyCopied, setIsStreamKeyCopied] = useState(false);
+  const [copiedText, copy, isCopied] = useCopyToClipboard();
+
   /**
    *
    * @param mode
@@ -116,7 +127,7 @@ const DetailsForm = (props: ComponentProps) => {
           title,
           description,
           categories: selectedCategories,
-          streamType: STREAM_TYPE.CAMERA,
+          streamType,
           thumbnailImage: thumbnailImage?.file,
           thumbnailPreview: thumbnailImage?.preview,
         },
@@ -131,7 +142,7 @@ const DetailsForm = (props: ComponentProps) => {
           title,
           description,
           categories: selectedCategories,
-          streamType: STREAM_TYPE.CAMERA,
+          streamType,
           thumbnailImage: thumbnailImage?.file,
           thumbnailPreview: thumbnailImage?.preview,
         },
@@ -319,6 +330,19 @@ const DetailsForm = (props: ComponentProps) => {
     }
   }, [_mode, data]);
 
+  useEffect(() => {
+    if (isCopied) {
+      if (copiedText === streamServer) {
+        setIsStreamServerCopied(true);
+      } else if (copiedText === streamKey) {
+        setIsStreamKeyCopied(true);
+      }
+    } else {
+      setIsStreamServerCopied(false);
+      setIsStreamKeyCopied(false);
+    }
+  }, [isCopied, copiedText, streamServer, streamKey]);
+
   const {
     actionFailure,
     titleFailure,
@@ -385,6 +409,71 @@ const DetailsForm = (props: ComponentProps) => {
               />
             )}
 
+            {/* Streams server and key */}
+            {mode === FORM_MODE.VIEW && data && data.push_url && (
+              <>
+                <Label>Stream crendentials</Label>
+                <div className="w-full border rounded-md py-4 px-3 space-y-2">
+                  <div className="border-b pb-2 text-xs relative">
+                    <span className="italic text-muted-foreground">
+                      Stream Server:
+                    </span>{' '}
+                    <span>{streamServer}</span>{' '}
+                    <TooltipComponent
+                      align="center"
+                      text="Copy to Clipboard"
+                      children={
+                        <div
+                          onClick={() => {
+                            if (streamServer) {
+                              copy(streamServer);
+                              toast.success(
+                                'Stream Server copied to clipboard!'
+                              );
+                            }
+                          }}
+                          className="absolute cursor-pointer hover:bg-muted p-2 right-0 -top-3 rounded-sm"
+                        >
+                          {isStreamServerCopied ? (
+                            <Check className="w-4 h-4" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </div>
+                      }
+                    />
+                  </div>
+                  <div className="text-xs flex relative">
+                    <span className="italic text-muted-foreground">
+                      Stream Key:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    </span>{' '}
+                    <span>{streamKey}</span>{' '}
+                    <TooltipComponent
+                      align="center"
+                      text="Copy to Clipboard"
+                      children={
+                        <div
+                          onClick={() => {
+                            if (streamKey) {
+                              copy(streamKey);
+                              toast.success('Stream Key copied to clipboard!');
+                            }
+                          }}
+                          className="absolute cursor-pointer hover:bg-muted p-2 right-0 -bottom-3 rounded-sm"
+                        >
+                          {isStreamKeyCopied ? (
+                            <Check className="w-4 h-4" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </div>
+                      }
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* title */}
             <div className="grid gap-3">
               <div className="flex justify-between items-center">
@@ -414,7 +503,7 @@ const DetailsForm = (props: ComponentProps) => {
             </div>
 
             {/* description */}
-            <div className="grid gap-3 mt-3">
+            <div className="grid gap-3 mt-1">
               <div className="flex justify-between items-center">
                 <Label htmlFor="description">
                   Description {!isViewMode && <RequiredInput />}
@@ -445,7 +534,7 @@ const DetailsForm = (props: ComponentProps) => {
             </div>
 
             {/* categories */}
-            <div className="grid gap-3 mt-3">
+            <div className="grid gap-3 mt-1">
               <Label htmlFor="description">
                 Categories {!isViewMode && <RequiredInput />}
               </Label>
@@ -487,7 +576,7 @@ const DetailsForm = (props: ComponentProps) => {
               )}
             </div>
 
-            <div className="flex flex-col-reverse md:flex-row w-full gap-5 justify-start items-start mt-3">
+            <div className="flex flex-col-reverse md:flex-row w-full gap-5 justify-start items-start mt-1">
               {/* thumbnail image */}
               <div className="w-full md:w-1/2 grid gap-3">
                 <Label htmlFor="description">
@@ -526,11 +615,11 @@ const DetailsForm = (props: ComponentProps) => {
                   Stream Type {!isViewMode && <RequiredInput />}
                 </Label>
                 <div className="inline cursor-not-allowed">
-                  <ToggleGroup type="single" value="webcam" disabled>
-                    <ToggleGroupItem value="webcam">
+                  <ToggleGroup type="single" value={streamType} disabled>
+                    <ToggleGroupItem value={STREAM_TYPE.CAMERA}>
                       <Camera /> Webcam
                     </ToggleGroupItem>
-                    <ToggleGroupItem value="software">
+                    <ToggleGroupItem value={STREAM_TYPE.SOFTWARE}>
                       <Blocks /> Software
                     </ToggleGroupItem>
                   </ToggleGroup>
@@ -538,7 +627,7 @@ const DetailsForm = (props: ComponentProps) => {
               </div>
             </div>
           </div>
-          <DialogFooter className="sm:flex gap-1 w-full px-0 py-5">
+          <DialogFooter className="sm:flex gap-1 w-full px-0 pt-3">
             {!isEditMode && (
               <DialogClose asChild>
                 <Button size="sm" variant="destructive" onClick={handleClose}>
@@ -585,3 +674,16 @@ const DetailsForm = (props: ComponentProps) => {
 };
 
 export default DetailsForm;
+
+function getStreamCrendentials(pushUrl: string): [string, string] | [] {
+  if (!pushUrl) return [];
+
+  const lastIndex = pushUrl.lastIndexOf('/');
+
+  if (lastIndex === -1) throw new Error('Invalid URL format');
+
+  const firstPart = pushUrl.slice(0, lastIndex);
+  const secondPart = pushUrl.slice(lastIndex + 1);
+
+  return [firstPart, secondPart];
+}

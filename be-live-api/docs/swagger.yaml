@@ -1,5 +1,29 @@
 basePath: /
 definitions:
+  dto.CategoryDto:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  dto.LikeInfo:
+    properties:
+      dislike:
+        type: integer
+      heart:
+        type: integer
+      laugh:
+        type: integer
+      like:
+        type: integer
+      sad:
+        type: integer
+      total:
+        type: integer
+      wow:
+        type: integer
+    type: object
   dto.LoginRequest:
     properties:
       password:
@@ -31,6 +55,130 @@ definitions:
       username:
         type: string
     type: object
+  dto.NotificationDto:
+    properties:
+      avatar_url:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_mute:
+        type: boolean
+      is_read:
+        type: boolean
+      stream_id:
+        type: integer
+      streamer_id:
+        type: integer
+      thumbnail_url:
+        type: string
+      type:
+        $ref: '#/definitions/model.NotificationType'
+    type: object
+  dto.NotificationNumResponse:
+    properties:
+      num:
+        type: integer
+    type: object
+  dto.NotificationReadResponse:
+    properties:
+      is_read:
+        type: boolean
+    type: object
+  dto.StreamAddShareResponse:
+    properties:
+      is_added:
+        type: boolean
+    type: object
+  dto.StreamChannelDto:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_me:
+        type: boolean
+      is_mute:
+        type: boolean
+      is_subscribed:
+        type: boolean
+      streamer_avatar_url:
+        type: string
+      streamer_name:
+        type: string
+      total_comment:
+        type: integer
+      total_like:
+        type: integer
+      total_share:
+        type: integer
+      total_subscribe:
+        type: integer
+      total_video:
+        type: integer
+      total_view:
+        type: integer
+    type: object
+  dto.StreamDetailDto:
+    properties:
+      avatar_file_url:
+        type: string
+      broadcast_url:
+        type: string
+      categories:
+        items:
+          $ref: '#/definitions/dto.CategoryDto'
+        type: array
+      comments:
+        type: integer
+      created_at:
+        type: string
+      current_like_type:
+        $ref: '#/definitions/model.LikeEmoteType'
+      description:
+        type: string
+      display_name:
+        type: string
+      duration:
+        type: integer
+      id:
+        type: integer
+      is_current_like:
+        type: boolean
+      is_mute:
+        type: boolean
+      is_owner:
+        type: boolean
+      is_saved:
+        type: boolean
+      is_subscribed:
+        type: boolean
+      likes:
+        $ref: '#/definitions/dto.LikeInfo'
+      scheduled_at:
+        type: string
+      shares:
+        type: integer
+      started_at:
+        type: string
+      status:
+        $ref: '#/definitions/dto.StreamStatus'
+      subscriptions:
+        type: integer
+      thumbnail_url:
+        type: string
+      title:
+        type: string
+      user_id:
+        type: integer
+      video_url:
+        type: string
+      views:
+        type: integer
+    type: object
   dto.StreamDto:
     properties:
       avatar_file_url:
@@ -58,6 +206,16 @@ definitions:
       views:
         type: integer
     type: object
+  dto.StreamStatus:
+    enum:
+    - live
+    - video
+    - upcoming
+    type: string
+    x-enum-varnames:
+    - LIVE
+    - VIDEO
+    - UPCOMING
   dto.SubscribeDto:
     properties:
       id:
@@ -84,6 +242,39 @@ definitions:
     required:
     - streamer_id
     type: object
+  dto.SubscribeMuteResponse:
+    properties:
+      is_mute:
+        type: boolean
+    type: object
+  model.LikeEmoteType:
+    enum:
+    - like
+    - dislike
+    - laugh
+    - sad
+    - wow
+    - heart
+    type: string
+    x-enum-varnames:
+    - LikeEmoteTypeLike
+    - LikeEmoteTypeDislike
+    - LikeEmoteTypeLaugh
+    - LikeEmoteTypeSad
+    - LikeEmoteTypeWow
+    - LikeEmoteTypeHeart
+  model.NotificationType:
+    enum:
+    - subscribe_live
+    - subscribe_video
+    - account_blocked
+    - account_deleted
+    type: string
+    x-enum-varnames:
+    - NotificationTypeSubscribeLive
+    - NotificationTypeSubscribeVideo
+    - NotificationTypeBlocked
+    - NotificationTypeDeleted
   model.RoleType:
     enum:
     - super_admin
@@ -153,6 +344,8 @@ paths:
       produces:
       - application/json
       responses:
+        "200":
+          description: OK
         "401":
           description: Unauthorized
       security:
@@ -174,6 +367,10 @@ paths:
       produces:
       - application/json
       responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.NotificationReadResponse'
         "401":
           description: Unauthorized
       security:
@@ -203,7 +400,9 @@ paths:
         "200":
           description: OK
           schema:
-            type: object
+            items:
+              $ref: '#/definitions/dto.NotificationDto'
+            type: array
         "401":
           description: Unauthorized
       security:
@@ -222,7 +421,7 @@ paths:
         "200":
           description: OK
           schema:
-            type: object
+            $ref: '#/definitions/dto.NotificationNumResponse'
         "401":
           description: Unauthorized
       security:
@@ -241,7 +440,7 @@ paths:
         "200":
           description: OK
           schema:
-            type: object
+            $ref: '#/definitions/dto.NotificationNumResponse'
         "401":
           description: Unauthorized
       security:
@@ -315,7 +514,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.StreamDto'
+            items:
+              $ref: '#/definitions/dto.StreamDto'
+            type: array
         "401":
           description: Unauthorized
       security:
@@ -337,6 +538,10 @@ paths:
       produces:
       - application/json
       responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.StreamDetailDto'
         "401":
           description: Unauthorized
       security:
@@ -406,7 +611,7 @@ paths:
         "200":
           description: OK
           schema:
-            type: object
+            $ref: '#/definitions/dto.StreamAddShareResponse'
         "401":
           description: Unauthorized
       security:
@@ -431,7 +636,7 @@ paths:
         "200":
           description: OK
           schema:
-            type: object
+            $ref: '#/definitions/dto.StreamChannelDto'
         "401":
           description: Unauthorized
       security:
@@ -461,7 +666,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.SubscribeDto'
+            items:
+              $ref: '#/definitions/dto.SubscribeDto'
+            type: array
         "401":
           description: Unauthorized
       security:
@@ -486,6 +693,8 @@ paths:
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/dto.SubscribeMuteResponse'
         "400":
           description: Invalid request
       security:

@@ -77,6 +77,7 @@ const useSubscriptions = (payload: SubscriptionListRequest = {}) => {
     hasMore,
     totalItems,
     error,
+    setTotalItems,
     refetchSubscriptions,
     setSubscriptions,
   };

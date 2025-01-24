@@ -6,6 +6,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import AppAvatar from '../AppAvatar';
+import { getAvatarFallbackText } from '@/lib/utils';
 
 interface ComponentProps {
   isSelfSent?: boolean;
@@ -23,7 +24,10 @@ const MessageItem = (props: ComponentProps) => {
       <TooltipProvider>
         <Tooltip>
           <div className="flex gap-1 items-center">
-            <AppAvatar url={avatarUrl} />
+            <AppAvatar
+              url={avatarUrl}
+              fallback={getAvatarFallbackText(displayName)}
+            />
             <p className="text-justify">{displayName || 'Unknown'}</p>
           </div>
           <TooltipTrigger asChild>

@@ -158,6 +158,7 @@ const NotificationContent = ({ closeSheet }: { closeSheet: () => void }) => {
           {!isLoading &&
             data.map((notification) => (
               <div
+                key={notification.id}
                 className={cn(
                   inProgressNotifications.has(notification.id)
                     ? 'opacity-50'
