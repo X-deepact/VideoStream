@@ -1,12 +1,12 @@
 database:
-  host: localhost
+  host: database
   port: 5432
-  user: username
-  pass: password
+  user: postgres
+  pass: postgres
   name: live_stream
 
 redis:
-  host: localhost
+  host: rds
   port: 6379
   user: default
   pass: default
@@ -30,9 +30,9 @@ client:
   host: http://localhost:8787
 
 stream_server:
-  http_url: http://localhost:8090
-  rtmp_url: rtmp://localhost:1935/live
-  hls_url: http://localhost:7002/live
+  http_url: http://livego:8090
+  rtmp_url: rtmp://livego:1935/live
+  hls_url: http://livego:7002/live
 
 auth:
   secret_key: live&^stream^%2024@

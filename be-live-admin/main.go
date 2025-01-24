@@ -64,7 +64,7 @@ func main() {
 	srv := service.NewService(repo, ds.RedisStore, streamServer)
 	conf.SeedRoles(srv.Role)
 	conf.SeedSuperAdminUser(srv.User, srv.Role)
-
+	conf.SeedActions(srv.Admin)
 	if err := repo.User.SetRoleMap(); err != nil {
 		log.Fatalf("Failed to set role map: %v", err)
 	}
@@ -117,7 +117,7 @@ func main() {
 	handler.Register()
 
 	go func() {
-		if err := e.Start(fmt.Sprintf("127.0.0.1:%d", conf.GetApplicationConfig().Port)); err != nil && err != http.ErrServerClosed {
+		if err := e.Start(fmt.Sprintf(":%d", conf.GetApplicationConfig().Port)); err != nil && err != http.ErrServerClosed {
 			e.Logger.Fatal("shutting down the server")
 		}
 	}()

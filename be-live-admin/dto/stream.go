@@ -19,9 +19,11 @@ type StreamAndStreamScheduleDto struct {
 }
 
 type UpdateStreamRequest struct {
-	Title       string `json:"title" form:"title" validate:"required"`
-	Description string `json:"description" form:"description" validate:"required"`
-	CategoryIDs []uint `json:"category_ids" form:"category_ids" validate:"required,max=3,dive,required"`
+	Title       string             `json:"title" form:"title" validate:"required"`
+	Description string             `json:"description" form:"description" validate:"required"`
+	Status      model.StreamStatus `json:"status" form:"status" validate:"omitempty,oneof=pending started ended upcoming"`
+	EndedAt     string             `json:"ended_at" form:"ended_at" validate:"omitempty,datetime=2006-01-02 15:04:05.999 -0700"`
+	CategoryIDs []uint             `json:"category_ids" form:"category_ids" validate:"required,max=3,dive,required"`
 }
 
 type UpdateScheduledStreamRequest struct {

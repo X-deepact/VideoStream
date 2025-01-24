@@ -15,7 +15,6 @@ const UpdateCategory = ({
   isOpen,
   data,
   setOpen,
-  setFormData,
   onUpdate,
   onInputChange,
 }: {

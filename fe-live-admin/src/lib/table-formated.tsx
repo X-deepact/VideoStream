@@ -15,15 +15,6 @@ interface SortProps {
   setSortOrder: (value: SORT_ORDER) => void;
 }
 
-interface ColumnsProps {
-    sort: {
-      setSortBy: (field: string) => void;
-      setSortOrder: (order: SORT_ORDER) => void;
-      sortBy: string;
-      sortOrder: SORT_ORDER;
-    };
-  }
-
 interface CreateCenteredColumnProps<T> {
   accessorKey: keyof T;
   columnName: ColumnName;
@@ -45,23 +36,23 @@ export function createCenteredColumn<T>({
       <div className={"flex justify-center"}>
         <DataTableColumnHeader
           title={columnName.label}
-          sort={columnName.sortKey ? {
-            sortKey: columnName.sortKey,
-            sortBy: sort.sortBy,
-            sortOrder: sort.sortOrder,
-            setSortBy: sort.setSortBy,
-            setSortOrder: sort.setSortOrder,
-          } : undefined}
+          sort={
+            columnName.sortKey
+              ? {
+                  sortKey: columnName.sortKey,
+                  sortBy: sort.sortBy,
+                  sortOrder: sort.sortOrder,
+                  setSortBy: sort.setSortBy,
+                  setSortOrder: sort.setSortOrder,
+                }
+              : undefined
+          }
         />
       </div>
     ),
     cell: ({ row }: { row: any }) => {
       const value = row.original[accessorKey as keyof typeof row.original];
-      return (
-        <div className={className}>
-          {formatValue(Number(value))}
-        </div>
-      );
+      return <div className={className}>{formatValue(Number(value))}</div>;
     },
   };
 }

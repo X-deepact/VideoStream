@@ -36,9 +36,8 @@ import {
 import Avatar from "@/assets/avatar.svg";
 
 const Profile = () => {
-  const [profileData, setProfileData] = useState(
-    JSON.parse(localStorage.getItem("user") || ({} as any))
-  );
+  const profileData = JSON.parse(localStorage.getItem("user") || ({} as any));
+
   const [formData, setFormData] = useState({
     id: "",
     username: "",
@@ -54,7 +53,7 @@ const Profile = () => {
   const [sort, setSort] = useState("ASC");
   const [logData, setLogData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
+  const pageSize = 5;
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {

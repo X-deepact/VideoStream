@@ -1,44 +1,44 @@
-import React, { useState } from 'react'
-import { Label } from '../ui/label'
-import { Input } from '../ui/input'
-import { Button } from '../ui/button'
-import { useNavigate } from 'react-router-dom'
-import { useToast } from '@/hooks/use-toast'
-import { sendVerifyCode } from '@/services/auth.service'
-import loadingImg from '@/assets/loading.svg'
+import React, { useState } from "react";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { sendVerifyCode } from "@/services/auth.service";
+import loadingImg from "@/assets/loading.svg";
 
 const ForgotPasswordForm: React.FC = () => {
-  const navigator = useNavigate()
-  const { toast } = useToast()
+  const navigator = useNavigate();
+  const { toast } = useToast();
 
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState("");
 
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
 
   const handleSendcode = () => {
-    if (email === '') {
+    if (email === "") {
       toast({
-        description: 'Please enter your email',
-        variant: 'destructive',
-      })
-      return
+        description: "Please enter your email",
+        variant: "destructive",
+      });
+      return;
     }
     if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
       toast({
-        description: 'Please enter a valid email address',
-        variant: 'destructive',
-      })
-      return
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
     }
-    setLoading(true)
+    setLoading(true);
 
     sendVerifyCode(email).then(
-      (res) => {
-        setLoading(false)
+      () => {
+        setLoading(false);
         toast({
-          description: 'Sent verify code to your email.',
-        })
-        navigator('/reset-password')
+          description: "Sent verify code to your email.",
+        });
+        navigator("/reset-password");
       },
       (error) => {
         const resMessage =
@@ -46,16 +46,16 @@ const ForgotPasswordForm: React.FC = () => {
             error.response.data &&
             error.response.data.message) ||
           error.message ||
-          error.toString()
+          error.toString();
         toast({
           description: resMessage,
-          variant: 'destructive',
-        })
-        setLoading(false)
-        return
-      },
-    )
-  }
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+    );
+  };
 
   return (
     <div className="space-y-4 max-w-md mx-auto p-6 bg-white shadow rounded-lg">
@@ -85,7 +85,7 @@ const ForgotPasswordForm: React.FC = () => {
         Send Code{loading && <img src={loadingImg} />}
       </Button>
     </div>
-  )
-}
+  );
+};
 
-export default ForgotPasswordForm
+export default ForgotPasswordForm;

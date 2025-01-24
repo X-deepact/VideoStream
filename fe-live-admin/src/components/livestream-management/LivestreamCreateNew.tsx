@@ -293,7 +293,7 @@ const LivestreamCreateNew = (props: ComponentProps) => {
 									className="grid grid-cols-2 xl:grid-cols-1 pb-2 xl:pb-4 gap-2 xl:gap-4">
 									{/*Users*/}
 									<div>
-										<FieldLabel isRequired={true} label="Users"/>
+										<FieldLabel isRequired={true} label="Streamer"/>
 										<DataCombobox
 											placeholder="Select User"
 											emptyMsg="No user found"

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"gitlab/live/be-live-admin/cache"
@@ -384,6 +385,16 @@ func (s *StreamService) UpdateStreamByAdmin(id int, req *dto.UpdateStreamRequest
 	}
 	liveStream.Title = req.Title
 	liveStream.Description = req.Description
+	if req.Status != "" {
+		liveStream.Status = req.Status
+	}
+	if req.EndedAt != "" {
+		endedAt, err := utils.ConvertDatetimeToTimestamp(req.EndedAt, utils.DATETIME_LAYOUT)
+		if err != nil {
+			return nil, err
+		}
+		liveStream.EndedAt = sql.NullTime{Valid: true, Time: *endedAt}
+	}
 
 	if err := s.repo.Stream.UpdateStream(liveStream, nil, req.CategoryIDs); err != nil {
 		return nil, err

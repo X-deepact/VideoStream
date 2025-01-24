@@ -14,9 +14,9 @@ import { AuthProvider, useAuth } from "./lib/auth-util";
 import Profile from "./components/admin-management/Profile";
 import VideoStatistic from "@/components/statistics-management/VideoStatistic";
 
-import Register from "./pages/auth/Register";
-import ForgotPassword from "./pages/auth/ForgotPassword";
-import ResetPassword from "./pages/auth/ResetPassword";
+// import Register from "./pages/auth/Register";
+// import ForgotPassword from "./pages/auth/ForgotPassword";
+// import ResetPassword from "./pages/auth/ResetPassword";
 
 import {
   APP_ACCOUNT_LIST_PATH,
@@ -26,7 +26,7 @@ import {
   APP_LIVE_SESSION_PATH,
   APP_LIVE_STATISTIC_PATH,
   APP_LOGIN_PATH,
-  APP_PREFIX_PATH,
+  // APP_PREFIX_PATH,
   APP_PROFILE_PATH,
   APP_VIDEO_LIBRARY_PATH,
   APP_VIDEO_STATISTIC_PATH,

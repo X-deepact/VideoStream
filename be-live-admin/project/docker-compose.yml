@@ -4,6 +4,7 @@ version: '3'
 services:
   db:
     image: postgres:11.8-alpine
+    container_name: database
     expose:
       - '5432'
     ports:
@@ -12,7 +13,7 @@ services:
       - ./db-data/postgres:/var/lib/postgresql/data      
     environment:
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: dbyoumi
+      POSTGRES_DB: live_stream
     networks:
       - backend
   redis:
@@ -36,6 +37,23 @@ services:
     restart: always
     networks:
       - backend
+  api:
+    build: 
+      context: ..
+      dockerfile: Dockerfile
+    restart: always  
+    expose:
+      - '8686'
+    ports:
+      - '8686:8686'
+    volumes:
+      - ../tmp:/app/tmp      
+    depends_on:
+      - db
+      - redis
+      - livego
+    networks:
+      - backend      
 networks:
   backend:
     driver: bridge

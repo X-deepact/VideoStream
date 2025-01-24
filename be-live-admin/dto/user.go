@@ -13,7 +13,7 @@ type UserQuery struct {
 	Reason    string `json:"reason" query:"reason" validate:"omitempty,min=3,max=255"`
 	SortBy    string `json:"sort_by" query:"sort_by" validate:"omitempty,oneof=created_at updated_at username email display_name"`
 	Sort      string `json:"sort" query:"sort" validate:"omitempty,oneof=DESC ASC"`
-	Page      uint   `query:"page" validate:"omitempty,min=1"`
+	Page      uint   `query:"page" validate:"required,min=1"`
 	Limit     uint   `query:"limit" validate:"omitempty,min=1,max=20"`
 }
 

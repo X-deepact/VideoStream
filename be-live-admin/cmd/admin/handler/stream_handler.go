@@ -29,13 +29,14 @@ type streamHandler struct {
 	scheduledVideosFolder string
 	videoFolder           string
 	ApiURL                string
+	clientHost            string
 }
 
 func newStreamHandler(r *echo.Group, srv *service.Service) *streamHandler {
 
 	fileStorageConfig := conf.GetFileStorageConfig()
 	streamConfig := conf.GetStreamServerConfig()
-
+	clientHost := conf.GetClientConfig().Host
 	stream := &streamHandler{
 		Handler: Handler{
 			r:   r,
@@ -50,6 +51,7 @@ func newStreamHandler(r *echo.Group, srv *service.Service) *streamHandler {
 		scheduledVideosFolder: fileStorageConfig.ScheduledVideosFolder,
 		videoFolder:           fileStorageConfig.VideoFolder,
 		ApiURL:                conf.GetApiFileConfig().Url,
+		clientHost:            clientHost,
 	}
 
 	stream.register()
@@ -165,6 +167,18 @@ func (h *streamHandler) getLiveStreamBroadCastByID(c echo.Context) error {
 
 }
 
+// @Summary Update a live stream by admin
+// @Description Admin can update a live stream's details
+// @Tags Streams
+// @Accept json
+// @Produce json
+// @Param id path int true "Stream ID"
+// @Param UpdateStreamRequest body dto.UpdateStreamRequest true "Update Stream Request"
+// @Success 200 {object} map[string]any
+// @Failure 400 "Invalid request"
+// @Failure 500 "Internal Server Error"
+// @Security Bearer
+// @Router /api/streams/{id} [put]
 func (h *streamHandler) updateLiveStreamByAdmin(c echo.Context) error {
 	var req dto.UpdateStreamRequest
 	if err := utils.BindAndValidate(c, &req); err != nil {
@@ -431,6 +445,7 @@ func (h *streamHandler) createLiveStreamByAdmin(c echo.Context) error {
 
 	src, err := file.Open()
 	if err != nil {
+		fmt.Println("remove file: ", err)
 		go utils.RemoveFiles(filesToRemove)
 		return utils.BuildErrorResponse(c, http.StatusBadRequest, err, nil)
 	}
@@ -642,6 +657,19 @@ func (h *streamHandler) getLiveStreamWithPagination(c echo.Context) error {
 
 }
 
+// @Summary End a live stream by admin
+// @Description Admin can end a live stream
+// @Tags Streams
+// @Accept json
+// @Produce json
+// @Param id path uint true "Stream ID"
+// @Success 200 ""Stream is ending. Wait for a few minutes""
+// @Success 202 "Stream is ending. Wait for a few minutes"
+// @Failure 400 "invalid id"
+// @Failure 400 "you can't end a live stream which is not started"
+// @Failure 500 "Internal Server Error"
+// @Security Bearer
+// @Router /api/streams/{id}/end_live [post]
 func (h *streamHandler) endLiveStream(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
@@ -669,6 +697,16 @@ func (h *streamHandler) endLiveStream(c echo.Context) error {
 		return utils.BuildSuccessResponse(c, http.StatusAccepted, "Stream is ending. Wait for a few minutes", nil)
 	}
 	if err := h.srv.Stream.EndLivByRedis(c.Request().Context(), stream.ID); err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	currentToken, err := utils.GetTokenFromHeader(c)
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
+	}
+
+	_, err = utils.PostAsync[dto.CommonResponseDTO](fmt.Sprintf("%s/api/notification/end-stream", h.clientHost), currentToken, map[string]interface{}{"stream_id": id})
+	if err != nil {
 		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 

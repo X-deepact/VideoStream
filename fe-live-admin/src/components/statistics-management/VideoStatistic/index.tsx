@@ -15,7 +15,7 @@ import useVideoStatistic from "@/hooks/useVideoStatistic";
 import { SORT_ORDER } from "@/lib/validation";
 
 const VideoStatistic = () => {
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState("");
   const {
     data,
     totalItems,
@@ -26,15 +26,15 @@ const VideoStatistic = () => {
     sortOrder,
     refetchData,
     setCurrentPage,
-    setPageLimit, 
+    setPageLimit,
     setSortBy,
     setSortOrder,
   } = useVideoStatistic({
     page: DEFAULT_PAGE,
     limit: DEFAULT_PAGE_SIZE,
     keyword,
-    sortBy: 'created_at',
-    sort: SORT_ORDER.DESC
+    sortBy: "created_at",
+    sort: SORT_ORDER.DESC,
   });
 
   const columns = getVideoStatisticsTableColumns({
@@ -43,7 +43,7 @@ const VideoStatistic = () => {
       sortOrder,
       setSortBy,
       setSortOrder,
-    }
+    },
   });
 
   const handlePageLimitChange = (limit: number) => setPageLimit(limit);
@@ -98,4 +98,4 @@ const VideoStatistic = () => {
   );
 };
 
-export default VideoStatistic; 
+export default VideoStatistic;

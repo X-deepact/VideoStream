@@ -131,7 +131,7 @@ const LivestreamPreview = ({ sessionId }: ComponentProps) => {
       const formatData = {
         title: data.title,
         description: data.description,
-        category: data.categories.map((c) => c.id.toString()),
+        category: data.categories.map((c: any) => c.id.toString()),
       };
       setFormData(formatData);
       setInitialFormData(formatData);

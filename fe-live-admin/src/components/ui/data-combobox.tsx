@@ -82,11 +82,9 @@ const DataCombobox = (props: ComponentProps) => {
                 {data.map((d) => (
                   <CommandItem
                     key={d.value}
-                    value={d.value}
-                    onSelect={(currentValue) => {
-                      handleDataChange(
-                        currentValue === selectedValue ? '' : currentValue
-                      );
+                    value={d.label}
+                    onSelect={() => {
+                      handleDataChange(d.value);
                       setOpenPopover(false);
                     }}
                   >

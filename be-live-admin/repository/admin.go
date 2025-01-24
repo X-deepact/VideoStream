@@ -13,6 +13,26 @@ type AdminRepository struct {
 	db *gorm.DB
 }
 
+func (s *AdminRepository) GetAdminActionByName(name string) (*model.Action, error) {
+	var action model.Action
+	if err := s.db.Model(model.Action{}).Where("name = ?", name).First(&action).Error; err != nil {
+		return nil, err
+	}
+	return &action, nil
+}
+
+func (s *AdminRepository) GetAdminActions() ([]string, error) {
+	var actions []string
+	if err := s.db.Model(model.Action{}).Select("name").Find(&actions).Error; err != nil {
+		return nil, err
+	}
+	return actions, nil
+}
+
+func (s *AdminRepository) CreateAdminAction(name string) error {
+	return s.db.Model(model.Action{}).Create(&model.Action{Name: name}).Error
+}
+
 func (s *AdminRepository) CreateAdmin(newUser *model.User) error {
 
 	// find role admin

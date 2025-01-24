@@ -88,6 +88,12 @@ type Role struct {
 	Users       []User    `gorm:"foreignKey:RoleID;constraint:OnDelete:CASCADE" json:"users,omitempty"`
 }
 
+type Action struct {
+	ID        uint      `gorm:"primaryKey"`
+	Name      string    `gorm:"type:varchar(50);not null;unique"`
+	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP;not null"`
+}
+
 type User struct {
 	ID                  uint           `gorm:"primaryKey;autoIncrement"`
 	Username            string         `gorm:"type:varchar(50);not null;unique"`

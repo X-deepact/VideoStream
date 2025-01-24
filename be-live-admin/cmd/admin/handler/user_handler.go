@@ -625,8 +625,6 @@ func (h *userHandler) page(c echo.Context) error {
 
 	if req.Page == 0 || req.Limit == 0 {
 		page = utils.DEFAULT_PAGE
-		limit = utils.DEFAULT_LIMIT
-
 	} else {
 		page = req.Page
 		limit = req.Limit

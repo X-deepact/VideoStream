@@ -1,76 +1,76 @@
-import React, { useState } from 'react'
-import { Label } from '../ui/label'
-import { Input } from '../ui/input'
-import { Button } from '../ui/button'
-import { useNavigate } from 'react-router-dom'
-import { useToast } from '@/hooks/use-toast'
-import { register } from '@/services/auth.service'
-import loadingImg from '@/assets/loading.svg'
+import React, { useState } from "react";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { register } from "@/services/auth.service";
+import loadingImg from "@/assets/loading.svg";
 
 const RegisterForm: React.FC = () => {
-  const navigator = useNavigate()
-  const { toast } = useToast()
+  const navigator = useNavigate();
+  const { toast } = useToast();
 
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmpass, setConfirmpass] = useState('')
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmpass, setConfirmpass] = useState("");
 
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
 
   const handleRegister = () => {
-    if (name === '') {
+    if (name === "") {
       toast({
-        description: 'Please enter your name.',
-        variant: 'destructive',
-      })
-      return
+        description: "Please enter your name.",
+        variant: "destructive",
+      });
+      return;
     }
-    if (email === '') {
+    if (email === "") {
       toast({
-        description: 'Please enter your email.',
-        variant: 'destructive',
-      })
-      return
+        description: "Please enter your email.",
+        variant: "destructive",
+      });
+      return;
     }
     if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
       toast({
-        description: 'Please enter a valid email address.',
-        variant: 'destructive',
-      })
-      return
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
     }
-    if (password === '') {
+    if (password === "") {
       toast({
-        description: 'Please enter a password.',
-        variant: 'destructive',
-      })
-      return
+        description: "Please enter a password.",
+        variant: "destructive",
+      });
+      return;
     }
     if (password.length < 8) {
       toast({
-        description: 'Password must be at least 8 character.',
-        variant: 'destructive',
-      })
-      return
+        description: "Password must be at least 8 character.",
+        variant: "destructive",
+      });
+      return;
     }
     if (password !== confirmpass) {
       toast({
-        description: 'Password is not match.',
-        variant: 'destructive',
-      })
-      return
+        description: "Password is not match.",
+        variant: "destructive",
+      });
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     register(name, email, password).then(
-      (res) => {
-        setLoading(false)
+      () => {
+        setLoading(false);
         toast({
-          description: 'Registered successfully.',
-        })
-        navigator('/login')
+          description: "Registered successfully.",
+        });
+        navigator("/login");
       },
       (error) => {
         const resMessage =
@@ -78,16 +78,16 @@ const RegisterForm: React.FC = () => {
             error.response.data &&
             error.response.data.message) ||
           error.message ||
-          error.toString()
+          error.toString();
         toast({
           description: resMessage,
-          variant: 'destructive',
-        })
-        setLoading(false)
-        return
-      },
-    )
-  }
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+    );
+  };
 
   return (
     <div className="space-y-4 max-w-md mx-auto p-6 bg-white shadow rounded-lg">
@@ -165,13 +165,13 @@ const RegisterForm: React.FC = () => {
         Register{loading && <img src={loadingImg} />}
       </Button>
       <p className="text-sm text-gray-600">
-        Already have an account?{' '}
+        Already have an account?{" "}
         <a href="/login" className="text-blue-600 hover:underline">
           Login
         </a>
       </p>
     </div>
-  )
-}
+  );
+};
 
-export default RegisterForm
+export default RegisterForm;

@@ -1,22 +1,12 @@
 import { ColumnDef } from "@tanstack/react-table";
-import DataTableColumnHeader from '@/components/common/DataTableHeader';
+import DataTableColumnHeader from "@/components/common/DataTableHeader";
 import { SORT_ORDER } from "@/lib/validation";
 import { ColumnNames } from "./columnData";
 import { formatKMBCount } from "@/lib/utils.ts";
 import { formatDate } from "@/lib/date-formated";
-import { formatDuration,  formatFileSize} from "@/lib/utils";
 import { createCenteredColumn } from "@/lib/table-formated.tsx";
-
-export type VideoStatistic = {
-  title: string;
-  viewers: number;
-  likes: number;
-  duration: number;
-  comments: number;
-  video_size: string;
-  created_at: string;
-  shares: number;
-};
+import { formatDuration, formatFileSize } from "@/lib/utils";
+import { VideoStatisticsResponse } from "@/type/statistic";
 
 interface ColumnsProps {
   sort: {
@@ -29,7 +19,7 @@ interface ColumnsProps {
 
 export const getVideoStatisticsTableColumns = ({
   sort,
-}: ColumnsProps): ColumnDef<VideoStatistic>[] => [
+}: ColumnsProps): ColumnDef<VideoStatisticsResponse>[] => [
   {
     accessorKey: "title",
     header: () => (
@@ -52,25 +42,25 @@ export const getVideoStatisticsTableColumns = ({
     accessorKey: "viewers",
     columnName: ColumnNames.viewers,
     formatValue: formatKMBCount,
-    sort: sort
-  }), 
+    sort: sort,
+  }),
   createCenteredColumn({
-    accessorKey: "likes", 
+    accessorKey: "likes",
     columnName: ColumnNames.likes,
     formatValue: formatKMBCount,
-    sort: sort
+    sort: sort,
   }),
   createCenteredColumn({
     accessorKey: "comments",
-    columnName: ColumnNames.comments, 
+    columnName: ColumnNames.comments,
     formatValue: formatKMBCount,
-    sort: sort
+    sort: sort,
   }),
   createCenteredColumn({
     accessorKey: "shares",
     columnName: ColumnNames.shares,
     formatValue: formatKMBCount,
-    sort: sort
+    sort: sort,
   }),
   {
     accessorKey: "duration",
@@ -83,9 +73,9 @@ export const getVideoStatisticsTableColumns = ({
             sortBy: sort.sortBy,
             sortOrder: sort.sortOrder,
             setSortBy: sort.setSortBy,
-          setSortOrder: sort.setSortOrder,
-        }}
-      />
+            setSortOrder: sort.setSortOrder,
+          }}
+        />
       </div>
     ),
     cell: ({ row }) => {
@@ -103,9 +93,9 @@ export const getVideoStatisticsTableColumns = ({
             sortBy: sort.sortBy,
             sortOrder: sort.sortOrder,
             setSortBy: sort.setSortBy,
-          setSortOrder: sort.setSortOrder,
-        }}
-      />
+            setSortOrder: sort.setSortOrder,
+          }}
+        />
       </div>
     ),
     cell: ({ row }) => {
@@ -129,5 +119,5 @@ export const getVideoStatisticsTableColumns = ({
     cell: ({ row }) => {
       return <div>{formatDate(row.original.created_at, true)}</div>;
     },
-  },    
+  },
 ];

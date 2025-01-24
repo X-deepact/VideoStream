@@ -1050,6 +1050,102 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/streams/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Admin can update a live stream's details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Streams"
+                ],
+                "summary": "Update a live stream by admin",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stream ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update Stream Request",
+                        "name": "UpdateStreamRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateStreamRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/api/streams/{id}/end_live": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Admin can end a live stream",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Streams"
+                ],
+                "summary": "End a live stream by admin",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stream ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Stream is ending. Wait for a few minutes"
+                    },
+                    "202": {
+                        "description": "Stream is ending. Wait for a few minutes"
+                    },
+                    "400": {
+                        "description": "you can't end a live stream which is not started"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
         "/api/users": {
             "get": {
                 "security": [
@@ -2164,6 +2260,45 @@ const docTemplate = `{
                 },
                 "total_live_streams": {
                     "type": "integer"
+                }
+            }
+        },
+        "dto.UpdateStreamRequest": {
+            "type": "object",
+            "required": [
+                "category_ids",
+                "description",
+                "title"
+            ],
+            "properties": {
+                "category_ids": {
+                    "type": "array",
+                    "maxItems": 3,
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
+                "ended_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "enum": [
+                        "pending",
+                        "started",
+                        "ended",
+                        "upcoming"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.StreamStatus"
+                        }
+                    ]
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },

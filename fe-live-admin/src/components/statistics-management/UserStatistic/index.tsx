@@ -51,7 +51,7 @@ const UserStatistic = () => {
   const handlePageLimitChange = (limit: number) => setPageLimit(limit);
   const handlePageChange = (page: number) => setCurrentPage(page);
   const handleSearch = (_keyword: string): void => setKeyword(_keyword);
-  const handleFilteredByRole = (role: "streamer" | "user") => setRoleType(role)
+  const handleFilteredByRole = (role: string) => setRoleType(role)
 
   return (
     <div className="px-8">
@@ -93,7 +93,7 @@ const UserStatistic = () => {
                 { value: "user", label: "User" },
               ],
               selectedValue: role,
-              handleFilter: (selectedOption: "streamer" | "user") => handleFilteredByRole(selectedOption),
+              handleFilter: (selectedOption: string) => handleFilteredByRole(selectedOption),
             },
           ],
         }}

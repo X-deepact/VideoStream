@@ -303,6 +303,32 @@ definitions:
       total_live_streams:
         type: integer
     type: object
+  dto.UpdateStreamRequest:
+    properties:
+      category_ids:
+        items:
+          type: integer
+        maxItems: 3
+        type: array
+      description:
+        type: string
+      ended_at:
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/model.StreamStatus'
+        enum:
+        - pending
+        - started
+        - ended
+        - upcoming
+      title:
+        type: string
+    required:
+    - category_ids
+    - description
+    - title
+    type: object
   dto.UpdateUserRequest:
     properties:
       display_name:
@@ -1184,6 +1210,67 @@ paths:
       security:
       - Bearer: []
       summary: Create a live stream by admin
+      tags:
+      - Streams
+  /api/streams/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Admin can update a live stream's details
+      parameters:
+      - description: Stream ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update Stream Request
+        in: body
+        name: UpdateStreamRequest
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateStreamRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: Update a live stream by admin
+      tags:
+      - Streams
+  /api/streams/{id}/end_live:
+    post:
+      consumes:
+      - application/json
+      description: Admin can end a live stream
+      parameters:
+      - description: Stream ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Stream is ending. Wait for a few minutes
+        "202":
+          description: Stream is ending. Wait for a few minutes
+        "400":
+          description: you can't end a live stream which is not started
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: End a live stream by admin
       tags:
       - Streams
   /api/streams/live-statistics:

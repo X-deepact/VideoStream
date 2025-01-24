@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { getCategories } from "@/services/category.service.ts";
 import { Catalogue } from "@/lib/interface.tsx";
 import { toast } from "@/hooks/use-toast.ts";
-import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, SORT_ORDER } from "@/lib/validation";
+import { DEFAULT_PAGE, SORT_ORDER } from "@/lib/validation";
 
 interface Category {
   label: string;

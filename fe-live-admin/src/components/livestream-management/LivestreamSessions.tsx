@@ -48,17 +48,8 @@ const LivestreamSessions = ({ defaultStatus, pageTitle }: SessionBaseProps) => {
 
   //Filters
   const [streamType, setStreamType] = useState("");
-  const [status, setStatus] = useState<string[]>(defaultStatus || []);
-  const { categories: nameList } = useCategories({});
-  const transformNameMiniResponse = (
-    data: any
-  ): { label: string; value: string }[] => {
-    return data?.map((cat: any) => ({
-      label: cat.label,
-      value: cat.label,
-    }));
-  };
-  const transformedNameOptions = transformNameMiniResponse(nameList);
+  const [status] = useState<string[]>(defaultStatus || []);
+  const { categories } = useCategories({});
   const { accounts } = useFetchAccount("streamer");
   //Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -105,7 +96,7 @@ const LivestreamSessions = ({ defaultStatus, pageTitle }: SessionBaseProps) => {
         <div className="flex flex-row gap-4">
           {/*New Stream Dialog*/}
           <LivestreamCreateNew
-            categories={transformedNameOptions}
+            categories={categories}
             users={accounts}
             onReset={refetchSessionList}
             isDisabled={defaultStatus[0] === "started"}
@@ -141,7 +132,6 @@ const LivestreamSessions = ({ defaultStatus, pageTitle }: SessionBaseProps) => {
                     Category
                   </Label>
                   <Select
-                    id="category"
                     value={streamType}
                     onValueChange={(value) => {
                       setStreamType(value);
@@ -155,7 +145,7 @@ const LivestreamSessions = ({ defaultStatus, pageTitle }: SessionBaseProps) => {
                     <SelectContent>
                       <SelectGroup>
                         <SelectLabel>Category</SelectLabel>
-                        {transformedNameOptions.map((category) => {
+                        {categories.map((category) => {
                           return (
                             <SelectItem
                               key={category.label}

@@ -107,6 +107,21 @@ func SeedRoles(roleService *service.RoleService) {
 	log.Println("Roles seeded successfully")
 }
 
+func SeedActions(adminService *service.AdminService) {
+
+	for _, action := range model.Actions {
+		existingAction, _ := adminService.GetActionByName(action)
+		if existingAction != nil {
+			continue // action already exists
+		}
+		if err := adminService.CreateAdminAction(action); err != nil {
+			log.Fatalf("Failed to seed admin action: %v", err)
+		}
+	}
+
+	log.Println("Actions seeded successfully")
+}
+
 func SeedSuperAdminUser(userService *service.UserService, roleService *service.RoleService) {
 	role, err := roleService.GetRoleByType(model.SUPPERADMINROLE)
 	if err != nil || role == nil {

@@ -133,3 +133,15 @@ func (s *AdminService) GetAdmins() ([]dto.AdminResp, error) {
 func (s *AdminService) CreateLog(adminLog *model.AdminLog) error {
 	return s.repo.Admin.Create(adminLog)
 }
+
+func (s *AdminService) GetActionByName(name string) (*model.Action, error) {
+	return s.repo.Admin.GetAdminActionByName(name)
+}
+
+func (s *AdminService) CreateAdminAction(name string) error {
+	return s.repo.Admin.CreateAdminAction(name)
+}
+
+func (s *AdminService) GetAdminActions() ([]string, error) {
+	return s.repo.Admin.GetAdminActions()
+}

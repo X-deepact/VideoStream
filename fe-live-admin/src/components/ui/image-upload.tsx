@@ -16,6 +16,10 @@ interface ComponentProps {
 	onFileChange?: (file: File | null) => void;
 }
 
+export interface ImageUploadRef {
+	clear: () => void;
+}
+
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/x-flv"];
 
@@ -41,7 +45,7 @@ const getAcceptString = (mode: UploadMode) => {
 	}
 };
 
-const ImageUpload = forwardRef((props: ComponentProps, ref) => {
+const ImageUpload = forwardRef<ImageUploadRef, ComponentProps>((props, ref) => {
 	const {
 		width = "w-32",
 		height = "w-32",
@@ -55,7 +59,7 @@ const ImageUpload = forwardRef((props: ComponentProps, ref) => {
 	const [preview, setPreview] = useState<string | null>(initialPreview || null);
 	const [fileType, setFileType] = useState<string | null>(null);
 
-	const fileInputRef = useRef<HTMLElement | null>(null);
+	const fileInputRef = useRef<HTMLInputElement | null>(null);
 
 	const handleFileChange =  (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0] || null;
@@ -190,4 +194,5 @@ const ImageUpload = forwardRef((props: ComponentProps, ref) => {
 	);
 })
 
-export default ImageUpload
+ImageUpload.displayName = "ImageUpload";
+export default ImageUpload;

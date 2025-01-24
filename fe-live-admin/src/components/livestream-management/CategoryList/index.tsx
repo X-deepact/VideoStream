@@ -253,7 +253,6 @@ const LiveCategory = () => {
           isOpen={isCreateModalOpen}
           setOpen={setIsCreateModalOpen}
           data={formData}
-          setFormData={setFormData}
           onInputChange={handleInputChange}
           onCreate={handleCreateClick}
         />

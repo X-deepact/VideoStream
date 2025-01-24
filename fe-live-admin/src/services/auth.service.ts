@@ -28,7 +28,7 @@ export const register = (username: string, email: string, password: string) => {
 export const logout = async() => {
 	return await axios
 	.post(API_BASE_URL + "logout", {}, {headers: authHeader()})
-	.then((res) => {
+	.then(() => {
 		localStorage.removeItem("IsAuth");
 		localStorage.removeItem("user");
 	});

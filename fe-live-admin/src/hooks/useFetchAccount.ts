@@ -18,11 +18,11 @@ export const useFetchAccount = (role: string) => {
         const transformData = data.page.map((account: AccountProps) => {
           return {
             label: account.username,
-            value: account.username,
+            value: String(account.id),
           };
         });
         setAccounts(transformData);
-      } catch (e) {
+      } catch (e: any) {
         toast({
           description: e.message,
           variant: "destructive",

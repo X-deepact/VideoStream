@@ -140,9 +140,9 @@ func (h *adminHandler) getAdminLogs(c echo.Context) error {
 // @Security     Bearer
 // @Router       /api/admins/actions [get]
 func (h *adminHandler) getAdminActions(c echo.Context) error {
-	var data []string
-	for _, value := range model.Actions {
-		data = append(data, value)
+	data, err := h.srv.Admin.GetAdminActions()
+	if err != nil {
+		return utils.BuildErrorResponse(c, http.StatusInternalServerError, err, nil)
 	}
 
 	return utils.BuildSuccessResponseWithData(c, http.StatusOK, data)

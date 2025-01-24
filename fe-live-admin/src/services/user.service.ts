@@ -85,7 +85,7 @@ export const getAdminsList = async <T = UserMiniResponse[]>(): Promise<
 
 export const getAccountListWithRole = (role: string) => {
   return axios.get(
-    `${API_URL}/users?page=1&limit=20&sort_by=username&sort=ASC&role=${role}`,
+    `${API_URL}/users?page=1&sort_by=username&sort=ASC&role=${role}`,
     {
       headers: authHeader(),
     }

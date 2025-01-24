@@ -70,6 +70,24 @@ func (s *UserRepository) Page(filter *dto.UserQuery, page, limit uint) (*utils.P
 	}
 	query = query.Where("users.username != ? AND users.email != ?", model.SUPER_ADMIN_USERNAME, model.SUPER_ADMIN_EMAIL)
 	query = query.Preload("Role").Preload("CreatedBy").Preload("UpdatedBy")
+
+	if limit == 0 {
+		var emptyLimitPagination = new(utils.PaginationModel[model.User])
+		var users []model.User
+		if err := query.Find(&users).Error; err != nil {
+			return nil, err
+		}
+		emptyLimitPagination.CurrentPage = int(page)
+		emptyLimitPagination.Index = 1
+		emptyLimitPagination.Length = len(users)
+		emptyLimitPagination.Next = -1
+		emptyLimitPagination.Previous = 0
+		emptyLimitPagination.PageSize = len(users)
+		emptyLimitPagination.TotalItems = int64(len(users))
+		emptyLimitPagination.Page = users
+		return emptyLimitPagination, nil
+	}
+
 	pagination, err := utils.CreatePage[model.User](query, int(page), int(limit))
 	if err != nil {
 		return nil, err

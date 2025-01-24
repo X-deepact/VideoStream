@@ -1,48 +1,46 @@
-import React, { useState } from 'react'
-import { Label } from '../ui/label'
-import { Input } from '../ui/input'
-import { Button } from '../ui/button'
-import { useNavigate } from 'react-router-dom'
-import { useToast } from '@/hooks/use-toast'
-import { InputOTP, InputOTPSlot, InputOTPGroup } from '../ui/input-otp'
-import axios from 'axios'
+import React, { useState } from "react";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { InputOTP, InputOTPSlot, InputOTPGroup } from "../ui/input-otp";
+import axios from "axios";
 
 const ResetPasswordForm: React.FC = () => {
-  const navigator = useNavigate()
-  const { toast } = useToast()
+  const { toast } = useToast();
 
-  const [password, setPassword] = useState('')
-  const [confirmpass, setConfirmpass] = useState('')
+  const [password, setPassword] = useState("");
+  const [confirmpass, setConfirmpass] = useState("");
 
   const handleVerifycode = (otp: any) => {
-    axios.post('/reset_password', { otpData: otp }).then((res: any) => {
-      console.log('responseData:', res)
-    })
-  }
+    axios.post("/reset_password", { otpData: otp }).then((res: any) => {
+      console.log("responseData:", res);
+    });
+  };
 
   const handleReset = () => {
-    if (password === '') {
+    if (password === "") {
       toast({
-        description: 'Please enter a password.',
-        variant: 'destructive',
-      })
-      return
+        description: "Please enter a password.",
+        variant: "destructive",
+      });
+      return;
     }
     if (password.length < 8) {
       toast({
-        description: 'Password must be at least 8 character.',
-        variant: 'destructive',
-      })
-      return
+        description: "Password must be at least 8 character.",
+        variant: "destructive",
+      });
+      return;
     }
     if (password !== confirmpass) {
       toast({
-        description: 'Password is not match.',
-        variant: 'destructive',
-      })
-      return
+        description: "Password is not match.",
+        variant: "destructive",
+      });
+      return;
     }
-  }
+  };
 
   return (
     <div className="space-y-4 max-w-md mx-auto p-6 bg-white shadow rounded-lg">
@@ -109,7 +107,7 @@ const ResetPasswordForm: React.FC = () => {
         Reset
       </Button>
     </div>
-  )
-}
+  );
+};
 
-export default ResetPasswordForm
+export default ResetPasswordForm;
