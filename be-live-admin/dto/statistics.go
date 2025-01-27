@@ -45,13 +45,8 @@ type BaseDTO struct {
 }
 
 type LiveStatRespInDayDTO struct {
-	Title       string             `json:"title"`
-	Description string             `json:"description"`
-	StreamID    uint               `json:"stream_id"`
-	Status      model.StreamStatus `json:"status"`
-	Likes       []BaseDTO          `json:"likes"`
-	Viewers     []BaseDTO          `json:"viewers"`
-	Comments    []BaseDTO          `json:"comments"`
+	Time  string `json:"time"`
+	Views uint   `json:"views"`
 }
 
 type StatisticsTotalLiveStreamDTO struct {

@@ -22,13 +22,6 @@ definitions:
       username:
         type: string
     type: object
-  dto.BaseDTO:
-    properties:
-      created_at:
-        type: string
-      id:
-        type: integer
-    type: object
   dto.CategoryDTO:
     properties:
       created_at:
@@ -142,26 +135,10 @@ definitions:
     type: object
   dto.LiveStatRespInDayDTO:
     properties:
-      comments:
-        items:
-          $ref: '#/definitions/dto.BaseDTO'
-        type: array
-      description:
+      time:
         type: string
-      likes:
-        items:
-          $ref: '#/definitions/dto.BaseDTO'
-        type: array
-      status:
-        $ref: '#/definitions/model.StreamStatus'
-      stream_id:
+      views:
         type: integer
-      title:
-        type: string
-      viewers:
-        items:
-          $ref: '#/definitions/dto.BaseDTO'
-        type: array
     type: object
   dto.LiveStreamBroadCastDTO:
     properties:
@@ -1457,6 +1434,7 @@ paths:
       - in: query
         minimum: 1
         name: page
+        required: true
         type: integer
       - in: query
         maxLength: 255

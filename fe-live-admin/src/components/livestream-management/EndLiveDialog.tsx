@@ -15,28 +15,35 @@ interface EndLiveDialogProps {
   livestreamId: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
 }
 
-const EndLiveDialog = ({ livestreamId, isOpen, onOpenChange }: EndLiveDialogProps) => {
+const EndLiveDialog = ({
+  livestreamId,
+  isOpen,
+  onOpenChange,
+  onSuccess,
+}: EndLiveDialogProps) => {
   const handleEndLive = async () => {
     try {
       const response = await endLivestreamSession(livestreamId);
-      
+
       if (response.status === 200) {
+        onSuccess();
         toast({
           description: "Stream ended successfully",
-          className: "bg-toast-success text-white border-toast-success-border"
+          className: "bg-toast-success text-white border-toast-success-border",
         });
       } else if (response.status === 202) {
         toast({
           description: "Stream is already being ended, please wait",
-          className: "bg-toast-success text-white border-toast-success-border"
+          className: "bg-toast-success text-white border-toast-success-border",
         });
       }
     } catch (error) {
       toast({
         description: "Failed to end stream. Please try again!",
-        className: "bg-toast-error text-white border-toast-error-border"
+        className: "bg-toast-error text-white border-toast-error-border",
       });
     } finally {
       onOpenChange(false);
@@ -52,9 +59,13 @@ const EndLiveDialog = ({ livestreamId, isOpen, onOpenChange }: EndLiveDialogProp
       </DialogTrigger>
       <DialogContent className="sm:max-md">
         <DialogHeader>
-          <DialogTitle className="text-red-500">End Live Stream: Are You Sure?</DialogTitle>
+          <DialogTitle className="text-red-500">
+            End Live Stream: Are You Sure?
+          </DialogTitle>
           <DialogDescription className="text-gray-600">
-            Ending this live stream will immediately stop the broadcast. The viewer count and live status will reset, and the streamer will be notified. Ensure this action is intentional, as it cannot be undone.
+            Ending this live stream will immediately stop the broadcast. The
+            viewer count and live status will reset, and the streamer will be
+            notified. Ensure this action is intentional, as it cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <div className="flex justify-end gap-3 mt-4">
@@ -70,4 +81,4 @@ const EndLiveDialog = ({ livestreamId, isOpen, onOpenChange }: EndLiveDialogProp
   );
 };
 
-export default EndLiveDialog; 
+export default EndLiveDialog;

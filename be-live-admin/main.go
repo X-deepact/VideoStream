@@ -118,6 +118,7 @@ func main() {
 
 	go func() {
 		if err := e.Start(fmt.Sprintf(":%d", conf.GetApplicationConfig().Port)); err != nil && err != http.ErrServerClosed {
+			log.Println(err)
 			e.Logger.Fatal("shutting down the server")
 		}
 	}()

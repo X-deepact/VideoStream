@@ -16,10 +16,14 @@ import { subscribeUnsubscribe } from '@/services/stream';
 import { toast } from 'sonner';
 import ApiFetchingError from '@/components/ApiFetchingError';
 import { toggleMuteNotificationsFromChannel } from '@/services/subscription';
+import { RESOURCE_ID, STREAMER_PROFILE_PATH } from '@/data/route';
+import { useNavigate } from 'react-router-dom';
 
 const title = 'Subscriptions';
 
 const Subscriptions = () => {
+  const navigate = useNavigate();
+
   const [currentPage, setCurrentPage] = useState(DEFAULT_PAGE);
   const [confirmModal, setConfirmModal] = useState<ConfirmationModalProps>({
     isDanger: false,
@@ -112,6 +116,10 @@ const Subscriptions = () => {
     }
   };
 
+  const handleGoToChannel = (id: number) => {
+    navigate(STREAMER_PROFILE_PATH.replace(RESOURCE_ID, id?.toString()));
+  };
+
   // Modal dialogs
   const openConfirmModal = (
     title: string,
@@ -145,13 +153,13 @@ const Subscriptions = () => {
 
   return (
     <div>
-      <div className="flex flex-col justify-center items-center max-w-4xl mx-auto">
-        <div className="w-full">
+      <div className='flex flex-col justify-center items-center max-w-4xl mx-auto'>
+        <div className='w-full'>
           <LayoutHeading title={`${title} (${totalItems})`} />
         </div>
 
         {!isLoading && !isFetchingError && (
-          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-x-10 w-full mt-6">
+          <div className='grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-x-10 w-full mt-6'>
             {subscriptions?.map((sub) => (
               <div key={sub.id}>
                 <SubscriptionItem
@@ -164,13 +172,14 @@ const Subscriptions = () => {
                   onToggleMuteNotifications={() =>
                     handleToggleMuteNotifications(sub.streamer_id, sub.is_mute)
                   }
+                  onNavigateChannel={() => handleGoToChannel(sub.streamer_id)}
                 />
               </div>
             ))}
           </div>
         )}
         {!isLoading && !isFetchingError && subscriptions.length > 0 && (
-          <div className="flex justify-center mt-6">
+          <div className='flex justify-center mt-6'>
             <AppPagination
               actions={{
                 pages: {
@@ -189,9 +198,9 @@ const Subscriptions = () => {
 
       {!isFetchingError && !isLoading && subscriptions.length === 0 && (
         <NotFoundCentered
-          Icon={<UsersRound className="text-white" />}
-          title="No Subscription Found!"
-          description="Subscribe to your favorite streamers not to miss their contents."
+          Icon={<UsersRound className='text-white' />}
+          title='No Subscription Found!'
+          description='Subscribe to your favorite streamers not to miss their contents.'
         />
       )}
 

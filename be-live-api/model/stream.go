@@ -8,10 +8,11 @@ import (
 type StreamStatus string
 
 const (
-	PENDING  StreamStatus = "pending"
-	STARTED  StreamStatus = "started"
-	ENDED    StreamStatus = "ended"
-	UPCOMING StreamStatus = "upcoming"
+	PENDING         StreamStatus = "pending"
+	STARTED         StreamStatus = "started"
+	ENDED           StreamStatus = "ended"
+	UPCOMING        StreamStatus = "upcoming"
+	PENDINGSOFTWARE StreamStatus = "pending_software"
 )
 
 type StreamType string

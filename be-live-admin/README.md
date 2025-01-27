@@ -55,9 +55,9 @@ I. Instructions on setting up your project via docker compose
     
 
     ```
-3. Replace config.yaml.docker to config.yaml
+3. Replace config.ini.docker to config.ini
       ```sh
-   cd ./be-live-admin/conf && mv config.example.docker.yaml config.yaml
+   cd ./be-live-admin/conf && mv config.example.docker.ini config.ini
    ```
 4. Run docker compose
       ```sh
@@ -89,9 +89,9 @@ I. Instructions on setting up your project via docker compose
     
 
     ```
-4. Replace config.example.yaml to config.yaml
+4. Replace config.example.ini to config.ini
       ```sh
-   cd ./be-live-admin/conf && mv config.example.yaml config.yaml
+   cd ./be-live-admin/conf && mv config.example.ini config.ini
    ```
 
 5. Run project

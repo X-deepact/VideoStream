@@ -8,7 +8,9 @@ interface ComponentProps {
 
 const AppAvatar = ({ url, classes, fallback = 'PF' }: ComponentProps) => {
   return (
-    <Avatar className={`w-8 h-8 cursor-pointer ${classes}`}>
+    <Avatar
+      className={`w-8 h-8 cursor-pointer border border-gray-300 overflow-hidden ${classes}`}
+    >
       <AvatarImage src={url} alt={fallback} className="object-cover" />
       <AvatarFallback className="text-sm">{fallback}</AvatarFallback>
     </Avatar>

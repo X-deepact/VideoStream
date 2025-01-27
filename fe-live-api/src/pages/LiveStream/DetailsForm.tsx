@@ -412,7 +412,9 @@ const DetailsForm = (props: ComponentProps) => {
             {/* Streams server and key */}
             {mode === FORM_MODE.VIEW && data && data.push_url && (
               <>
-                <Label>Stream crendentials</Label>
+                <Label>
+                  Stream crendentials (paste them into your streaming software)
+                </Label>
                 <div className="w-full border rounded-md py-4 px-3 space-y-2">
                   <div className="border-b pb-2 text-xs relative">
                     <span className="italic text-muted-foreground">
@@ -675,7 +677,7 @@ const DetailsForm = (props: ComponentProps) => {
 
 export default DetailsForm;
 
-function getStreamCrendentials(pushUrl: string): [string, string] | [] {
+export function getStreamCrendentials(pushUrl: string): [string, string] | [] {
   if (!pushUrl) return [];
 
   const lastIndex = pushUrl.lastIndexOf('/');

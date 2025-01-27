@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import VideoDescriptionBox from '@/components/VideoDescriptionBox';
 import useVideoDetails from '@/hooks/useVideoDetails';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  formatKMBCount,
   getAvatarFallbackText,
   getCorrectUnit,
+  KMBformatter,
 } from '@/lib/utils';
 import Reactions from '@/components/Chat/Reactions';
 import { Reaction, ReactionStats } from '@/data/chat';
@@ -25,7 +24,6 @@ import {
   BellRing,
   Bookmark,
   Share2,
-  Sparkles,
   SquarePlay,
   VideoOff,
 } from 'lucide-react';
@@ -47,6 +45,7 @@ import { toast } from 'sonner';
 import { API_ERROR } from '@/data/api';
 import { toggleMuteNotificationsFromChannel } from '@/services/subscription';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
+import SubscribeButton from '@/components/SubscribeButton';
 
 const WatchVideo = () => {
   const navigate = useNavigate();
@@ -303,11 +302,11 @@ const WatchVideo = () => {
     return (
       <div>
         <NotFoundCentered
-          Icon={<VideoOff className="text-white" />}
-          title="No Video Found!"
-          description="This video is not available anymore."
+          Icon={<VideoOff className='text-white' />}
+          title='No Video Found!'
+          description='This video is not available anymore.'
           redirectTo={{
-            Icon: <SquarePlay className="h-4 w-4" />,
+            Icon: <SquarePlay className='h-4 w-4' />,
             buttonText: 'Watch Videos',
             link: FEED_PATH,
           }}
@@ -325,12 +324,12 @@ const WatchVideo = () => {
 
   return (
     <div>
-      <div className="flex flex-col pt-0 space-y-6 min-h-screen">
+      <div className='flex flex-col pt-0 space-y-6 min-h-screen'>
         {/* Video Section */}
-        <div className="w-full flex justify-center bg-black border">
+        <div className='w-full flex justify-center bg-black border rounded-md'>
           <div
             ref={videoContainerRef}
-            className="relative shadow-lg"
+            className='relative shadow-lg'
             style={{
               width: videoDimensions ? `${videoDimensions.width}px` : 'auto',
               height: videoDimensions ? `${videoDimensions.height}px` : 'auto',
@@ -343,13 +342,13 @@ const WatchVideo = () => {
           </div>
         </div>
 
-        <h1 ref={titleRef} className="title text-xl font-bold">
+        <h1 ref={titleRef} className='title text-xl font-bold'>
           {videoDetails?.title || 'No Title'}
         </h1>
 
         {/* Uploader and Interaction Section */}
-        <div ref={streamerAvatarRef} className="flex items-center">
-          <div className="flex items-center space-x-2 flex-1">
+        <div ref={streamerAvatarRef} className='flex items-center'>
+          <div className='flex items-center space-x-2 flex-1'>
             <Link
               to={STREAMER_PROFILE_PATH.replace(
                 RESOURCE_ID,
@@ -361,7 +360,7 @@ const WatchVideo = () => {
                 fallback={getAvatarFallbackText(
                   videoDetails?.display_name || 'PF'
                 )}
-                classes="w-10 h-10"
+                classes='w-10 h-10'
               />
             </Link>
             <div>
@@ -371,48 +370,39 @@ const WatchVideo = () => {
                   videoDetails?.user_id?.toString() || ''
                 )}
               >
-                <h3 className="text-md font-medium">
+                <h3 className='text-md font-medium'>
                   {videoDetails?.display_name}
                 </h3>
               </Link>
-              <p className="text-muted-foreground text-xs">
-                {formatKMBCount(subscribedCount)} Subscribers
+              <p className='text-muted-foreground text-xs'>
+                {KMBformatter(subscribedCount)} Subscribers
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className='flex gap-2'>
               {!videoDetails?.is_owner && (
-                <Button
-                  onClick={handleSubscribeUnsubscribe}
-                  variant={`${isSubscribed ? 'secondary' : 'default'}`}
-                  className="px-4 py-2 ml-2 rounded-full"
-                >
-                  {isSubscribed ? (
-                    <>
-                      <Sparkles className="fill-primary text-primary" />
-                      Subscribed
-                    </>
-                  ) : (
-                    'Subscribe'
-                  )}
-                </Button>
+                <SubscribeButton
+                  className='ml-2'
+                  isSubscribed={isSubscribed}
+                  onSubscribeUnsubscribe={handleSubscribeUnsubscribe}
+                />
               )}
               {isSubscribed && (
                 <AppButton
-                  className="rounded-full"
+                  className='rounded-full'
                   Icon={isNotiMuted ? BellOff : BellRing}
                   isIconActive={false}
                   label={
                     isNotiMuted ? 'Unmute Notification' : 'Mute Notification'
                   }
                   tooltipOnSmallScreens
-                  size="icon"
-                  variant="secondary"
+                  size='icon'
+                  variant='secondary'
                   onClick={() => handleToggleMuteNotifications()}
                 />
               )}
             </div>
           </div>
-          <div className="flex space-x-2 items-center">
+          <div className='flex space-x-2 items-center'>
             <AppButton
               Icon={Share2}
               label={`${sharedCount > 0 ? sharedCount : ''} ${getCorrectUnit(
@@ -420,8 +410,8 @@ const WatchVideo = () => {
                 'Share'
               )}`}
               tooltipOnSmallScreens
-              size="sm"
-              variant="outline"
+              size='sm'
+              variant='outline'
               onClick={handleShare}
             />
             <AppButton
@@ -429,8 +419,8 @@ const WatchVideo = () => {
               isIconActive={isSaved}
               label={isSaved ? 'Bookmarked' : 'Bookmark'}
               tooltipOnSmallScreens
-              size="sm"
-              variant="outline"
+              size='sm'
+              variant='outline'
               onClick={handleBookmarkVideo}
             />
             <Reactions

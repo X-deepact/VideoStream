@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -212,7 +211,6 @@ func (h *streamHandler) getStreams(c echo.Context) error {
 	}
 
 	var newPage = new(utils.PaginationModel[dto.StreamDto])
-	softwareStarted := []dto.StreamDto{}
 	newPage.Page = utils.Map(pagination.Page, func(e dto.Stream) dto.StreamDto {
 		thumbnailURL := ""
 		avtURL := ""
@@ -257,48 +255,12 @@ func (h *streamHandler) getStreams(c echo.Context) error {
 			IsSaved:       e.IsSaved,
 		}
 
-		if e.Status == model.StreamStatus(dto.LIVE) && e.StreamType == model.SOFTWARESTREAM {
-			resDto.BroadCastURL = utils.MakeBroadcastURL(h.hlsURL, e.StreamKey)
-			softwareStarted = append(softwareStarted, resDto)
-		}
-
 		return resDto
 	})
 
 	if req.IsHistory != nil && *req.IsHistory {
 		newPage.BasePaginationModel = pagination.BasePaginationModel
 		return utils.BuildSuccessResponse(c, http.StatusOK, newPage)
-	}
-
-	if len(softwareStarted) > 0 {
-		results := []dto.StreamDto{}
-
-		var wg sync.WaitGroup
-
-		for _, stream := range softwareStarted {
-			wg.Add(1)
-			go func(streamCheck dto.StreamDto) {
-				defer wg.Done()
-				streamData := checkStreamStatus(streamCheck)
-
-				if streamData != nil {
-					results = append(results, *streamData)
-				}
-			}(stream)
-		}
-
-		wg.Wait()
-
-		if len(results) > 0 {
-			for i := 0; i < len(newPage.Page); {
-				if containsStream(results, newPage.Page[i]) {
-					newPage.Page = append(newPage.Page[:i], newPage.Page[i+1:]...)
-				} else {
-					i++
-				}
-			}
-
-		}
 	}
 
 	liveStreams := []dto.StreamDto{}
@@ -364,6 +326,10 @@ func (h *streamHandler) getStream(c echo.Context) error {
 		thumbnailURL = utils.MakeThumbnailURL(h.ApiURL, stream.ThumbnailFileName)
 	}
 
+	if stream.Status == model.PENDINGSOFTWARE {
+		return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("streamer is not live yet"), nil)
+	}
+
 	if stream.Status == model.ENDED {
 		if len(stream.StreamAnalytics) > 0 {
 			views = stream.StreamAnalytics[0].Views
@@ -377,12 +343,6 @@ func (h *streamHandler) getStream(c echo.Context) error {
 	} else if stream.Status == model.STARTED {
 		status = dto.LIVE
 		broadcastURL = utils.MakeBroadcastURL(h.hlsURL, stream.StreamKey)
-
-		if stream.StreamType == model.SOFTWARESTREAM {
-			if streamCheck := checkStreamStatus(dto.StreamDto{BroadCastURL: broadcastURL}); streamCheck != nil {
-				return utils.BuildErrorResponse(c, http.StatusBadRequest, errors.New("streamer is not live yet"), nil)
-			}
-		}
 
 		countView, err := h.srv.Interaction.CountViewsByStreamLive(stream.ID)
 		if err != nil {
@@ -1004,27 +964,4 @@ func (h *streamHandler) getChannel(c echo.Context) error {
 	}
 
 	return utils.BuildSuccessResponse(c, http.StatusOK, channel)
-}
-
-func checkStreamStatus(stream dto.StreamDto) *dto.StreamDto {
-	client := http.Client{
-		Timeout: 5 * time.Second,
-	}
-
-	resp, err := client.Get(stream.BroadCastURL)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		return &stream
-	}
-	defer resp.Body.Close()
-
-	return nil
-}
-
-func containsStream(streams []dto.StreamDto, target dto.StreamDto) bool {
-	for _, stream := range streams {
-		if stream.ID == target.ID {
-			return true
-		}
-	}
-	return false
 }

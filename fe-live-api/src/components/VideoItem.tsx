@@ -62,7 +62,7 @@ const VideoItem: React.FC<VideoItemProps> = ({
   };
 
   return (
-    <div className="overflow-hidden relative cursor-pointer">
+    <div className='overflow-hidden relative cursor-pointer'>
       <div
         className={cn(
           isSingleStyleMobile ? 'flex flex-col gap-4' : 'flex gap-4',
@@ -72,7 +72,7 @@ const VideoItem: React.FC<VideoItemProps> = ({
         {/* 1) thumbnail */}
         <div
           className={cn(
-            'overflow-hidden aspect-video rounded-lg hover:rounded-none border border-transparent hover:border-primary hover:border-4 transition-all ease-in-out duration-300 relative',
+            'overflow-hidden aspect-video rounded-lg border border-transparent hover:border-primary hover:border-4 transition-all ease-in-out duration-300 relative',
             !isGrid && 'md:max-w-[350px] md:min-w-[240px]'
           )}
           onClick={handleWatchVideo}
@@ -80,8 +80,8 @@ const VideoItem: React.FC<VideoItemProps> = ({
           {/* live status */}
           {isLive && (
             <Badge
-              variant="destructive"
-              className="absolute top-2.5 left-2.5 bg-red-600 text-white text-xs font-bold py-0.5 px-1 rounded-[5px]"
+              variant='destructive'
+              className='absolute top-2.5 left-2.5 bg-red-600 text-white text-xs font-bold py-0.5 px-1 rounded-[5px]'
             >
               LIVE
             </Badge>
@@ -89,7 +89,7 @@ const VideoItem: React.FC<VideoItemProps> = ({
 
           {/* upcoming status */}
           {isUpcoming && (
-            <Badge className="absolute top-2.5 left-2.5 bg-green-600 hover:bg-green-800 text-white text-xs font-bold py-0.5 px-1 rounded-[5px]">
+            <Badge className='absolute top-2.5 left-2.5 bg-green-600 hover:bg-green-800 text-white text-xs font-bold py-0.5 px-1 rounded-[5px]'>
               Upcoming
             </Badge>
           )}
@@ -97,7 +97,7 @@ const VideoItem: React.FC<VideoItemProps> = ({
           {/* duration */}
           {isVideo && (
             <OverlayStats
-              classes="top-2 left-2"
+              classes='top-2 left-2'
               content={getMicrosecondsToHHMMSS(video?.duration)}
             />
           )}
@@ -105,7 +105,7 @@ const VideoItem: React.FC<VideoItemProps> = ({
           {/* views */}
           {isVideo && (
             <OverlayStats
-              classes="bottom-2 left-2"
+              classes='bottom-2 left-2'
               content={`${video?.views} view${video?.views > 1 ? 's' : ''}`}
             />
           )}
@@ -113,19 +113,19 @@ const VideoItem: React.FC<VideoItemProps> = ({
           {/* uploaded/streamed/upcoming time */}
           {isLive && (
             <OverlayStats
-              classes="bottom-2 right-2"
+              classes='bottom-2 right-2'
               content={`Live ${getTimeAgoFormat(video.started_at)}`}
             />
           )}
           {isVideo && (
             <OverlayStats
-              classes="bottom-2 right-2"
+              classes='bottom-2 right-2'
               content={getTimeAgoFormat(video.started_at)}
             />
           )}
           {isUpcoming && (
             <OverlayStats
-              classes="bottom-2 right-2"
+              classes='bottom-2 right-2'
               content={`Live on ${getFormattedDate(
                 new Date(video?.scheduled_at || ''),
                 true
@@ -138,7 +138,7 @@ const VideoItem: React.FC<VideoItemProps> = ({
             isThumbnail
             src={video.thumbnail_url}
             alt={video.title}
-            className="w-full h-full object-cover"
+            className='w-full h-full object-cover'
           />
         </div>
 
@@ -157,19 +157,19 @@ const VideoItem: React.FC<VideoItemProps> = ({
               )}
             >
               <AppAvatar
-                classes="w-10 h-10"
+                classes='w-10 h-10'
                 url={video?.avatar_file_url}
                 fallback={getAvatarFallbackText(video?.display_name)}
               />
             </Link>
           )}
-          <div className="space-y-1 flex-1">
+          <div className='space-y-1 flex-1'>
             {/* title - 2 lines at most */}
             <p
               title={video.title}
               className={cn(
                 isSingleStyleMobile ? 'text-lg' : 'text-base md:text-lg',
-                'hover:text-primary font-bold line-clamp-2 text-ellipsis'
+                'hover:text-primary font-semibold line-clamp-2 text-ellipsis'
               )}
               onClick={handleWatchVideo}
             >
@@ -177,7 +177,7 @@ const VideoItem: React.FC<VideoItemProps> = ({
             </p>
 
             {/* avatar and streamer name */}
-            <div className="flex gap-2 md:items-center">
+            <div className='flex gap-2 md:items-center'>
               {!isGrid && (
                 <Link
                   to={STREAMER_PROFILE_PATH.replace(
@@ -185,10 +185,11 @@ const VideoItem: React.FC<VideoItemProps> = ({
                     video?.user_id?.toString()
                   )}
                 >
-                  <div className="hidden md:block md:mt-2">
+                  <div className='hidden md:block md:mt-2'>
                     <AppAvatar
-                      classes="w-10 h-10"
+                      classes='w-10 h-10'
                       url={video?.avatar_file_url}
+                      fallback={getAvatarFallbackText(video?.display_name)}
                     />
                   </div>
                 </Link>
@@ -198,7 +199,7 @@ const VideoItem: React.FC<VideoItemProps> = ({
                   RESOURCE_ID,
                   video?.user_id?.toString()
                 )}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground"
+                className='text-sm font-medium text-muted-foreground hover:text-foreground'
               >
                 {video.display_name}
               </Link>
@@ -249,18 +250,18 @@ const Actions = ({
   video: StreamsResponse;
 }) => {
   return (
-    <div className="flex items-start">
+    <div className='flex items-start'>
       <DropdownMenu>
         <DropdownMenuTrigger>
-          <Button size="icon" variant="ghost" className="px-2.5 outline-none">
-            <MoreVertical className="w-5 h-5 cursor-pointer text-muted-foreground hover:text-primary" />
+          <Button size='icon' variant='ghost' className='px-2.5 outline-none'>
+            <MoreVertical className='w-5 h-5 cursor-pointer text-muted-foreground hover:text-primary' />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align='end'>
           {actions?.map((action, idx) => (
             <DropdownMenuItem
               key={idx}
-              className="cursor-pointer"
+              className='cursor-pointer'
               onClick={(e) => {
                 e.stopPropagation();
                 action.onClick(video);

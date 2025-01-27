@@ -1,22 +1,20 @@
-import React from 'react';
 import { DATA_API_LIMIT, DEFAULT_PAGE } from '@/data/validations';
 import useVideosList from '@/hooks/useVideosList';
-import { Bookmark, VideoOff } from 'lucide-react';
+import { VideoOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import EndOfResults from '../../components/EndOfResults';
 import NotFoundCentered from '@/components/NotFoundCentered';
 import InlineLoading from '@/components/InlineLoading';
-import VideoItem from '@/components/VideoItem';
 import { debounce } from 'lodash';
 import { useCategory } from '@/context/CategoryContext';
 import { FixedCategories } from '@/data/types/category';
 import { CONTENT_STATUS } from '@/data/types/stream';
 import { useScreenSize } from '@/hooks/useScreenSize';
-import { Skeleton } from '@/components/ui/skeleton';
 import ApiFetchingError from '@/components/ApiFetchingError';
 import { StreamsResponse } from '@/data/dto/stream';
 import { bookmarkVideo } from '@/services/stream';
 import { toast } from 'sonner';
+import VideoList from './VideoList';
 
 const Feed = () => {
   const screenSize = useScreenSize();
@@ -74,7 +72,7 @@ const Feed = () => {
     const scrollTop = window.scrollY;
     const clientHeight = window.innerHeight;
 
-    const bottom = scrollTop + clientHeight >= scrollHeight;
+    const bottom = scrollTop + clientHeight + 10 >= scrollHeight; // 10 tolerence
 
     if (bottom && hasMore && !isLoading) setCurrentPage((prev) => prev + 1);
   }, 500);
@@ -88,51 +86,24 @@ const Feed = () => {
     setCurrentPage(1);
   }, [filteredCategory]);
 
-  const renderSkeletons = () => {
-    const skeletonsCount = DATA_API_LIMIT[screenSize];
-    return Array.from({ length: skeletonsCount }).map((_, index) => (
-      <div key={index} className="w-full h-full">
-        <Skeleton className="w-full h-48 bg-secondary" />
-      </div>
-    ));
-  };
-
   return (
-    <React.Fragment>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto mt-10">
-        {/* Videos List */}
-        {isLoading
-          ? renderSkeletons()
-          : !isFetchingError &&
-            videos.length > 0 &&
-            videos.map((video, index) => {
-              return (
-                <div key={index}>
-                  <VideoItem
-                    video={video}
-                    isSingle={false}
-                    isGrid
-                    actions={[
-                      {
-                        Icon: Bookmark,
-                        isIconActive: video.is_saved,
-                        label: video.is_saved ? 'Bookmarked' : 'Bookmark',
-                        onClick: () => handleBookmarkVideo(video),
-                      },
-                    ]}
-                  />
-                </div>
-              );
-            })}
+    <div>
+      {/* Videos List */}
+      {!isFetchingError && videos?.length > 0 && (
+        <VideoList
+          videos={videos}
+          className='mt-10'
+          onBookmarkVideo={handleBookmarkVideo}
+        />
+      )}
 
-        {!isFetchingError && !isLoading && videos.length === 0 && (
-          <NotFoundCentered
-            Icon={<VideoOff className="text-white" />}
-            title="No Video Found!"
-            description="Please try searching with different filters."
-          />
-        )}
-      </div>
+      {!isFetchingError && !isLoading && videos.length === 0 && (
+        <NotFoundCentered
+          Icon={<VideoOff className='text-white' />}
+          title='No Video Found!'
+          description='Please try searching with different filters.'
+        />
+      )}
 
       {!isFetchingError && isLoading && <InlineLoading />}
 
@@ -147,7 +118,7 @@ const Feed = () => {
           onRefetch={refetchVideos}
         />
       )}
-    </React.Fragment>
+    </div>
   );
 };
 

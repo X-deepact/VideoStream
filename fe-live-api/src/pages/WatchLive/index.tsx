@@ -13,16 +13,15 @@ import {
   LetterText,
   MessageSquare,
   Share2,
-  Sparkles,
 } from 'lucide-react';
 import StreamDetailsCard from '../LiveStream/Webcam/StreamDetailsCard';
 import { Fragment, useEffect, useState } from 'react';
 import { getFormattedDate } from '@/lib/date-time';
 import {
   convertToHashtagStyle,
-  formatKMBCount,
   getAvatarFallbackText,
   getCorrectUnit,
+  KMBformatter,
 } from '@/lib/utils';
 import VideoCategory from '@/components/VideoCategory';
 import VideoPlayerFLV from '@/components/VideoPlayerFLV';
@@ -56,6 +55,7 @@ import { toast } from 'sonner';
 import AppButton from '@/components/AppButton';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import DefaultThumbnail from '@/assets/images/video-thumbnail.jpg';
+import SubscribeButton from '@/components/SubscribeButton';
 
 const WatchLive = () => {
   const isMobile = useIsMobile();
@@ -285,15 +285,15 @@ const WatchLive = () => {
 
   return (
     <div>
-      <div className="flex flex-col w-full h-full gap-3 overflow-hidden box-border">
-        <div className="flex w-full lg:h-full items-center justify-center overflow-hidden">
+      <div className='flex flex-col w-full h-full gap-3 overflow-hidden box-border'>
+        <div className='flex w-full lg:h-full items-center justify-center overflow-hidden'>
           {/* Video and Chat Layout */}
-          <div className="flex flex-col lg:flex-row w-full h-full gap-3">
+          <div className='flex flex-col lg:flex-row w-full h-full gap-3'>
             {/* Webcam View */}
-            <div className="flex-1 flex items-center justify-center border rounded-md overflow-hidden relative">
+            <div className='flex-1 flex items-center justify-center border rounded-md overflow-hidden relative'>
               {/* Live indicators */}
               {isStreamStarted && (
-                <div className="absolute top-3 left-3 z-20">
+                <div className='absolute top-3 left-3 z-20'>
                   <LiveIndicator
                     isStreamStarted
                     startedAt={videoDetails?.started_at}
@@ -339,7 +339,7 @@ const WatchLive = () => {
 
             {/* Chat */}
             {isStreamStarted && isChatVisible && (
-              <div className="w-full lg:w-1/4 flex flex-col h-[50vh] md:h-full border rounded-md overflow-hidden">
+              <div className='w-full lg:w-1/4 flex flex-col h-[50vh] md:h-full border rounded-md overflow-hidden'>
                 <Chat
                   currentUser={currentUser}
                   initialStats={liveInitialStats}
@@ -353,13 +353,13 @@ const WatchLive = () => {
         </div>
 
         {/* Control bars */}
-        <div className="bottom-0 flex items-center md:justify-center mt-3">
+        <div className='bottom-0 flex items-center md:justify-center mt-3'>
           {/* Stream details card */}
           {isStreamStarted && videoDetails?.id && (
             <>
-              <div className="hidden md:inline-block absolute left-5 mt-2">
-                <div className="flex gap-3 items-center">
-                  <div className="flex items-center space-x-2 flex-1">
+              <div className='hidden md:inline-block absolute left-5 mt-2'>
+                <div className='flex gap-3 items-center'>
+                  <div className='flex items-center space-x-2 flex-1'>
                     <Link
                       to={STREAMER_PROFILE_PATH.replace(
                         RESOURCE_ID,
@@ -371,7 +371,7 @@ const WatchLive = () => {
                         fallback={getAvatarFallbackText(
                           videoDetails?.display_name || 'PF'
                         )}
-                        classes="w-10 h-10"
+                        classes='w-10 h-10'
                       />
                     </Link>
                     <div>
@@ -381,34 +381,25 @@ const WatchLive = () => {
                           videoDetails?.user_id?.toString() || ''
                         )}
                       >
-                        <h3 className="text-md font-medium">
+                        <h3 className='text-md font-medium'>
                           {videoDetails?.display_name}
                         </h3>
                       </Link>
-                      <p className="text-muted-foreground text-xs">
-                        {formatKMBCount(subscribedCount)} Subscribers
+                      <p className='text-muted-foreground text-xs'>
+                        {KMBformatter(subscribedCount)} Subscribers
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className='flex gap-2'>
                       {!videoDetails?.is_owner && (
-                        <Button
-                          onClick={handleSubscribeUnsubscribe}
-                          variant={`${isSubscribed ? 'secondary' : 'default'}`}
-                          className="px-4 py-2 ml-2 rounded-full"
-                        >
-                          {isSubscribed ? (
-                            <>
-                              <Sparkles className="fill-primary text-primary" />
-                              Subscribed
-                            </>
-                          ) : (
-                            'Subscribe'
-                          )}
-                        </Button>
+                        <SubscribeButton
+                          className='ml-2'
+                          isSubscribed={isSubscribed}
+                          onSubscribeUnsubscribe={handleSubscribeUnsubscribe}
+                        />
                       )}
                       {isSubscribed && (
                         <AppButton
-                          className="rounded-full"
+                          className='rounded-full'
                           Icon={isNotiMuted ? BellOff : BellRing}
                           isIconActive={false}
                           label={
@@ -417,8 +408,8 @@ const WatchLive = () => {
                               : 'Mute Notification'
                           }
                           tooltipOnSmallScreens
-                          size="icon"
-                          variant="secondary"
+                          size='icon'
+                          variant='secondary'
                           onClick={() => handleToggleMuteNotifications()}
                         />
                       )}
@@ -426,12 +417,12 @@ const WatchLive = () => {
                   </div>
                   <Popover>
                     <PopoverTrigger>
-                      <Button variant="outline" size="sm">
+                      <Button variant='outline' size='sm'>
                         <LetterText />
                         Details
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent side="bottom">
+                    <PopoverContent side='bottom'>
                       <StreamDetailsCard
                         data={{
                           id: videoDetails?.id,
@@ -455,18 +446,18 @@ const WatchLive = () => {
                       liveSharesCount > 0 ? liveSharesCount : ''
                     } ${getCorrectUnit(liveSharesCount || 0, 'Share')}`}
                     tooltipOnSmallScreens
-                    size="sm"
-                    variant="outline"
+                    size='sm'
+                    variant='outline'
                     onClick={handleAddShareWs}
                   />
                 </div>
               </div>
               {/* Start - Mobile stream details card */}
               {!isChatVisible && isStreamStarted && (
-                <div className="block w-full md:hidden">
-                  <div className="flex justify-between items-start">
+                <div className='block w-full md:hidden'>
+                  <div className='flex justify-between items-start'>
                     {/* Streamer info */}
-                    <div className="flex items-center space-x-2 flex-1">
+                    <div className='flex items-center space-x-2 flex-1'>
                       <Link
                         to={STREAMER_PROFILE_PATH.replace(
                           RESOURCE_ID,
@@ -478,7 +469,7 @@ const WatchLive = () => {
                           fallback={getAvatarFallbackText(
                             videoDetails?.display_name || 'PF'
                           )}
-                          classes="w-10 h-10"
+                          classes='w-10 h-10'
                         />
                       </Link>
                       <div>
@@ -488,36 +479,25 @@ const WatchLive = () => {
                             videoDetails?.user_id?.toString() || ''
                           )}
                         >
-                          <h3 className="text-md font-medium">
+                          <h3 className='text-md font-medium'>
                             {videoDetails?.display_name}
                           </h3>
                         </Link>
-                        <p className="text-muted-foreground text-xs">
-                          {formatKMBCount(subscribedCount)} Subscribers
+                        <p className='text-muted-foreground text-xs'>
+                          {KMBformatter(subscribedCount)} Subscribers
                         </p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className='flex gap-2'>
                         {!videoDetails?.is_owner && (
-                          <Button
-                            onClick={handleSubscribeUnsubscribe}
-                            variant={`${
-                              isSubscribed ? 'secondary' : 'default'
-                            }`}
-                            className="px-4 py-2 ml-2 rounded-full"
-                          >
-                            {isSubscribed ? (
-                              <>
-                                <Sparkles className="fill-primary text-primary" />
-                                Subscribed
-                              </>
-                            ) : (
-                              'Subscribe'
-                            )}
-                          </Button>
+                          <SubscribeButton
+                            className='ml-2'
+                            isSubscribed={isSubscribed}
+                            onSubscribeUnsubscribe={handleSubscribeUnsubscribe}
+                          />
                         )}
                         {isSubscribed && (
                           <AppButton
-                            className="rounded-full"
+                            className='rounded-full'
                             Icon={isNotiMuted ? BellOff : BellRing}
                             isIconActive={false}
                             label={
@@ -526,23 +506,23 @@ const WatchLive = () => {
                                 : 'Mute Notification'
                             }
                             tooltipOnSmallScreens
-                            size="icon"
-                            variant="secondary"
+                            size='icon'
+                            variant='secondary'
                             onClick={() => handleToggleMuteNotifications()}
                           />
                         )}
                       </div>
                     </div>
-                    <Button onClick={toggleChat} variant="outline" size="sm">
+                    <Button onClick={toggleChat} variant='outline' size='sm'>
                       <MessageSquare /> Show Chat
                     </Button>
                   </div>
-                  <div className="mt-3 bg-muted p-4 rounded-lg">
-                    <p className="text-xl font-semibold">
+                  <div className='mt-3 bg-muted p-4 rounded-lg'>
+                    <p className='text-xl font-semibold'>
                       {videoDetails?.title || ''}
                     </p>
-                    <p className="text-xs">
-                      <span className="text-muted-foreground">
+                    <p className='text-xs'>
+                      <span className='text-muted-foreground'>
                         Streamed live at
                       </span>{' '}
                       {getFormattedDate(
@@ -551,7 +531,7 @@ const WatchLive = () => {
                       )}
                     </p>
 
-                    <div className="flex gap-2">
+                    <div className='flex gap-2'>
                       {videoDetails?.categories?.map((category) => (
                         <Fragment key={category.id}>
                           <VideoCategory
@@ -562,7 +542,7 @@ const WatchLive = () => {
                       ))}
                     </div>
 
-                    <p className="mt-2">{videoDetails?.description || ''}</p>
+                    <p className='mt-2'>{videoDetails?.description || ''}</p>
                   </div>
                 </div>
               )}
@@ -571,9 +551,9 @@ const WatchLive = () => {
           )}
 
           {/* Chat toggle button */}
-          <div className="hidden md:inline-block absolute right-5">
+          <div className='hidden md:inline-block absolute right-5'>
             {isStreamStarted && (
-              <Button variant="ghost" size="sm" onClick={toggleChat}>
+              <Button variant='ghost' size='sm' onClick={toggleChat}>
                 <MessageSquare /> {isChatVisible ? 'Hide' : 'Show'} chat
               </Button>
             )}

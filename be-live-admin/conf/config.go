@@ -2,13 +2,13 @@ package conf
 
 import (
 	"crypto/rsa"
+	"fmt"
 	"gitlab/live/be-live-admin/model"
 	"gitlab/live/be-live-admin/service"
 	"gitlab/live/be-live-admin/utils"
 	"log"
-	"os"
 
-	"gopkg.in/yaml.v3"
+	"gopkg.in/ini.v1"
 )
 
 var (
@@ -19,71 +19,72 @@ var (
 var cfg *Config
 
 type Config struct {
-	DB           DBConfig           `yaml:"database"`
-	Redis        RedisConfig        `yaml:"redis"`
-	Web          ApplicationConfig  `yaml:"web"`
-	FileStorage  FileStorageConfig  `yaml:"file_storage"`
-	StreamServer StreamServerConfig `yaml:"stream_server"`
-	ApiFile      ApiFileConfig      `yaml:"api_file"`
-	Client       ClientConfig       `yaml:"client"`
+	DB           DBConfig           `ini:"database"`
+	Redis        RedisConfig        `ini:"redis"`
+	Web          ApplicationConfig  `ini:"web"`
+	FileStorage  FileStorageConfig  `ini:"file_storage"`
+	StreamServer StreamServerConfig `ini:"stream_server"`
+	ApiFile      ApiFileConfig      `ini:"api_file"`
+	Client       ClientConfig       `ini:"client"`
 }
 
 type ClientConfig struct {
-	Host string `yaml:"host"`
+	Host string `ini:"host"`
 }
 type ApiFileConfig struct {
-	Url string `yaml:"url"`
+	Url string `ini:"url"`
 }
 
 type StreamServerConfig struct {
-	HTTPURL string `yaml:"http_url"`
-	RTMPURL string `yaml:"rtmp_url"`
-	HLSURL  string `yaml:"hls_url"`
+	HTTPURL string `ini:"http_url"`
+	RTMPURL string `ini:"rtmp_url"`
+	HLSURL  string `ini:"hls_url"`
 }
 
 type DBConfig struct {
-	Host string `yaml:"host"`
-	Port int    `yaml:"port"`
-	User string `yaml:"user"`
-	Pass string `yaml:"pass"`
-	Name string `yaml:"name"`
+	Host string `ini:"host"`
+	Port int    `ini:"port"`
+	User string `ini:"user"`
+	Pass string `ini:"pass"`
+	Name string `ini:"name"`
 }
 
 type RedisConfig struct {
-	Host string `yaml:"host"`
-	Port int    `yaml:"port"`
-	User string `yaml:"user"`
-	Pass string `yaml:"pass"`
+	Host string `ini:"host"`
+	Port int    `ini:"port"`
+	User string `ini:"user"`
+	Pass string `ini:"pass"`
 }
 
 type ApplicationConfig struct {
-	Port           int      `yaml:"port"`
-	AllowedOrigins []string `yaml:"allowed_origins"`
+	Port           int      `ini:"port"`
+	AllowedOrigins []string `ini:"allowed_origins"`
 }
 
 type FileStorageConfig struct {
-	RootFolder            string `yaml:"root_folder"`
-	ThumbnailFolder       string `yaml:"thumbnail_folder"`
-	AvatarFolder          string `yaml:"avatar_folder"`
-	LiveFolder            string `yaml:"live_folder"`
-	ScheduledVideosFolder string `yaml:"scheduled_videos_folder"`
-	VideoFolder           string `yaml:"video_folder"`
+	RootFolder            string `ini:"root_folder"`
+	ThumbnailFolder       string `ini:"thumbnail_folder"`
+	AvatarFolder          string `ini:"avatar_folder"`
+	LiveFolder            string `ini:"live_folder"`
+	ScheduledVideosFolder string `ini:"scheduled_videos_folder"`
+	VideoFolder           string `ini:"video_folder"`
 }
 
-func LoadYaml(path string) (*Config, error) {
-	file, err := os.Open(path)
+func LoadINI(path string) (*Config, error) {
+	// Load the INI file
+	cfg, err := ini.Load(path)
 	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	var cfg Config
-	decoder := yaml.NewDecoder(file)
-	if err := decoder.Decode(&cfg); err != nil {
-		return nil, err
+		log.Fatalf("Fail to read file: %v", err)
 	}
 
-	return &cfg, nil
+	// Create an instance of Config and map the INI data to it
+	var config Config
+	err = cfg.MapTo(&config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to map INI to struct: %v", err)
+	}
+
+	return &config, nil
 }
 
 func SeedRoles(roleService *service.RoleService) {
@@ -157,7 +158,7 @@ func SeedSuperAdminUser(userService *service.UserService, roleService *service.R
 func init() {
 	var err error
 
-	if cfg, err = LoadYaml("conf/config.yaml"); err != nil {
+	if cfg, err = LoadINI("conf/config.ini"); err != nil {
 		log.Fatal(err)
 	}
 }

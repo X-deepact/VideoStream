@@ -64,5 +64,6 @@ export const useStreamingSessions = (props: Props) => {
     totalItems,
     totalPages,
     refetchSessionList,
+    setSessions,
   };
 };

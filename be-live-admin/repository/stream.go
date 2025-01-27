@@ -55,6 +55,14 @@ func (r *StreamRepository) GetViewsByStreamID(id uint, startedDate, endedDate ti
 	return data, nil
 }
 
+func (r *StreamRepository) GetViewsByDuration(startedDate, endedDate time.Time) (int64, error) {
+	var count int64
+	if err := r.db.Model(model.View{}).Where("created_at BETWEEN ? AND ?", startedDate, endedDate).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func (s *StreamRepository) PaginateStreamStatisticsData(cond *dto.StatisticsQuery) (*utils.PaginationModel[model.StreamAnalytics], error) {
 
 	var query = s.db.Model(model.StreamAnalytics{}).Preload("Stream")

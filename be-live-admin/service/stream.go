@@ -143,77 +143,36 @@ func (s *StreamService) GetStreamAnalyticsData(req *dto.StatisticsQuery) (*utils
 
 func (s *StreamService) GetLiveStatDataInDay(cond *dto.StatisticsStreamInDayQuery) ([]dto.LiveStatRespInDayDTO, error) {
 	var result []dto.LiveStatRespInDayDTO
-	startedStream, err := s.repo.Stream.GetStartedStreams()
+	var inDays []time.Time
+
+	startedDate, _, err := utils.GetStartDateEndDateSameDay(cond.TargetedDate)
 	if err != nil {
 		return nil, err
 	}
 
-	startedDate, endedDate, err := utils.GetStartDateEndDateSameDay(cond.TargetedDate)
-	fmt.Println(startedDate.Unix(), endedDate.Unix())
-	if err != nil {
-		return nil, err
+	for i := 0; i <= 24; i++ {
+		inDays = append(inDays, startedDate.Add(time.Hour*time.Duration(i)))
 	}
 
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
-	var wgSubThread sync.WaitGroup
-
-	for _, stream := range startedStream {
+	for i := 1; i <= 24; i++ {
 		wg.Add(1)
-		go func(user model.Stream) {
+		go func(prev, cur time.Time) {
 			defer wg.Done()
-
-			var comments, likes, views []dto.BaseDTO
-			var err error
-
-			// Fetch likes
-			wgSubThread.Add(1)
-			go func() {
-				defer wgSubThread.Done()
-				likes, err = s.repo.Stream.GetLikesByStreamID(stream.ID, *startedDate, *endedDate)
-				if err != nil {
-					likes = []dto.BaseDTO{}
-				}
-			}()
-
-			// Fetch comments
-			wgSubThread.Add(1)
-			go func() {
-				defer wgSubThread.Done()
-				comments, err = s.repo.Stream.GetCommentsByStreamID(stream.ID, *startedDate, *endedDate)
-				if err != nil {
-					comments = []dto.BaseDTO{}
-				}
-			}()
-
-			// Fetch views
-			wgSubThread.Add(1)
-			go func() {
-				defer wgSubThread.Done()
-				views, err = s.repo.Stream.GetViewsByStreamID(stream.ID, *startedDate, *endedDate)
-				if err != nil {
-					views = []dto.BaseDTO{}
-				}
-			}()
-			wgSubThread.Wait()
-
+			count, err := s.repo.Stream.GetViewsByDuration(prev, cur)
+			if err != nil {
+				log.Println("get views by duration error: ", err)
+				count = 0
+			}
 			mu.Lock()
-			result = append(result, dto.LiveStatRespInDayDTO{
-				StreamID:    stream.ID,
-				Title:       stream.Title,
-				Description: stream.Description,
-				Status:      stream.Status,
-				Comments:    comments,
-				Likes:       likes,
-				Viewers:     views,
-			})
+			result = append(result, dto.LiveStatRespInDayDTO{Time: prev.Format("2006-01-02 15:04"), Views: uint(count)})
 			mu.Unlock()
-		}(stream)
+		}(inDays[i-1], inDays[i])
 	}
 
 	wg.Wait()
-
 	return result, nil
 }
 

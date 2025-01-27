@@ -5,6 +5,7 @@ live_stream_db/db-data/
 zz
 hls
 config.yaml
+config.ini
 tmp
 
 dd

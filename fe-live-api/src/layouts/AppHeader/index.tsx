@@ -185,30 +185,30 @@ const AppHeader = React.memo(() => {
   }, [newNotifications]);
 
   return (
-    <header className="flex flex-col fixed top-0 group-has-[[data-collapsible=icon]]/sidebar-wrapper:py-3 z-50 w-full shrink-0">
+    <header className='flex flex-col fixed top-0 group-has-[[data-collapsible=icon]]/sidebar-wrapper:py-3 z-50 w-full shrink-0'>
       {/* header */}
-      <div className="flex justify-between w-full top-0 py-2 border-b items-center gap-2 transition-[width,height] ease-linear backdrop-blur bg-background/90">
+      <div className='flex justify-between w-full top-0 py-2 border-b dark:border-gray-900 items-center gap-2 transition-[width,height] ease-linear backdrop-blur bg-background/90'>
         {!isSmallSearchExpanded && (
-          <div className="px-4 flex items-center gap-1">
+          <div className='px-4 flex items-center gap-1'>
             <SidebarTriggerHangBurger />
             <Button
-              variant="ghost"
+              variant='ghost'
               onClick={() => navigate(FEED_PATH)}
-              size="lg"
-              className="px-2 w-[146px]"
+              size='lg'
+              className='px-2 w-[146px]'
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-sidebar-primary-foreground">
+              <div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-sidebar-primary-foreground'>
                 {siteData.logo && <siteData.logo />}
               </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{siteData.name}</span>
-                <span className="truncate text-xs">{siteData.description}</span>
+              <div className='grid flex-1 text-left text-sm leading-tight'>
+                <span className='truncate font-semibold'>{siteData.name}</span>
+                <span className='truncate text-xs'>{siteData.description}</span>
               </div>
             </Button>
 
             {/* md: search box */}
             {!isSearchDisabled && (
-              <div className="hidden md:block lg:hidden">
+              <div className='hidden md:block lg:hidden'>
                 <SearchBox
                   filteredCategory={filteredCategory}
                   onSearch={(value) => debouncedSetSearchTerm(value)}
@@ -220,7 +220,7 @@ const AppHeader = React.memo(() => {
 
         {/* lg: search box */}
         {!isSearchDisabled && (
-          <div className="w-1/2 md:w-1/3 hidden lg:block">
+          <div className='w-1/2 md:w-1/3 hidden lg:block'>
             <SearchBox
               filteredCategory={filteredCategory}
               onSearch={(value) => debouncedSetSearchTerm(value)}
@@ -230,19 +230,19 @@ const AppHeader = React.memo(() => {
 
         {/* sm: search box is expanded in mobile devices */}
         {!isSearchDisabled && isSmallSearchExpanded && (
-          <div className="flex gap-3 w-full mx-4">
+          <div className='flex gap-3 w-full mx-4'>
             <TooltipComponent
-              text="Back"
+              text='Back'
               children={
                 <Button
-                  variant="outline"
+                  variant='outline'
                   onClick={() => setIsSmallSearchExpanded(false)}
                 >
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft className='w-4 h-4' />
                 </Button>
               }
             />
-            <div className="w-full">
+            <div className='w-full'>
               <SearchBox
                 filteredCategory={filteredCategory}
                 onSearch={(value) => debouncedSetSearchTerm(value)}
@@ -253,22 +253,22 @@ const AppHeader = React.memo(() => {
 
         {/* sm: search box collapsed */}
         {!isSmallSearchExpanded && (
-          <div className="flex px-4 justify-between items-center">
-            <div className="ml-auto flex gap-3 items-center">
+          <div className='flex px-4 justify-between items-center'>
+            <div className='ml-auto flex gap-3 items-center'>
               {!isSearchDisabled && (
-                <div className="block md:hidden">
+                <div className='block md:hidden'>
                   <TooltipComponent
-                    align="center"
-                    text="Search videos"
+                    align='center'
+                    text='Search videos'
                     children={
                       <Button
-                        size="sm"
-                        variant="secondary"
+                        size='sm'
+                        variant='secondary'
                         onClick={() => {
                           setIsSmallSearchExpanded(true);
                         }}
                       >
-                        <Search className="w-6 h-6" />
+                        <Search className='w-6 h-6' />
                       </Button>
                     }
                   />
@@ -279,13 +279,17 @@ const AppHeader = React.memo(() => {
                 <>
                   {isStreamingLive ? (
                     <Badge
-                      variant="destructive"
-                      className="bg-red-600 gap-1 rounded-sm"
+                      variant='destructive'
+                      className='bg-red-600 gap-1 rounded-sm'
                     >
-                      <PodcastIcon className="w-3 h-3" /> LIVE
+                      <PodcastIcon className='w-3 h-3' /> LIVE
                     </Badge>
                   ) : (
-                    <Button size="sm" onClick={handleGoLive}>
+                    <Button
+                      size='sm'
+                      className='rounded-full'
+                      onClick={handleGoLive}
+                    >
                       <Radio />
                       Go Live
                     </Button>
@@ -294,9 +298,9 @@ const AppHeader = React.memo(() => {
               )}
               <Sheet open={isOpen} onOpenChange={closeSheet}>
                 <SheetTrigger asChild>
-                  <TooltipComponent text="Notifications" align="center">
+                  <TooltipComponent text='Notifications' align='center'>
                     <Button
-                      size="icon"
+                      size='icon'
                       className={cn(
                         'relative rounded-full p-3 px-2 bg-transparent shadow-none dark:bg-transparent hover:bg-muted dark:hover:bg-secondary'
                       )}
@@ -306,11 +310,11 @@ const AppHeader = React.memo(() => {
                       }}
                     >
                       <Bell
-                        className="text-black dark:text-white"
+                        className='text-black dark:text-white'
                         style={{ width: '20px', height: '20px' }}
                       />
                       {notiCount > 0 && (
-                        <div className="absolute bg-red-500 text-white px-1 max-content rounded-full text-[9px] -top-0.5 right-0 w-5 h-5">
+                        <div className='absolute bg-red-500 text-white px-1 max-content rounded-full text-[9px] -top-0.5 right-0 w-5 h-5'>
                           {notiCount < 100 ? notiCount : '99+'}
                         </div>
                       )}
@@ -318,8 +322,8 @@ const AppHeader = React.memo(() => {
                   </TooltipComponent>
                 </SheetTrigger>
                 <SheetContent
-                  side="right"
-                  className="w-[500px] p-0 overflow-y-auto"
+                  side='right'
+                  className='w-[500px] p-0 overflow-y-auto'
                 >
                   <Suspense fallback={<InlineLoading />}>
                     <LazyNotificationContent closeSheet={closeSheet} />
@@ -336,7 +340,7 @@ const AppHeader = React.memo(() => {
       {isCategoryFilterEnabled &&
         !isCategoryFetching &&
         !categoryFetchError && (
-          <div className="px-6 py-2 bg-background border-b">
+          <div className='px-6 py-2 bg-background border-b dark:border-gray-900'>
             <CategoryPills
               isLoading={isCategoryFetching}
               categories={categories}

@@ -4,20 +4,18 @@ import AppButton from '@/components/AppButton';
 import EndOfResults from '@/components/EndOfResults';
 import InlineLoading from '@/components/InlineLoading';
 import NotFoundCentered from '@/components/NotFoundCentered';
-import { Button } from '@/components/ui/button';
-import VideoItem from '@/components/VideoItem';
 import { getLoggedInUserInfo } from '@/data/model/userAccount';
 import { USER_ROLE } from '@/data/types/role';
-import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '@/data/validations';
+import { DATA_API_LIMIT, DEFAULT_PAGE } from '@/data/validations';
 import useStreamerDetails from '@/hooks/useStreamerDetails';
 import useVideosList from '@/hooks/useVideosList';
 import LayoutHeading from '@/layouts/LayoutHeading';
 import {
-  formatKMBCount,
   getAvatarFallbackText,
   getCorrectUnit,
+  KMBformatter,
 } from '@/lib/utils';
-import { subscribeUnsubscribe } from '@/services/stream';
+import { bookmarkVideo, subscribeUnsubscribe } from '@/services/stream';
 import { toggleMuteNotificationsFromChannel } from '@/services/subscription';
 import {
   BellOff,
@@ -25,16 +23,22 @@ import {
   Eye,
   MessageSquare,
   Share2,
-  Sparkles,
   ThumbsUp,
   VideoOff,
 } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import NotFound from '../NotFound';
+import SubscribeButton from '@/components/SubscribeButton';
+import VideoList from '../Feed/VideoList';
+import { debounce } from 'lodash';
+import { useScreenSize } from '@/hooks/useScreenSize';
+import { StreamsResponse } from '@/data/dto/stream';
 
 const StreamerProfile = () => {
+  const screenSize = useScreenSize();
+
   const currentUser = getLoggedInUserInfo();
 
   const { id: streamerId } = useParams<{ id: string }>();
@@ -57,10 +61,10 @@ const StreamerProfile = () => {
     isLoading,
     error: isFetchingError,
     refetchVideos,
+    setVideos,
   } = useVideosList({
     page: currentPage,
-    limit: DEFAULT_PAGE_SIZE,
-    // is_me: false,
+    limit: DATA_API_LIMIT[screenSize],
     streamer_id: Number(streamerId),
   });
 
@@ -111,27 +115,51 @@ const StreamerProfile = () => {
     }
   };
 
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const lastVideoElementRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (isLoading) return;
-      if (observerRef.current) observerRef.current.disconnect();
-      observerRef.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasMore) {
-          setCurrentPage((prev) => prev + 1);
-        }
-      });
-      if (node) observerRef.current.observe(node); // Observe the last element in the list
-    },
-    [isLoading, hasMore]
-  );
+  const handleBookmarkVideo = async (video: StreamsResponse) => {
+    if (video && video.id) {
+      const previousVideos = [...videos];
+
+      setVideos((prev) =>
+        prev.map((v) =>
+          v.id === video.id ? { ...v, is_saved: !v.is_saved } : v
+        )
+      );
+
+      const isSuccess = await bookmarkVideo(video.id);
+
+      if (!isSuccess) {
+        setVideos(previousVideos);
+        toast.error('Error saving to Bookmark videos');
+      } else {
+        const message = video.is_saved
+          ? 'Removed from Bookmark videos!'
+          : 'Saved to Bookmark videos!';
+        toast.success(message);
+      }
+    }
+  };
+
+  const handleScroll = debounce(() => {
+    const scrollHeight = document.documentElement.scrollHeight;
+    const scrollTop = window.scrollY;
+    const clientHeight = window.innerHeight;
+
+    const bottom = scrollTop + clientHeight + 10 >= scrollHeight; // 10 tolerence
+
+    if (bottom && hasMore && !isLoading) setCurrentPage((prev) => prev + 1);
+  }, 500);
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   if (streamerDetails === null && !isStreamerDetailsFetching)
     return <NotFound />;
 
   return (
-    <div className="md:container lg:px-[10rem] md:mx-auto flex flex-col justify-center">
-      <div className="w-full mb-3">
+    <div className='md:container lg:px-[10rem] md:mx-auto flex flex-col justify-center'>
+      <div className='w-full mb-3'>
         <LayoutHeading
           title={`${
             currentUser?.role_type === USER_ROLE.STREAMER &&
@@ -144,58 +172,48 @@ const StreamerProfile = () => {
 
       {/* profile */}
       {!isStreamerDetailsFetching && streamerDetails && (
-        <div className="flex gap-3 border-b pb-5 pt-2">
+        <div className='flex gap-3 border-b pb-5 pt-2'>
           {/* avatar */}
           <AppAvatar
             url={streamerDetails.streamer_avatar_url}
-            classes="w-28 h-28"
+            classes='w-28 h-28'
             fallback={getAvatarFallbackText(streamerDetails.streamer_name)}
           />
           {/* details */}
           <div>
-            <p className="text-lg font-semibold">
+            <p className='text-lg font-semibold'>
               {streamerDetails.streamer_name}
             </p>
-            <div className="flex gap-2 text-sm text-muted-foreground">
+            <div className='flex gap-2 text-sm text-muted-foreground'>
               <p>
-                {formatKMBCount(subscribedCount)}
+                {KMBformatter(subscribedCount)}
                 {getCorrectUnit(subscribedCount, 'subscriber')}
               </p>
               •
               <p>
-                {formatKMBCount(streamerDetails.total_video)}
+                {KMBformatter(streamerDetails.total_video)}
                 {getCorrectUnit(streamerDetails.total_video, 'video')}
               </p>
             </div>
             {/* subscribe and noti */}
-            <div className="flex gap-2 mt-3 ml-0">
+            <div className='flex gap-2 mt-3 ml-0'>
               {!streamerDetails?.is_me && (
-                <Button
-                  onClick={handleSubscribeUnsubscribe}
-                  variant={`${isSubscribed ? 'secondary' : 'default'}`}
-                  className="px-4 py-2 rounded-full"
-                >
-                  {isSubscribed ? (
-                    <>
-                      <Sparkles className="fill-primary text-primary" />
-                      Subscribed
-                    </>
-                  ) : (
-                    'Subscribe'
-                  )}
-                </Button>
+                <SubscribeButton
+                  isSubscribed={isSubscribed}
+                  onSubscribeUnsubscribe={handleSubscribeUnsubscribe}
+                />
               )}
               {isSubscribed && (
                 <AppButton
-                  className="rounded-full"
+                  className='rounded-full'
                   Icon={isNotiMuted ? BellOff : BellRing}
                   isIconActive={false}
                   label={
                     isNotiMuted ? 'Unmute Notification' : 'Mute Notification'
                   }
                   tooltipOnSmallScreens
-                  size="icon"
-                  variant="secondary"
+                  size='icon'
+                  variant='secondary'
                   onClick={() => handleToggleMuteNotifications()}
                 />
               )}
@@ -205,50 +223,37 @@ const StreamerProfile = () => {
       )}
 
       {streamerDetails && (
-        <div className="flex gap-3 p-3 border-b">
-          <div className="flex gap-1 items-center justify-center text-xs text-green-500">
-            <ThumbsUp className="w-3 h-3" />
-            {formatKMBCount(streamerDetails.total_like)}{' '}
+        <div className='flex gap-2 p-3 border-b text-xs font-medium'>
+          <div className='flex gap-1 items-center justify-center text-green-500 bg-green-100 dark:bg-transparent px-2 py-1.5'>
+            <ThumbsUp className='w-3 h-3' />
+            {KMBformatter(streamerDetails.total_like)}{' '}
             {getCorrectUnit(streamerDetails.total_like, 'like')}
           </div>
-          <div className="flex gap-1 items-center justify-center text-xs text-purple-500">
-            <MessageSquare className="w-3 h-3" />
-            {formatKMBCount(streamerDetails.total_comment)}
+          <div className='flex gap-1 items-center justify-center text-purple-500 bg-purple-100 dark:bg-transparent px-2 py-1.5'>
+            <MessageSquare className='w-3 h-3' />
+            {KMBformatter(streamerDetails.total_comment)}
             {getCorrectUnit(streamerDetails.total_comment, 'comment')}
           </div>
-          <div className="flex gap-1 items-center justify-center text-xs text-orange-500">
-            <Eye className="w-3 h-3" />
-            {formatKMBCount(streamerDetails.total_view)}
+          <div className='flex gap-1 items-center justify-center text-orange-500 bg-orange-100 dark:bg-transparent px-2 py-1.5'>
+            <Eye className='w-3 h-3' />
+            {KMBformatter(streamerDetails.total_view)}
             {getCorrectUnit(streamerDetails.total_view, 'view')}
           </div>
-          <div className="flex gap-1 items-center justify-center text-xs text-yellow-500">
-            <Share2 className="w-3 h-3" />
-            {formatKMBCount(streamerDetails.total_share)}
+          <div className='flex gap-1 items-center justify-center text-yellow-500 bg-yellow-100 dark:bg-transparent px-2 py-1.5'>
+            <Share2 className='w-3 h-3' />
+            {KMBformatter(streamerDetails.total_share)}
             {getCorrectUnit(streamerDetails.total_share, 'share')}
           </div>
         </div>
       )}
 
-      <div className="w-full my-3">
+      <div className='w-full my-3'>
         <LayoutHeading title={`Videos (${streamerDetails?.total_video})`} />
       </div>
-      <div className="flex flex-col justify-center gap-8 md:gap-4 mb-3">
-        {!isFetchingError &&
-          videos.length > 0 &&
-          videos.map((video, index) => {
-            if (videos.length === index + 1)
-              return (
-                <div key={index} ref={lastVideoElementRef}>
-                  <VideoItem video={video} />
-                </div>
-              );
-            else
-              return (
-                <div key={index}>
-                  <VideoItem video={video} />
-                </div>
-              );
-          })}
+      <div className='flex flex-col justify-center gap-8 md:gap-4 mb-3'>
+        {!isFetchingError && videos?.length > 0 && (
+          <VideoList videos={videos} onBookmarkVideo={handleBookmarkVideo} />
+        )}
       </div>
 
       {!isFetchingError && !isLoading && !hasMore && videos?.length > 0 && (
@@ -258,11 +263,11 @@ const StreamerProfile = () => {
       {!isFetchingError && isLoading && <InlineLoading />}
 
       {!isFetchingError && !isLoading && videos.length === 0 && (
-        <div className="mt-5">
+        <div className='mt-5'>
           <NotFoundCentered
-            Icon={<VideoOff className="text-white" />}
-            title="No Video Found!"
-            description="Streamed videos will appear here."
+            Icon={<VideoOff className='text-white' />}
+            title='No Video Found!'
+            description='Streamed videos will appear here.'
           />
         </div>
       )}

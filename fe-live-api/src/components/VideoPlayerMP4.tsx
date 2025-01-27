@@ -105,27 +105,27 @@ const VideoPlayerMP4: React.FC<VideoPlayerProps> = ({
       {!error && (
         <video
           ref={videoRef}
-          className="video-js vjs-theme-city vjs-big-play-centered"
+          className='video-js vjs-theme-city vjs-big-play-centered'
           controls
         ></video>
       )}
       {error && (
-        <div className="flex flex-col justify-center text-center items-center absolute inset-0 bg-gray-900 bg-opacity-75 text-white backdrop-blur space-y-2">
-          <VideoOff className="w-7 h-7 mb-3" />
-          <p className="text-lg font-semibold">Ooops!</p>
-          <p className="text-sm text-gray-300">
+        <div className='flex flex-col justify-center text-center items-center absolute inset-0 bg-gray-900 bg-opacity-75 text-white backdrop-blur space-y-2'>
+          <VideoOff className='w-7 h-7 mb-3' />
+          <p className='text-lg font-semibold'>Ooops!</p>
+          <p className='text-sm text-gray-300'>
             {error || 'Unexpected error occured'}
           </p>
-          <div className="flex gap-2 items-center justify-center">
+          <div className='flex gap-2 items-center justify-center'>
             <Button
-              variant="secondary"
-              size="sm"
+              variant='secondary'
+              size='sm'
               onClick={() => navigate(FEED_PATH)}
             >
-              <SquarePlay className="w-4 h-4" /> Watch Videos
+              <SquarePlay className='w-4 h-4' /> Watch Videos
             </Button>
-            <Button size="sm" onClick={() => window.location.reload()}>
-              <RotateCw className="w-4 h-4" /> Reload
+            <Button size='sm' onClick={() => window.location.reload()}>
+              <RotateCw className='w-4 h-4' /> Reload
             </Button>
           </div>
         </div>

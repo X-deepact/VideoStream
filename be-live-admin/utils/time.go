@@ -43,21 +43,10 @@ func GetStartDateEndDateSameDay(dateString string) (*time.Time, *time.Time, erro
 	if err != nil {
 		return nil, nil, err
 	}
-	dateStr := currentDate.Format("2006-01-02")
+	// Set the time to midnight (00:00:00)
+	midnight := time.Date(currentDate.Year(), currentDate.Month(), currentDate.Day(), 0, 0, 0, 0, currentDate.Location())
 
-	// Create 12 AM (midnight) on the same day
-	amTimeStr := dateStr + " 00:00:00"
-	amTime, err := time.Parse("2006-01-02 15:04:05", amTimeStr)
-	if err != nil {
-		return nil, nil, err
-	}
+	endDay := time.Date(currentDate.Year(), currentDate.Month(), currentDate.Day(), 23, 59, 59, 59, currentDate.Location())
 
-	// Create 11 PM (23:00:00) on the same day
-	pmTimeStr := dateStr + " 23:00:00"
-	pmTime, err := time.Parse("2006-01-02 15:04:05", pmTimeStr)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return &amTime, &pmTime, nil
+	return &midnight, &endDay, nil
 }

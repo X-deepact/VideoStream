@@ -56,13 +56,19 @@ const LivestreamSessions = ({ defaultStatus, pageTitle }: SessionBaseProps) => {
   //Search
   const [title, setTitle] = useState("");
 
-  const { sessions, quantities, totalItems, totalPages, refetchSessionList } =
-    useStreamingSessions({
-      currentPage,
-      streamType,
-      status,
-      title,
-    });
+  const {
+    sessions,
+    quantities,
+    totalItems,
+    totalPages,
+    refetchSessionList,
+    setSessions,
+  } = useStreamingSessions({
+    currentPage,
+    streamType,
+    status,
+    title,
+  });
 
   const handleSearchStream = async (
     e: React.KeyboardEvent<HTMLInputElement>
@@ -72,6 +78,9 @@ const LivestreamSessions = ({ defaultStatus, pageTitle }: SessionBaseProps) => {
       setCurrentPage(1); // Reset to first page every time you do a new search
     }
   };
+
+  const handleEndLiveSuccess = (sessionId: string) =>
+    setSessions((prev) => prev.filter((session) => session.id !== sessionId));
 
   return (
     <div className="px-8">
@@ -242,7 +251,10 @@ const LivestreamSessions = ({ defaultStatus, pageTitle }: SessionBaseProps) => {
 
             {sessions.map((session: LivestreamSession) => (
               <div key={session.id} className="pr-5">
-                <LivestreamList livestream={session} />
+                <LivestreamList
+                  livestream={session}
+                  onSuccessEndLive={handleEndLiveSuccess}
+                />
               </div>
             ))}
 

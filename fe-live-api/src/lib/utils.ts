@@ -39,12 +39,10 @@ export function getAvatarFallbackText(str: string): string {
  * @param count (number)
  * @returns count in K, M, B format (eg: 1k, 2M, 1.3B likes, comments, etc)
  */
-export function formatKMBCount(count: number | undefined): string {
-  if (count === undefined) return '';
-  if (count >= 1_000_000_000) return `${(count / 1_000_000_000).toFixed(1)}B`;
-  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
-  if (count >= 1_000) return `${(count / 1_000).toFixed(1)}k`;
-  return count.toString();
+export function KMBformatter(value: number): string {
+  return new Intl.NumberFormat(undefined, { notation: 'compact' }).format(
+    value
+  );
 }
 
 /**

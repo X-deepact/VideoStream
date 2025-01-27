@@ -14,6 +14,8 @@ export const DATA_API_LIMIT = {
   sm: 5,
   md: 8,
   lg: 12,
+  xl: 15,
+  xxl: 20,
 };
 
 export const RECORD_VIEW_AFTER_SECONDS = 10; // 10 seconds

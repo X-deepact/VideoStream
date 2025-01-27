@@ -145,7 +145,11 @@ func (h *wsHandler) StreamLive(c echo.Context) error {
 
 	log.Println("Broadcasting live stream url:", broadCastURL)
 
-	stream.Status = model.STARTED
+	if stream.StreamType == model.SOFTWARESTREAM {
+		stream.Status = model.PENDINGSOFTWARE
+	} else {
+		stream.Status = model.STARTED
+	}
 	stream.StartedAt = sql.NullTime{
 		Time:  time.Now(),
 		Valid: true,
@@ -154,12 +158,45 @@ func (h *wsHandler) StreamLive(c echo.Context) error {
 		return err
 	}
 
+	if stream.Status == model.PENDINGSOFTWARE {
+		go func() {
+			for {
+				if CheckStreamStatus(broadCastURL) {
+					stream.Status = model.STARTED
+					stream.StartedAt = sql.NullTime{
+						Time:  time.Now(),
+						Valid: true,
+					}
+					if err := h.srv.Stream.Update(stream); err != nil {
+						return
+					}
+
+					if err := conn.WriteJSON(map[string]interface{}{
+						"type": "started_software",
+					}); err != nil {
+						log.Println("Failed to write to WebSocket:", err)
+						return
+					}
+
+					h.sendNotificationLive(stream)
+
+					break
+				}
+
+				// Check every 5 seconds
+				time.Sleep(5 * time.Second)
+			}
+		}()
+	}
+
 	if err := h.srv.Stream.InitializeStreamAnalytics(stream); err != nil {
 		return err
 	}
 
 	//send notification live
-	h.sendNotificationLive(stream)
+	if stream.StreamType != model.SOFTWARESTREAM {
+		h.sendNotificationLive(stream)
+	}
 
 	wsCloseChan := make(chan bool)
 
@@ -733,4 +770,18 @@ func (h *wsHandler) sendNotificationLive(streamReq *model.Stream) {
 		}
 		_ = h.wsNotificationPool.SendMessage(subscriberID, message)
 	}
+}
+
+func CheckStreamStatus(url string) bool {
+	client := http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	resp, err := client.Get(url)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return false
+	}
+	defer resp.Body.Close()
+
+	return true
 }

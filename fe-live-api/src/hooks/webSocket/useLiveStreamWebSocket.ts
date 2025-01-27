@@ -71,8 +71,10 @@ export const useLiveStreamWebSocket = ({
 
       mediaRecorder.start(100); // Send data every 100ms
 
-      streamWs.onclose = () =>
+      streamWs.onclose = () => {
+        EventEmitter.emit(EVENT_EMITTER_NAME.LIVE_STREAM_END); // emit end event when admin ends
         cleanupStream(`WebSocket connection closed`, mediaRecorder);
+      };
       streamWs.onerror = (error) =>
         cleanupStream(`WebSocket error: ${error}`, mediaRecorder);
     };
@@ -80,6 +82,7 @@ export const useLiveStreamWebSocket = ({
     streamWs.onmessage = (event) => {
       try {
         const response = JSON.parse(event.data);
+
         if (response && response?.started_at) {
           setStreamDetails((prevStats) => ({
             ...prevStats,

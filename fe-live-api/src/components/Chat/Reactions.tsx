@@ -1,6 +1,6 @@
 import { Reaction, ReactionIcons, ReactionStats } from '@/data/chat';
 import { Button } from '../ui/button';
-import { formatKMBCount } from '@/lib/utils';
+import { KMBformatter } from '@/lib/utils';
 import { useMemo, useState } from 'react';
 import { useSidebar } from '@/components/CustomSidebar';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
@@ -48,16 +48,15 @@ const Reactions = (props: ComponentProps) => {
     return popularReaction;
   }, [stats.likeInfo, reactions]);
 
-  const mostPopularCount = formatKMBCount(
-    stats.likeInfo && mostPopularReaction
-      ? stats.likeInfo[mostPopularReaction]
-      : 0
-  );
+  const mostPopularCount = stats?.likeInfo[mostPopularReaction]
+    ? KMBformatter(stats.likeInfo[mostPopularReaction])
+    : 0;
 
   const currentReaction = stats.currentReactionType;
-  const currentReactionCount = currentReaction
-    ? formatKMBCount(stats.likeInfo[currentReaction])
-    : null;
+  const currentReactionCount =
+    currentReaction && stats.likeInfo[currentReaction]
+      ? KMBformatter(stats.likeInfo[currentReaction])
+      : null;
 
   const triggerReactions = useMemo(() => {
     if (!currentReaction || currentReaction === mostPopularReaction) {
@@ -71,32 +70,33 @@ const Reactions = (props: ComponentProps) => {
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
         <DrawerTrigger asChild>
           <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
+            variant='outline'
+            size='sm'
+            className='flex items-center gap-2'
           >
             {triggerReactions.map((reaction, index) => (
-              <div key={reaction} className="flex items-center gap-1">
-                <span className="text-lg">{ReactionIcons[reaction]}</span>
+              <div key={reaction} className='flex items-center gap-1'>
+                <span className='text-lg'>{ReactionIcons[reaction]}</span>
                 {index === 0 && (
-                  <span className="text-sm">{mostPopularCount}</span>
+                  <span className='text-sm'>{mostPopularCount}</span>
                 )}
                 {index !== 0 && Number(currentReactionCount) > 0 && (
-                  <span className="text-sm">{currentReactionCount}</span>
+                  <span className='text-sm'>{currentReactionCount}</span>
                 )}
               </div>
             ))}
           </Button>
         </DrawerTrigger>
         <DrawerContent>
-          <div className="p-4">
-            <h3 className="text-lg font-bold mb-4 text-center">Reactions</h3>
-            <div className="flex flex-wrap gap-2 items-center justify-center">
+          <div className='p-4'>
+            <h3 className='text-lg font-bold mb-4 text-center'>Reactions</h3>
+            <div className='flex flex-wrap gap-2 items-center justify-center'>
               {reactions.map((reaction) => {
                 const isActive = stats?.currentReactionType === reaction;
-                const reactionCount = stats.likeInfo
-                  ? formatKMBCount(stats.likeInfo[reaction])
-                  : 0;
+                const reactionCount =
+                  stats.likeInfo && stats.likeInfo[reaction]
+                    ? KMBformatter(stats.likeInfo[reaction])
+                    : 0;
 
                 return (
                   <Button
@@ -104,8 +104,8 @@ const Reactions = (props: ComponentProps) => {
                       onReactOnLive({ reaction });
                       setIsDrawerOpen(false);
                     }}
-                    variant="ghost"
-                    size="sm"
+                    variant='ghost'
+                    size='sm'
                     className={`rounded-full ${
                       isActive
                         ? 'bg-primary hover:bg-primary'
@@ -113,8 +113,8 @@ const Reactions = (props: ComponentProps) => {
                     }`}
                     key={reaction}
                   >
-                    <div className="flex items-center gap-1">
-                      <p className="text-lg">{ReactionIcons[reaction]}</p>
+                    <div className='flex items-center gap-1'>
+                      <p className='text-lg'>{ReactionIcons[reaction]}</p>
                       {reactionCount && (
                         <span
                           className={`text-[9px] ${
@@ -139,7 +139,7 @@ const Reactions = (props: ComponentProps) => {
 
   return (
     <div
-      className="flex justify-between items-center px-0 overflow-x-auto scrollbar-hide  no-scrollbar"
+      className='flex justify-between items-center px-0 overflow-x-auto scrollbar-hide  no-scrollbar'
       style={{
         WebkitOverflowScrolling: 'touch',
         scrollbarWidth: 'none',
@@ -149,23 +149,23 @@ const Reactions = (props: ComponentProps) => {
       {reactions.map((reaction) => {
         const isActive = stats?.currentReactionType === reaction;
 
-        const reactionCount = stats.likeInfo
-          ? formatKMBCount(stats.likeInfo[reaction])
+        const reactionCount = stats.likeInfo[reaction]
+          ? KMBformatter(stats.likeInfo[reaction])
           : 0;
 
         return (
           <Button
             onClick={() => onReactOnLive({ reaction })}
-            variant="ghost"
-            size="sm"
+            variant='ghost'
+            size='sm'
             className={`rounded-full ${
               isActive ? 'bg-primary hover:bg-primary' : 'bg-transparent'
             }`}
             key={reaction}
           >
-            <div className="flex items-center gap-1">
-              <p className="text-lg">{ReactionIcons[reaction]}</p>
-              {reactionCount && (
+            <div className='flex items-center gap-1'>
+              <p className='text-lg'>{ReactionIcons[reaction]}</p>
+              {reactionCount !== 0 && (
                 <span
                   className={`text-[9px] ${
                     isActive ? 'text-white' : 'text-black dark:text-white'

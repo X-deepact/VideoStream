@@ -21,10 +21,11 @@ import { useState } from "react";
 import EndLiveDialog from "./EndLiveDialog";
 
 interface ComponentProps {
-  livestream: LivestreamSession
+  livestream: LivestreamSession;
+  onSuccessEndLive: (id: string) => void;
 }
 
-const LivestreamList = ({ livestream }: ComponentProps) => {
+const LivestreamList = ({ livestream, onSuccessEndLive }: ComponentProps) => {
   const {
     id,
     title,
@@ -100,6 +101,7 @@ const LivestreamList = ({ livestream }: ComponentProps) => {
                   livestreamId={livestream.id}
                   isOpen={showEndDialog}
                   onOpenChange={setShowEndDialog}
+                  onSuccess={() => onSuccessEndLive(id)}
                 />
               </>
             )}

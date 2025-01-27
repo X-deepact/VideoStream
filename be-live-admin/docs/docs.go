@@ -1188,7 +1188,8 @@ const docTemplate = `{
                         "minimum": 1,
                         "type": "integer",
                         "name": "page",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "maxLength": 255,
@@ -1843,17 +1844,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.BaseDTO": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                }
-            }
-        },
         "dto.CategoryDTO": {
             "type": "object",
             "properties": {
@@ -2022,35 +2012,11 @@ const docTemplate = `{
         "dto.LiveStatRespInDayDTO": {
             "type": "object",
             "properties": {
-                "comments": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.BaseDTO"
-                    }
-                },
-                "description": {
+                "time": {
                     "type": "string"
                 },
-                "likes": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.BaseDTO"
-                    }
-                },
-                "status": {
-                    "$ref": "#/definitions/model.StreamStatus"
-                },
-                "stream_id": {
+                "views": {
                     "type": "integer"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "viewers": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.BaseDTO"
-                    }
                 }
             }
         },
