@@ -1,3 +1,4 @@
+import { LiveStreamBySoftware } from '@/data/dto/chat';
 import { StreamDetailsResponse } from '@/data/dto/stream';
 import { retrieveAuthToken } from '@/data/model/userAccount';
 import { EVENT_EMITTER_NAME, EventEmitter } from '@/lib/event-emitter';
@@ -16,6 +17,8 @@ export const useLiveStreamSoftwareWebSocket = ({
 }: ComponentProps) => {
   const streamWsRef = useRef<WebSocket | null>(null);
   const [isStreamStarted, setIsStreamStarted] = useState(false);
+  const [isLiveEndEventReceivedSoftware, setIsLiveEndEventReceivedSoftware] =
+    useState(false);
 
   const cleanupStream = (reason: string) => {
     logger.log(reason);
@@ -43,10 +46,6 @@ export const useLiveStreamSoftwareWebSocket = ({
 
     streamWs.onopen = () => {
       logger.log('WebSocket connection established');
-      setIsStreamStarted(true);
-
-      EventEmitter.emit(EVENT_EMITTER_NAME.LIVE_STREAM_START);
-
       streamWs.onclose = () => cleanupStream('WebSocket connection closed');
       streamWs.onerror = (error) => cleanupStream(`WebSocket error: ${error}`);
     };
@@ -54,7 +53,15 @@ export const useLiveStreamSoftwareWebSocket = ({
     streamWs.onmessage = (event) => {
       try {
         const response = JSON.parse(event.data);
-        if (response && response?.started_at) {
+
+        if (response?.type === LiveStreamBySoftware.STARTED) {
+          setIsStreamStarted(true);
+          EventEmitter.emit(EVENT_EMITTER_NAME.LIVE_STREAM_START);
+        } else if (response?.type === LiveStreamBySoftware.ENDED) {
+          setIsStreamStarted(false);
+          setIsLiveEndEventReceivedSoftware(true);
+          EventEmitter.emit(EVENT_EMITTER_NAME.LIVE_STREAM_END);
+        } else if (response && response?.started_at) {
           setStreamDetails((prevStats) => ({
             ...prevStats,
             started_at: response.started_at,
@@ -82,6 +89,7 @@ export const useLiveStreamSoftwareWebSocket = ({
 
   return {
     isStreamStarted,
+    isLiveEndEventReceivedSoftware,
     setIsStreamStarted,
     startStream,
     stopStream,

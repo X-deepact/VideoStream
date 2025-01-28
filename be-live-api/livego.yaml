@@ -2,6 +2,9 @@
 flv_archive: true
 flv_dir: "/tmp"
 
+# # RTMP Options
+read_timeout: 30
+
 server:
 - appname: live
   live: true

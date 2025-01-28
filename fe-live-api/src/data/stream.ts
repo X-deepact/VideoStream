@@ -1,5 +1,10 @@
 export const modalTexts = {
   stream: {
+    successStartSoftware: {
+      title: 'Live Created Successfully!',
+      description:
+        'You can now paste stream server and stream key into your streaming software and start streaming!',
+    },
     successStart: {
       title: 'Go Live: Live Started Successfully!',
       description:
@@ -13,6 +18,11 @@ export const modalTexts = {
     forceEnd: {
       title: 'Live Ended!',
       description: 'Live has been ended.',
+    },
+    endFromSoftware: {
+      title: 'Live Ended From Streaming Software!',
+      description:
+        'Live has been ended because you have ended from your streaming software.',
     },
     confirmToEnd: {
       title: 'End Live Stream: Are You Sure?',

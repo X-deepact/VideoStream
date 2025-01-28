@@ -8,7 +8,7 @@ const SetupGuideContent = () => {
       <ol className="list-decimal pl-5 space-y-4 leading-loose">
         <li>
           <div className="flex gap-2">
-            Download streaming software. Recommended:{' '}
+            Download a streaming software. Recommended:{' '}
             <Link
               to="https://obsproject.com/download"
               target="_blank"

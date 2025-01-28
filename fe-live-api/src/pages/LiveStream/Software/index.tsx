@@ -7,7 +7,7 @@ import {
   MessageSquare,
   Video,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import DetailsForm, { getStreamCrendentials } from '../DetailsForm';
 import { useNavigate } from 'react-router-dom';
 import { LIVE_STREAM_PATH, WATCH_VIDEO_PATH } from '@/data/route';
@@ -35,7 +35,7 @@ import { EVENT_EMITTER_NAME, EventEmitter } from '@/lib/event-emitter';
 import { useLiveChatWebSocket } from '@/hooks/webSocket/useLiveChatWebSocket';
 import { FORM_MODE } from '@/data/types/ui/form';
 import VideoDescriptionBox from '@/components/VideoDescriptionBox';
-import { STREAM_TYPE } from '@/data/types/stream';
+import { CONTENT_STATUS, STREAM_TYPE } from '@/data/types/stream';
 import { useLiveStreamSoftwareWebSocket } from '@/hooks/webSocket/useLiveStreamSoftwareWebSocket';
 import SetupGuideContent from './SetupGuideContent';
 import { fetchImageWithAuth } from '@/api/image';
@@ -43,6 +43,10 @@ import { Label } from '@/components/ui/label';
 import TooltipComponent from '@/components/TooltipComponent';
 import { toast } from 'sonner';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
+import VideoPlayerFLV from '@/components/VideoPlayerFLV';
+import { retrieveAuthToken } from '@/data/model/userAccount';
+import DefaultThumbnail from '@/assets/images/video-thumbnail.jpg';
+import LoadingIndicator from '@/components/LoadingIndicator';
 
 const LiveStreamSoftware = () => {
   const navigate = useNavigate();
@@ -70,6 +74,13 @@ const LiveStreamSoftware = () => {
   const [isStreamServerCopied, setIsStreamServerCopied] = useState(false);
   const [isStreamKeyCopied, setIsStreamKeyCopied] = useState(false);
   const [copiedText, copy, isCopied] = useCopyToClipboard();
+  const [videoDimensions, setVideoDimensions] = useState<{
+    width: number | string;
+    height: number | string;
+  }>({
+    width: 0,
+    height: 0,
+  });
   const [notifyModal, setNotifyModal] = useState<NotificationModalProps>({
     type: NotifyModalType.SUCCESS,
     isOpen: false,
@@ -88,10 +99,15 @@ const LiveStreamSoftware = () => {
   });
 
   // stream websocket
-  const { isStreamStarted, setIsStreamStarted, startStream, stopStream } =
-    useLiveStreamSoftwareWebSocket({
-      setStreamDetails,
-    });
+  const {
+    isStreamStarted,
+    isLiveEndEventReceivedSoftware,
+    setIsStreamStarted,
+    startStream,
+    stopStream,
+  } = useLiveStreamSoftwareWebSocket({
+    setStreamDetails,
+  });
 
   // live chat interaction websocket
   const {
@@ -161,13 +177,12 @@ const LiveStreamSoftware = () => {
       if (streamKeyValue) setStreamKey(streamKeyValue);
 
       if (mode === FORM_MODE.CREATE) {
-        setIsStreamStarted(true);
         if (!isMobile) openChat();
 
         openNotifyModal(
           NotifyModalType.SUCCESS,
-          modalTexts.stream.successStart.title,
-          modalTexts.stream.successStart.description
+          modalTexts.stream.successStartSoftware.title,
+          modalTexts.stream.successStartSoftware.description
         );
 
         startStream(data.id);
@@ -277,6 +292,9 @@ const LiveStreamSoftware = () => {
     });
   };
 
+  const IS_PENDING_SOFTWARE =
+    !isStreamStarted && streamDetails && streamDetails?.id;
+
   // Open fetch categories as soon as this page is rendered
   useEffect(() => {
     const getCategories = async () => {
@@ -288,11 +306,18 @@ const LiveStreamSoftware = () => {
 
   // show modal alert when live ends
   useEffect(() => {
-    if (streamDetails && isLiveEndEventReceived) {
+    if (
+      streamDetails &&
+      (isLiveEndEventReceived || isLiveEndEventReceivedSoftware)
+    ) {
       openNotifyModal(
         NotifyModalType.SUCCESS,
-        modalTexts.stream.forceEnd.title,
-        modalTexts.stream.forceEnd.description,
+        isLiveEndEventReceived
+          ? modalTexts.stream.forceEnd.title
+          : modalTexts.stream.endFromSoftware.title,
+        isLiveEndEventReceived
+          ? modalTexts.stream.forceEnd.description
+          : modalTexts.stream.endFromSoftware.description,
         () => {
           navigate(
             WATCH_VIDEO_PATH.replace(':id', streamDetails?.id?.toString() || '')
@@ -300,7 +325,13 @@ const LiveStreamSoftware = () => {
         }
       );
     }
-  }, [isLiveEndEventReceived, streamDetails, navigate, openNotifyModal]);
+  }, [
+    isLiveEndEventReceived,
+    isLiveEndEventReceivedSoftware,
+    streamDetails,
+    navigate,
+    openNotifyModal,
+  ]);
 
   // fetch authed thumbnail img
   useEffect(() => {
@@ -325,6 +356,37 @@ const LiveStreamSoftware = () => {
       setIsStreamKeyCopied(false);
     }
   }, [isCopied, copiedText, streamServer, streamKey]);
+
+  // calculate video width and height
+  useEffect(() => {
+    const calculateVideoDimensions = () => {
+      const containerWidth = window.innerWidth;
+
+      if (isMobile) {
+        const width = containerWidth - 50;
+        const height = (width * 9) / 16; // maintain 16:9 aspect ratio
+        setVideoDimensions({ width, height });
+      } else {
+        const containerHeight = window.innerHeight;
+        const chatWidth = isChatVisible ? containerWidth / 4 : 0;
+        const availableWidth = containerWidth - chatWidth - 120; // padding and offsets
+        const availableHeight = containerHeight - 140; // padding and offsets
+
+        setVideoDimensions({
+          width: availableWidth,
+          height: availableHeight,
+        });
+      }
+    };
+
+    // calculate dimensions on mount, chat visibility toggle, or window resize
+    calculateVideoDimensions();
+    window.addEventListener('resize', calculateVideoDimensions);
+
+    return () => {
+      window.removeEventListener('resize', calculateVideoDimensions);
+    };
+  }, [isChatVisible, isMobile]);
 
   return (
     <div>
@@ -351,7 +413,7 @@ const LiveStreamSoftware = () => {
             {/* Webcam View */}
             <div
               className={cn(
-                'flex-1 flex items-center justify-center border rounded-md overflow-hidden relative'
+                'flex-1 flex items-center justify-center border rounded-md overflow-hidden relative bg-black'
               )}
             >
               {/* Live indicators */}
@@ -371,6 +433,7 @@ const LiveStreamSoftware = () => {
               {/* sm: Control buttons */}
               <div className="absolute bottom-3 z-10 inline md:hidden">
                 <ControlButtons
+                  isStartStreamBtnVisible={!IS_PENDING_SOFTWARE}
                   type={STREAM_TYPE.SOFTWARE}
                   isStreamStarted={isStreamStarted}
                   onEndStream={handleEndStream}
@@ -379,116 +442,152 @@ const LiveStreamSoftware = () => {
                 />
               </div>
               {/* video */}
-              <div className="w-full h-[82vh] relative flex items-center justify-center">
-                {isStreamStarted && thumbnailSrc && (
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      backgroundImage: `url(${thumbnailSrc})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      zIndex: 0,
+              {isStreamStarted && streamDetails ? (
+                <div className="h-[82vh]">
+                  <VideoPlayerFLV
+                    isStreamStarted={isStreamStarted}
+                    videoDetails={{
+                      url: streamDetails?.broadcast_url || '',
+                      status: CONTENT_STATUS.LIVE,
+                      scheduledAt: '',
                     }}
-                  ></div>
-                )}
+                    token={retrieveAuthToken() || ''}
+                    poster={thumbnailSrc || DefaultThumbnail}
+                    videoWidth={videoDimensions.width}
+                    videoHeight={window.innerHeight * 0.82}
+                    styles="bg-black"
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-[82vh] relative flex items-center justify-center">
+                  {!isStreamStarted && thumbnailSrc && (
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        backgroundImage: `url(${thumbnailSrc})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        zIndex: 0,
+                      }}
+                    ></div>
+                  )}
 
-                <div className="relative z-10 flex flex-col justify-center items-center text-center gap-3 bg-white/60 dark:bg-black/60 p-10 backdrop-blur rounded-md">
-                  <div className="bg-primary/60 p-2 rounded-full">
-                    <Video />
-                  </div>
-                  <span className="text-lg">
-                    Start stream and connect with your streaming software <br />
-                    by entering server and stream key which will be provided
-                    after you have started stream.
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    Viewers will be able to find your stream once you go live.
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full"
-                    onClick={handleStreamSetupGuideOpen}
-                  >
-                    Stream Setup Guide <CircleHelp />
-                  </Button>
-
-                  {isStreamStarted &&
-                    streamDetails &&
-                    streamDetails?.push_url && (
-                      <div className="text-left w-full border-t pt-3 mt-3">
-                        <Label>
-                          Stream crendentials (paste them into your streaming
-                          software)
-                        </Label>
-                        <div className="text-left w-full border rounded-md py-4 px-3 space-y-2 mt-2">
-                          <div className="border-b pb-2 text-xs relative">
-                            <span className="italic text-muted-foreground">
-                              Stream Server:
-                            </span>{' '}
-                            <span>{streamServer}</span>{' '}
-                            <TooltipComponent
-                              align="center"
-                              text="Copy to Clipboard"
-                              children={
-                                <div
-                                  onClick={() => {
-                                    if (streamServer) {
-                                      copy(streamServer);
-                                      toast.success(
-                                        'Stream Server copied to clipboard!'
-                                      );
-                                    }
-                                  }}
-                                  className="absolute cursor-pointer hover:bg-muted p-2 right-0 -top-3 rounded-sm"
-                                >
-                                  {isStreamServerCopied ? (
-                                    <Check className="w-4 h-4" />
-                                  ) : (
-                                    <Copy className="w-4 h-4" />
-                                  )}
-                                </div>
-                              }
-                            />
-                          </div>
-                          <div className="text-xs flex relative">
-                            <span className="italic text-muted-foreground">
-                              Stream Key:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                            </span>{' '}
-                            <span>{streamKey}</span>{' '}
-                            <TooltipComponent
-                              align="center"
-                              text="Copy to Clipboard"
-                              children={
-                                <div
-                                  onClick={() => {
-                                    if (streamKey) {
-                                      copy(streamKey);
-                                      toast.success(
-                                        'Stream Key copied to clipboard!'
-                                      );
-                                    }
-                                  }}
-                                  className="absolute cursor-pointer hover:bg-muted p-2 right-0 -bottom-3 rounded-sm"
-                                >
-                                  {isStreamKeyCopied ? (
-                                    <Check className="w-4 h-4" />
-                                  ) : (
-                                    <Copy className="w-4 h-4" />
-                                  )}
-                                </div>
-                              }
-                            />
-                          </div>
-                        </div>
+                  <div className="relative z-10 flex flex-col justify-center items-center text-center gap-3 bg-white/80 dark:bg-black/80 p-5 backdrop-blur rounded-md">
+                    {IS_PENDING_SOFTWARE ? (
+                      <div className="flex gap-2 items-center text-sm">
+                        <LoadingIndicator width={15} height={15} /> Waiting for
+                        streaming from your streaming software...
+                      </div>
+                    ) : (
+                      <div className="bg-primary/60 p-2 rounded-full">
+                        <Video className="text-white" />
                       </div>
                     )}
-                </div>
+                    {!IS_PENDING_SOFTWARE && (
+                      <Fragment>
+                        <span className="text-balance font-medium">
+                          Start stream and connect with your streaming software{' '}
+                          <br />
+                          by entering server and stream key which will be
+                          provided after you have started stream.
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          Viewers will be able to find your stream once you go
+                          live.
+                        </span>
+                      </Fragment>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full"
+                      onClick={handleStreamSetupGuideOpen}
+                    >
+                      Stream Setup Guide <CircleHelp />
+                    </Button>
 
-                {isStreamStarted && thumbnailSrc && (
-                  <div className="absolute inset-0 bg-black/40 z-5"></div>
-                )}
-              </div>
+                    {/* stream not started yet in software, but created stream info */}
+                    {!isStreamStarted &&
+                      streamDetails &&
+                      streamDetails?.push_url && (
+                        <div className="text-left w-full border-t dark:border-gray-600 pt-3 mt-3">
+                          <Label>
+                            Stream crendentials (paste them into your streaming
+                            software)
+                          </Label>
+                          <div className="text-left w-full border dark:border-gray-600 rounded-sm py-4 px-3 space-y-2 mt-2">
+                            <div className="border-b dark:border-gray-600 pb-2 text-xs flex items-center relative gap-3">
+                              <div className="flex flex-col md:flex-row gap-2">
+                                <span className="italic text-muted-foreground">
+                                  Stream Server:
+                                </span>
+                                {streamServer}
+                              </div>{' '}
+                              <TooltipComponent
+                                align="center"
+                                text="Copy to Clipboard"
+                                children={
+                                  <div
+                                    onClick={() => {
+                                      if (streamServer) {
+                                        copy(streamServer);
+                                        toast.success(
+                                          'Stream Server copied to clipboard!'
+                                        );
+                                      }
+                                    }}
+                                    className="absolute cursor-pointer hover:bg-muted p-2 right-0 -top-3 rounded-sm"
+                                  >
+                                    {isStreamServerCopied ? (
+                                      <Check className="w-4 h-4" />
+                                    ) : (
+                                      <Copy className="w-4 h-4" />
+                                    )}
+                                  </div>
+                                }
+                              />
+                            </div>
+                            <div className="text-xs flex items-center relative gap-3">
+                              <div className="flex flex-col md:flex-row gap-2">
+                                <span className="italic text-muted-foreground">
+                                  Stream Key:
+                                </span>{' '}
+                                {streamKey}
+                              </div>{' '}
+                              <TooltipComponent
+                                align="center"
+                                text="Copy to Clipboard"
+                                children={
+                                  <div
+                                    onClick={() => {
+                                      if (streamKey) {
+                                        copy(streamKey);
+                                        toast.success(
+                                          'Stream Key copied to clipboard!'
+                                        );
+                                      }
+                                    }}
+                                    className="cursor-pointer hover:bg-muted p-2  rounded-sm"
+                                  >
+                                    {isStreamKeyCopied ? (
+                                      <Check className="w-4 h-4" />
+                                    ) : (
+                                      <Copy className="w-4 h-4" />
+                                    )}
+                                  </div>
+                                }
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                  </div>
+
+                  {isStreamStarted && thumbnailSrc && (
+                    <div className="absolute inset-0 bg-black/40 z-5"></div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Chat */}
@@ -520,22 +619,20 @@ const LiveStreamSoftware = () => {
                   <LetterText />
                   Details
                 </Button>
-                {isStreamStarted && (
-                  <DetailsForm
-                    type={STREAM_TYPE.SOFTWARE}
-                    mode={FORM_MODE.VIEW}
-                    isOpen={isStreamDetailsModalOpen}
-                    data={streamDetails}
-                    categories={streamCategories?.map((cat) => ({
-                      id: cat.id.toString(),
-                      name: cat.name,
-                    }))}
-                    onSuccess={(data: StreamDetailsResponse) =>
-                      handleStreamSaveSuccess(data, FORM_MODE.EDIT)
-                    }
-                    onClose={handleStreamDetailsModalClose}
-                  />
-                )}
+                <DetailsForm
+                  type={STREAM_TYPE.SOFTWARE}
+                  mode={FORM_MODE.VIEW}
+                  isOpen={isStreamDetailsModalOpen}
+                  data={streamDetails}
+                  categories={streamCategories?.map((cat) => ({
+                    id: cat.id.toString(),
+                    name: cat.name,
+                  }))}
+                  onSuccess={(data: StreamDetailsResponse) =>
+                    handleStreamSaveSuccess(data, FORM_MODE.EDIT)
+                  }
+                  onClose={handleStreamDetailsModalClose}
+                />
               </div>
               {/* Start - Mobile stream details card */}
               {!isChatVisible && isStreamStarted && (
@@ -572,6 +669,7 @@ const LiveStreamSoftware = () => {
           {/* md: Control buttons */}
           <div className="hidden md:inline-block">
             <ControlButtons
+              isStartStreamBtnVisible={!IS_PENDING_SOFTWARE}
               type={STREAM_TYPE.SOFTWARE}
               isStreamStarted={isStreamStarted}
               onEndStream={handleEndStream}

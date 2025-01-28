@@ -1,8 +1,9 @@
-import { Button } from '@/components/ui/button';
-import { STREAM_TYPE } from '@/data/types/stream';
-import { Ban, CircleSlash, Mic, MicOff, Radio } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { STREAM_TYPE } from "@/data/types/stream";
+import { Ban, CircleSlash, Mic, MicOff, Radio } from "lucide-react";
 
 interface ComponentProps {
+  isStartStreamBtnVisible?: boolean;
   type: STREAM_TYPE;
   isMicOn?: boolean;
   isStreamStarted: boolean;
@@ -14,6 +15,7 @@ interface ComponentProps {
 
 const ControlButtons = (props: ComponentProps) => {
   const {
+    isStartStreamBtnVisible = true,
     type,
     isMicOn,
     isStreamStarted,
@@ -24,41 +26,43 @@ const ControlButtons = (props: ComponentProps) => {
   } = props;
 
   return (
-    <div className="flex gap-2">
+    <div className='flex gap-2'>
       {type === STREAM_TYPE.CAMERA && (
         <Button
           onClick={() => {
             if (onToggleMic) onToggleMic();
           }}
-          variant="ghost"
-          size="sm"
-          className="rounded-full px-2.5"
+          variant='ghost'
+          size='sm'
+          className='rounded-full px-2.5'
         >
           {isMicOn ? <Mic /> : <MicOff />}
         </Button>
       )}
       {isStreamStarted ? (
         <Button
-          size="sm"
-          variant="destructive"
-          className="rounded-full"
+          size='sm'
+          variant='destructive'
+          className='rounded-full'
           onClick={onEndStream}
         >
-          <CircleSlash /> <span className="hidden md:inline">End Stream</span>
+          <CircleSlash /> <span className='hidden md:inline'>End Stream</span>
         </Button>
       ) : (
-        <div className="flex gap-2">
+        <div className='flex gap-2'>
+          {isStartStreamBtnVisible && (
+            <Button
+              size='sm'
+              className='rounded-full'
+              onClick={onInitializeStreamModalOpen}
+            >
+              <Radio /> Start Stream
+            </Button>
+          )}
           <Button
-            size="sm"
-            className="rounded-full"
-            onClick={onInitializeStreamModalOpen}
-          >
-            <Radio /> Start Stream
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            className="rounded-full"
+            size='sm'
+            variant='secondary'
+            className='rounded-full'
             onClick={onInitializeStreamCancel}
           >
             <Ban /> Cancel

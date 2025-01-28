@@ -13,6 +13,7 @@ import { getFormattedDate } from '@/lib/date-time';
 import Countdown from './CountDown';
 
 interface VideoPlayerProps {
+  isStreamStarted?: boolean;
   videoDetails: {
     url: string;
     status: CONTENT_STATUS;
@@ -27,6 +28,7 @@ interface VideoPlayerProps {
 }
 
 const VideoPlayerFLV: React.FC<VideoPlayerProps> = ({
+  isStreamStarted,
   videoDetails,
   token,
   poster,
@@ -47,7 +49,12 @@ const VideoPlayerFLV: React.FC<VideoPlayerProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!url) return;
+    if (!url) {
+      logger.error(
+        `Cannot initialize player: Invalid URL (${url}) or Stream not started`
+      );
+      return;
+    }
 
     const initializeFLVPlayer = () => {
       if (!playerRef.current && videoRef.current) {
@@ -105,7 +112,7 @@ const VideoPlayerFLV: React.FC<VideoPlayerProps> = ({
         logger.log('FLV Player disposed');
       }
     };
-  }, [url, token, status]);
+  }, [url, token, status, isStreamStarted]);
 
   useEffect(() => {
     posterRef.current = poster;
@@ -123,43 +130,45 @@ const VideoPlayerFLV: React.FC<VideoPlayerProps> = ({
         backgroundPosition: 'center',
       }}
     >
+      {/* status - upcoming */}
       {status === CONTENT_STATUS.UPCOMING && (
-        <div className="flex flex-col justify-center text-center items-center absolute inset-0 bg-gray-900 bg-opacity-75 text-white backdrop-blur space-y-2">
-          <Clock className="w-7 h-7 mb-2" />
-          <p className="text-lg font-semibold">Stay Tuned. Upcoming Video!</p>
+        <div className='flex flex-col justify-center text-center items-center absolute inset-0 bg-gray-900 bg-opacity-75 text-white backdrop-blur space-y-2'>
+          <Clock className='w-7 h-7 mb-2' />
+          <p className='text-lg font-semibold'>Stay Tuned. Upcoming Video!</p>
           {scheduledAt && (
             <>
-              <p className="text-sm text-gray-300">
+              <p className='text-sm text-gray-300'>
                 This video can be accessed on{' '}
                 {getFormattedDate(new Date(scheduledAt), true)}.
               </p>
-              <div className="flex gap-2 text-xs font-medium">
-                <span className="bg-red-500 text-white px-2 py-0.5 rounded-full">
+              <div className='flex gap-2 text-xs font-medium'>
+                <span className='bg-red-500 text-white px-2 py-0.5 rounded-full'>
                   Available on
                 </span>{' '}
                 <Countdown targetDate={scheduledAt} />
               </div>
             </>
           )}
-          <div className="flex gap-2 items-center justify-center">
+          <div className='flex gap-2 items-center justify-center'>
             <Button
-              variant="secondary"
-              size="sm"
+              variant='secondary'
+              size='sm'
               onClick={() => navigate(FEED_PATH)}
             >
-              <SquarePlay className="w-4 h-4" /> Watch Videos
+              <SquarePlay className='w-4 h-4' /> Watch Videos
             </Button>
-            <Button size="sm" onClick={() => window.location.reload()}>
-              <RotateCw className="w-4 h-4" /> Reload
+            <Button size='sm' onClick={() => window.location.reload()}>
+              <RotateCw className='w-4 h-4' /> Reload
             </Button>
           </div>
         </div>
       )}
+      {/* status - live */}
       {status !== CONTENT_STATUS.UPCOMING && !error && (
         <video
           ref={videoRef}
           onLoad={onLoadVideo && onLoadVideo}
-          className="video-js vjs-theme-city vjs-big-play-centered"
+          className='video-js vjs-theme-city vjs-big-play-centered'
           style={{
             width: `${
               typeof videoWidth === 'number' ? videoWidth + 'px' : videoWidth
@@ -170,24 +179,25 @@ const VideoPlayerFLV: React.FC<VideoPlayerProps> = ({
           }}
         ></video>
       )}
+      {/* not-upcoming & error */}
       {status !== CONTENT_STATUS.UPCOMING && error && (
-        <div className="flex flex-col justify-center text-center items-center absolute inset-0 bg-gray-900 bg-opacity-75 text-white backdrop-blur space-y-2">
-          <VideoOff className="w-7 h-7 mb-3" />
-          <p className="text-lg font-semibold">Ooops!</p>
-          <p className="text-sm text-gray-300">
+        <div className='flex flex-col justify-center text-center items-center absolute inset-0 bg-gray-900 bg-opacity-75 text-white backdrop-blur space-y-2'>
+          <VideoOff className='w-7 h-7 mb-3' />
+          <p className='text-lg font-semibold'>Ooops!</p>
+          <p className='text-sm text-gray-300'>
             Check your network and refresh the page. <br /> Otherwise, this
             video may not be available anymore.
           </p>
-          <div className="flex gap-2 items-center justify-center">
+          <div className='flex gap-2 items-center justify-center'>
             <Button
-              variant="secondary"
-              size="sm"
+              variant='secondary'
+              size='sm'
               onClick={() => navigate(FEED_PATH)}
             >
-              <SquarePlay className="w-4 h-4" /> Watch Videos
+              <SquarePlay className='w-4 h-4' /> Watch Videos
             </Button>
-            <Button size="sm" onClick={() => window.location.reload()}>
-              <RotateCw className="w-4 h-4" /> Reload
+            <Button size='sm' onClick={() => window.location.reload()}>
+              <RotateCw className='w-4 h-4' /> Reload
             </Button>
           </div>
         </div>

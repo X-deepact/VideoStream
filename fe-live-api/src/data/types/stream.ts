@@ -17,6 +17,7 @@ export const enum CONTENT_STATUS {
   LIVE = 'live', // currently streaming
   UPCOMING = 'upcoming', // premire scheduled-streams
   VIDEO = 'video', // stream ended
+  PENDING_SOFTWARE = 'pending_software', // pending software
 }
 
 export const enum VIDEO_FETCH_STATUS_CODE {

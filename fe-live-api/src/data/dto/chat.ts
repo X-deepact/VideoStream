@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { Reaction, ReactionStats } from '../chat';
 
+// started_software
+export enum LiveStreamBySoftware {
+  'STARTED' = 'started_software',
+  'ENDED' = 'ended_software',
+}
+
 export enum LiveInteractionType {
   'COMMENT' = 'comment',
   'LIKE' = 'like',

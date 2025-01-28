@@ -17,12 +17,14 @@ interface VideoPlayerProps {
   options?: PlayerOptions;
   styles?: string;
   poster?: string;
+  key?: number;
 }
 
 const VideoPlayerMP4: React.FC<VideoPlayerProps> = ({
   url,
   poster,
   styles,
+  key,
 }: VideoPlayerProps) => {
   const navigate = useNavigate();
 
@@ -42,7 +44,14 @@ const VideoPlayerMP4: React.FC<VideoPlayerProps> = ({
         return;
       }
 
-      if (!playerRef.current && videoRef.current) {
+      // Dispose of the existing player if it exists
+      if (playerRef.current) {
+        playerRef.current.dispose();
+        playerRef.current = null;
+      }
+
+      // Initialize the new player
+      if (videoRef.current) {
         const player = videojs(
           videoRef.current,
           {
@@ -87,7 +96,7 @@ const VideoPlayerMP4: React.FC<VideoPlayerProps> = ({
         logger.log('MP4 Player disposed');
       }
     };
-  }, [url]);
+  }, [url, key]);
 
   useEffect(() => {
     posterRef.current = poster;
@@ -102,30 +111,29 @@ const VideoPlayerMP4: React.FC<VideoPlayerProps> = ({
         backgroundPosition: 'center',
       }}
     >
-      {!error && (
+      {!error ? (
         <video
           ref={videoRef}
-          className='video-js vjs-theme-city vjs-big-play-centered'
+          className="video-js vjs-theme-city vjs-big-play-centered"
           controls
         ></video>
-      )}
-      {error && (
-        <div className='flex flex-col justify-center text-center items-center absolute inset-0 bg-gray-900 bg-opacity-75 text-white backdrop-blur space-y-2'>
-          <VideoOff className='w-7 h-7 mb-3' />
-          <p className='text-lg font-semibold'>Ooops!</p>
-          <p className='text-sm text-gray-300'>
+      ) : (
+        <div className="flex flex-col justify-center text-center items-center absolute inset-0 bg-gray-900 bg-opacity-75 text-white backdrop-blur space-y-2">
+          <VideoOff className="w-7 h-7 mb-3" />
+          <p className="text-lg font-semibold">Ooops!</p>
+          <p className="text-sm text-gray-300">
             {error || 'Unexpected error occured'}
           </p>
-          <div className='flex gap-2 items-center justify-center'>
+          <div className="flex gap-2 items-center justify-center">
             <Button
-              variant='secondary'
-              size='sm'
+              variant="secondary"
+              size="sm"
               onClick={() => navigate(FEED_PATH)}
             >
-              <SquarePlay className='w-4 h-4' /> Watch Videos
+              <SquarePlay className="w-4 h-4" /> Watch Videos
             </Button>
-            <Button size='sm' onClick={() => window.location.reload()}>
-              <RotateCw className='w-4 h-4' /> Reload
+            <Button size="sm" onClick={() => window.location.reload()}>
+              <RotateCw className="w-4 h-4" /> Reload
             </Button>
           </div>
         </div>

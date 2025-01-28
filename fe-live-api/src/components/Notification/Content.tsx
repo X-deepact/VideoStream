@@ -140,7 +140,7 @@ const NotificationContent = ({ closeSheet }: { closeSheet: () => void }) => {
     <div className="pb-4 w-full">
       <div className="sticky top-0 w-full bg-white dark:bg-black z-10 border-b">
         <div className="flex justify-between items-center py-2 px-4">
-          <h2 className="text-xl font-semibold">Notifications</h2>
+          <h2 className="text-base font-semibold">Notifications</h2>
           <AppButton
             Icon={X}
             size="icon"
@@ -155,27 +155,24 @@ const NotificationContent = ({ closeSheet }: { closeSheet: () => void }) => {
 
       {data?.length > 0 && (
         <ul className="space-y-2">
-          {!isLoading &&
-            data.map((notification) => (
-              <div
-                key={notification.id}
-                className={cn(
-                  inProgressNotifications.has(notification.id)
-                    ? 'opacity-50'
-                    : ''
-                )}
-              >
-                <div onClick={() => closeSheet()}>
-                  <NotificationItem
-                    key={notification.id}
-                    notification={notification}
-                    onMarkAsRead={handleNotificationClick}
-                    onHide={handleHideNotification}
-                    onMuteAll={handleMuteNotificationsFromChannel}
-                  />
-                </div>
+          {data.map((notification) => (
+            <div
+              key={notification.id}
+              className={cn(
+                inProgressNotifications.has(notification.id) ? 'opacity-50' : ''
+              )}
+            >
+              <div onClick={() => closeSheet()}>
+                <NotificationItem
+                  key={notification.id}
+                  notification={notification}
+                  onMarkAsRead={handleNotificationClick}
+                  onHide={handleHideNotification}
+                  onMuteAll={handleMuteNotificationsFromChannel}
+                />
               </div>
-            ))}
+            </div>
+          ))}
         </ul>
       )}
 
@@ -250,9 +247,7 @@ export const NotificationItem = memo(
           )}
         </div>
         <div className="ml-2 flex-1" onClick={() => onMarkAsRead(notification)}>
-          <p className="font-medium line-clamp-2">
-            {notification.id} - {notification.content}
-          </p>
+          <p className="font-medium line-clamp-2">{notification.content}</p>
           <p className="text-xs text-muted-foreground mt-3">
             {getTimeAgoFormat(notification.created_at)}
           </p>

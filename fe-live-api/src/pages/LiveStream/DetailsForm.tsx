@@ -542,7 +542,7 @@ const DetailsForm = (props: ComponentProps) => {
               </Label>
               <div className="max-w-xl">
                 {isViewMode ? (
-                  <div className="flex gap-2 p-3 border rounded-md flex-wrap">
+                  <div className="flex gap-2 p-3 py-2 border rounded-md flex-wrap">
                     {data &&
                       data?.category_ids?.length > 0 &&
                       categories?.map((category, index) => {

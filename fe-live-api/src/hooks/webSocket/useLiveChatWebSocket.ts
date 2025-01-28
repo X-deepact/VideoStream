@@ -195,6 +195,10 @@ export function useLiveChatWebSocket(
     };
   }, [videoId, isStreamStarted, setIsStreamStarted]);
 
+  useEffect(() => {
+    setIsChatVisible(true);
+  }, [isStreamStarted]);
+
   return {
     isChatVisible,
     isLiveEndEventReceived,
