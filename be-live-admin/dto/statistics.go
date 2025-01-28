@@ -44,9 +44,14 @@ type BaseDTO struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-type LiveStatRespInDayDTO struct {
+type LiveStatRespInDayElementDTO struct {
 	Time  string `json:"time"`
 	Views uint   `json:"views"`
+}
+
+type LiveStatRespInDayDTO struct {
+	TheDayBeforeTotalViews uint                          `json:"the_day_before_total_views"`
+	Elements               []LiveStatRespInDayElementDTO `json:"elements"`
 }
 
 type StatisticsTotalLiveStreamDTO struct {

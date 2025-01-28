@@ -141,11 +141,11 @@ func (s *StreamService) GetStreamAnalyticsData(req *dto.StatisticsQuery) (*utils
 	return result, nil
 }
 
-func (s *StreamService) GetLiveStatDataInDay(cond *dto.StatisticsStreamInDayQuery) ([]dto.LiveStatRespInDayDTO, error) {
-	var result []dto.LiveStatRespInDayDTO
+func (s *StreamService) GetLiveStatDataInDay(cond *dto.StatisticsStreamInDayQuery) (*dto.LiveStatRespInDayDTO, error) {
+	var result dto.LiveStatRespInDayDTO
 	var inDays []time.Time
 
-	startedDate, _, err := utils.GetStartDateEndDateSameDay(cond.TargetedDate)
+	startedDate, endDay, err := utils.GetStartDateEndDateSameDay(cond.TargetedDate)
 	if err != nil {
 		return nil, err
 	}
@@ -167,13 +167,27 @@ func (s *StreamService) GetLiveStatDataInDay(cond *dto.StatisticsStreamInDayQuer
 				count = 0
 			}
 			mu.Lock()
-			result = append(result, dto.LiveStatRespInDayDTO{Time: prev.Format("2006-01-02 15:04"), Views: uint(count)})
+			result.Elements = append(result.Elements, dto.LiveStatRespInDayElementDTO{Time: prev.Format("2006-01-02 15:04"), Views: uint(count)})
 			mu.Unlock()
 		}(inDays[i-1], inDays[i])
 	}
 
+	// get total views the day before
+	wg.Add(1)
+	go func(beforeMidnight, beforeEndDay time.Time) {
+		defer wg.Done()
+		count, err := s.repo.Stream.GetViewsByDuration(beforeMidnight, beforeEndDay)
+		if err != nil {
+			log.Println("get views by duration error: ", err)
+			count = 0
+		}
+		mu.Lock()
+		result.TheDayBeforeTotalViews = uint(count)
+		mu.Unlock()
+	}(startedDate.AddDate(0, 0, -2), endDay.AddDate(0, 0, -2))
+
 	wg.Wait()
-	return result, nil
+	return &result, nil
 }
 
 func (s *StreamService) toLiveStreamBroadCastDto(v *model.Stream, apiUrl, rtmpURL, hlsURL string) *dto.LiveStreamBroadCastDTO {

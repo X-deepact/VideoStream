@@ -684,7 +684,8 @@ const docTemplate = `{
                                 "pending",
                                 "started",
                                 "ended",
-                                "upcoming"
+                                "upcoming",
+                                "pending_software"
                             ],
                             "type": "string"
                         },
@@ -2012,6 +2013,20 @@ const docTemplate = `{
         "dto.LiveStatRespInDayDTO": {
             "type": "object",
             "properties": {
+                "elements": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.LiveStatRespInDayElementDTO"
+                    }
+                },
+                "the_day_before_total_views": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.LiveStatRespInDayElementDTO": {
+            "type": "object",
+            "properties": {
                 "time": {
                     "type": "string"
                 },
@@ -2434,13 +2449,15 @@ const docTemplate = `{
                 "pending",
                 "started",
                 "ended",
-                "upcoming"
+                "upcoming",
+                "pending_software"
             ],
             "x-enum-varnames": [
                 "PENDING",
                 "STARTED",
                 "ENDED",
-                "UPCOMING"
+                "UPCOMING",
+                "PENDINGSOFTWARE"
             ]
         },
         "model.StreamType": {

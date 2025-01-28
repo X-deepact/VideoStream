@@ -186,6 +186,21 @@ func (h *wsHandler) StreamLive(c echo.Context) error {
 				// Check every 5 seconds
 				time.Sleep(5 * time.Second)
 			}
+
+			for {
+				if !CheckStreamStatus(broadCastURL) {
+					if err := conn.WriteJSON(map[string]interface{}{
+						"type": "ended_software",
+					}); err != nil {
+						return
+					}
+
+					break
+				}
+
+				// Check every 5 seconds
+				time.Sleep(5 * time.Second)
+			}
 		}()
 	}
 

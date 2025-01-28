@@ -1,100 +1,115 @@
 package conf
 
 import (
+	"gopkg.in/ini.v1"
 	"log"
-	"os"
-
-	"gopkg.in/yaml.v3"
 )
 
 var cfg *Config
 
 type Config struct {
-	DB           DBConfig           `yaml:"database"`
-	Redis        RedisConfig        `yaml:"redis"`
-	StreamServer StreamServerConfig `yaml:"stream_server"`
-	Auth         AuthConfig         `yaml:"auth"`
-	Mail         MailConfig         `yaml:"mail"`
-	FileStorage  FileStorageConfig  `yaml:"file_storage"`
-	Web          ApplicationConfig  `yaml:"web"`
-	ApiFile      ApiFileConfig      `yaml:"api_file"`
-	TwoFAAuth    TwoFAAuthConfig    `yaml:"2fa_auth"`
+	DB           DBConfig           `ini:"database"`
+	Redis        RedisConfig        `ini:"redis"`
+	StreamServer StreamServerConfig `ini:"stream_server"`
+	Auth         AuthConfig         `ini:"auth"`
+	Mail         MailConfig         `ini:"mail"`
+	FileStorage  FileStorageConfig  `ini:"file_storage"`
+	Web          ApplicationConfig  `ini:"web"`
+	ApiFile      ApiFileConfig      `ini:"api_file"`
+	TwoFAAuth    TwoFAAuthConfig    `ini:"2fa_auth"`
 }
 
 type DBConfig struct {
-	Host string `yaml:"host"`
-	Port int    `yaml:"port"`
-	User string `yaml:"user"`
-	Pass string `yaml:"pass"`
-	Name string `yaml:"name"`
+	Host string `ini:"host"`
+	Port int    `ini:"port"`
+	User string `ini:"user"`
+	Pass string `ini:"pass"`
+	Name string `ini:"name"`
 }
 
 type RedisConfig struct {
-	Host string `yaml:"host"`
-	Port int    `yaml:"port"`
-	User string `yaml:"user"`
-	Pass string `yaml:"pass"`
+	Host string `ini:"host"`
+	Port int    `ini:"port"`
+	User string `ini:"user"`
+	Pass string `ini:"pass"`
 }
 
 type ApplicationConfig struct {
-	Port           int      `yaml:"port"`
-	AllowedOrigins []string `yaml:"allowed_origins"`
+	Port           int      `ini:"port"`
+	AllowedOrigins []string `ini:"allowed_origins"`
 }
 
 type StreamServerConfig struct {
-	HTTPURL string `yaml:"http_url"`
-	RTMPURL string `yaml:"rtmp_url"`
-	HLSURL  string `yaml:"hls_url"`
+	HTTPURL string `ini:"http_url"`
+	RTMPURL string `ini:"rtmp_url"`
+	HLSURL  string `ini:"hls_url"`
 }
 
 type AuthConfig struct {
-	SecretKey string `yaml:"secret_key"`
+	SecretKey string `ini:"secret_key"`
 }
 
 type MailConfig struct {
-	Email    string `yaml:"email"`
-	Password string `yaml:"password"`
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
+	Email    string `ini:"email"`
+	Password string `ini:"password"`
+	Host     string `ini:"host"`
+	Port     int    `ini:"port"`
 }
 
 type FileStorageConfig struct {
-	RootFolder            string `yaml:"root_folder"`
-	ThumbnailFolder       string `yaml:"thumbnail_folder"`
-	AvatarFolder          string `yaml:"avatar_folder"`
-	LiveFolder            string `yaml:"live_folder"`
-	ScheduledVideosFolder string `yaml:"scheduled_videos_folder"`
-	VideoFolder           string `yaml:"video_folder"`
-	LogFolder             string `yaml:"log_folder"`
+	RootFolder            string `ini:"root_folder"`
+	ThumbnailFolder       string `ini:"thumbnail_folder"`
+	AvatarFolder          string `ini:"avatar_folder"`
+	LiveFolder            string `ini:"live_folder"`
+	ScheduledVideosFolder string `ini:"scheduled_videos_folder"`
+	VideoFolder           string `ini:"video_folder"`
+	LogFolder             string `ini:"log_folder"`
 }
 
 type TwoFAAuthConfig struct {
-	Issuer string `yaml:"issuer"`
+	Issuer string `ini:"issuer"`
 }
 
 type ApiFileConfig struct {
-	Url string `yaml:"url"`
+	Url string `ini:"url"`
 }
 
-func LoadYaml(path string) (*Config, error) {
-	file, err := os.Open(path)
+//func LoadYaml(path string) (*Config, error) {
+//	file, err := os.Open(path)
+//	if err != nil {
+//		return nil, err
+//	}
+//	defer file.Close()
+//
+//	var cfg Config
+//	decoder := yaml.NewDecoder(file)
+//	if err := decoder.Decode(&cfg); err != nil {
+//		return nil, err
+//	}
+//
+//	return &cfg, nil
+//}
+
+func LoadConfig(path string) (*Config, error) {
+	cfg := new(Config)
+
+	// Load the INI file
+	iniFile, err := ini.Load(path)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 
-	var cfg Config
-	decoder := yaml.NewDecoder(file)
-	if err := decoder.Decode(&cfg); err != nil {
+	// Map the sections to the struct fields
+	if err := iniFile.MapTo(cfg); err != nil {
 		return nil, err
 	}
 
-	return &cfg, nil
+	return cfg, nil
 }
 
 func init() {
 	var err error
-	if cfg, err = LoadYaml("conf/config.yaml"); err != nil {
+	if cfg, err = LoadConfig("conf/config.ini"); err != nil {
 		log.Fatal(err)
 	}
 }

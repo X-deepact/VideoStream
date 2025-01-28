@@ -135,6 +135,15 @@ definitions:
     type: object
   dto.LiveStatRespInDayDTO:
     properties:
+      elements:
+        items:
+          $ref: '#/definitions/dto.LiveStatRespInDayElementDTO'
+        type: array
+      the_day_before_total_views:
+        type: integer
+    type: object
+  dto.LiveStatRespInDayElementDTO:
+    properties:
       time:
         type: string
       views:
@@ -420,12 +429,14 @@ definitions:
     - started
     - ended
     - upcoming
+    - pending_software
     type: string
     x-enum-varnames:
     - PENDING
     - STARTED
     - ENDED
     - UPCOMING
+    - PENDINGSOFTWARE
   model.StreamType:
     enum:
     - camera
@@ -1106,6 +1117,7 @@ paths:
           - started
           - ended
           - upcoming
+          - pending_software
           type: string
         name: status
         type: array
