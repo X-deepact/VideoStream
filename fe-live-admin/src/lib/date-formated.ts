@@ -1,4 +1,4 @@
-import { formatDistanceToNow } from 'date-fns';
+import {format, formatDistanceToNow, parse, subDays} from 'date-fns';
 
 /**
  * A utility function to format dates in "DD/MM/YYYY, H:MM AM/PM" format.
@@ -111,3 +111,30 @@ export const getTimeAgo = (
     return 'Invalid date';
   }
 };
+
+
+export const getYesterday = (
+  date: Date | string | number,
+): Date | string => {
+  try {
+    return subDays(date, 1);
+  } catch (error) {
+    console.error('Invalid date provided to getTimeAgo:', error);
+    return 'Invalid date';
+  }
+}
+
+export const formatDateToReadable = (value: Date | string) => {
+  return new Date(value).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+export const formatDateToHourlyRange = (timeString: string) => {
+  const date = parse(timeString, 'yyyy-MM-dd HH:mm', new Date());
+  const hour = format(date, 'HH');
+
+  return `${hour}:00 - ${hour}:59`;
+}

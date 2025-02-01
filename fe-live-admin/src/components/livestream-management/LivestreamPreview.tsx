@@ -30,6 +30,7 @@ import { Switch } from "@/components/ui/switch.tsx";
 import ImageUpload from "@/components/ui/image-upload.tsx";
 import { FileUpload } from "@/lib/FileUpload.ts";
 import { AxiosError } from "axios";
+import {within72Hours} from "@/components/livestream-management/utils.ts";
 
 interface ComponentProps {
   sessionId: string;
@@ -337,7 +338,7 @@ const LivestreamPreview = ({ sessionId }: ComponentProps) => {
                     width="w-full"
                     value={scheduledAt}
                     onDateChange={setScheduledAt}
-                    within72hours={true}
+                    disableDate={within72Hours}
                   />
                 </div>
               </div>

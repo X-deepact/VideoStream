@@ -32,3 +32,12 @@ export interface VideoStatisticsResponse {
   video_size: number;
   created_at: string;
 }
+
+
+export interface HoursViewStatisticResponse {
+  elements: {
+    time: string;
+    views: number;
+  }[];
+  the_day_before_total_views: number;
+}

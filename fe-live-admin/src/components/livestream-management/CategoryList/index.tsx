@@ -5,7 +5,7 @@ import {
 } from "@/components/common/DataTable";
 import { useCategories } from "@/hooks/useCategories";
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, SORT_ORDER } from "@/lib/validation";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import DeleteCategory from "./Modals/DeleteCategory";
 import CreateCategory, { _FormData } from "./Modals/CreateCategory";
 import UpdateCategory from "./Modals/UpdateCategory";
@@ -61,24 +61,13 @@ const LiveCategory = () => {
     created_by: "",
   });
 
-  const columns = () =>
-    getCategoriesListTableColumns({
-      onUpdate: handleUpdateClick,
-      onDelete: handleDeleteClick,
-      sort: {
-        sortBy,
-        sortOrder,
-        setSortBy,
-        setSortOrder,
-      },
-    });
   const handlePageLimitChange = (limit: number) => setPageLimit(limit);
   const handlePageChange = (page: number) => setCurrentPage(page);
 
-  const handleUpdateClick = (id: string, name: string) => {
+  const handleUpdateClick = useCallback((id: string, name: string) => {
     setIsUpdateModalOpen(true);
     setFormData({ id, name });
-  };
+  }, []);
   const handleUpdateCategory = async () => {
     try {
       await updateCategory(formData);
@@ -93,10 +82,10 @@ const LiveCategory = () => {
     }
   };
 
-  const handleDeleteClick = (id: string) => {
+  const handleDeleteClick = useCallback((id: string) => {
     setIsDeleteModalOpen(true);
     setFormData({ ...formData, id });
-  };
+  }, []);
   const handleDeleteCategory = async () => {
     try {
       await deleteCategory(formData);
@@ -111,7 +100,9 @@ const LiveCategory = () => {
     }
   };
 
-  const handleCreateCategory = () => setIsCreateModalOpen(true);
+  const handleCreateCategory = useCallback(() => {
+    setIsCreateModalOpen(true);
+  }, []);
   const handleCreateClick = async () => {
     try {
       await createCategory(formData);
@@ -161,6 +152,26 @@ const LiveCategory = () => {
     }));
   };
   const transformedNameOptions = transformNameMiniResponse(nameList);
+  const columns = useMemo(() => {
+    return getCategoriesListTableColumns({
+      onUpdate: handleUpdateClick,
+      onDelete: handleDeleteClick,
+      sort: {
+        sortBy,
+        sortOrder,
+        setSortBy,
+        setSortOrder,
+      },
+    });
+  }, [
+    handleCreateCategory,
+    handleUpdateClick,
+    handleDeleteClick,
+    sortBy,
+    sortOrder,
+    setSortBy,
+    setSortOrder,
+  ]);
   return (
     <div className="px-8 pb-4">
       <Breadcrumb className="py-3">
@@ -180,7 +191,7 @@ const LiveCategory = () => {
         data={categories}
         totalCount={totalItems}
         canToggleColumns={false}
-        columns={columns()}
+        columns={columns}
         isLoading={isLoading}
         onRefresh={refetchCategories}
         pagination={{

@@ -1,23 +1,13 @@
 import axios from "axios";
 import authHeader from "@/services/auth-header.ts";
+import { formatDateToCustomFormat, getTimezoneOffsetAsHoursAndMinutes } from "@/lib/date-formated.ts";
+import {HoursViewStatisticResponse} from "@/type/statistic.ts";
+import {ApiResult} from "@/type/api.ts";
 
-// const API_URL = "http://localhost:8686/api/streams/statistics";
 const API_URL = import.meta.env.VITE_API_BASE_URL + "/api/streams/statistics";
 
 	export const getOverviewStatistics = () => {
 		return axios.get(`${API_URL}/total`, {headers: authHeader()});
-	}
-
-	export const getLiveStreamStatistics = (
-		page: number = 1,
-		limit: number = 10,
-		sort_by: string = "title",
-		sort: string = "ASC"
-	) => {
-		return axios.get(
-			`${API_URL}/${page}/${limit}?sort_by=${sort_by}&sort=${sort}`,
-			{headers: authHeader()}
-		);
 	}
 
 	export const getStatisticsSortedByViews = (
@@ -49,3 +39,10 @@ const API_URL = import.meta.env.VITE_API_BASE_URL + "/api/streams/statistics";
 
 		return axios.get(url, { headers: authHeader() });
 	}
+
+	export const getStatisticsPerPage = <T = HoursViewStatisticResponse>(day: Date): Promise<ApiResult<T>> => {
+		const formatDate = formatDateToCustomFormat(day, getTimezoneOffsetAsHoursAndMinutes());
+
+		//encode URI to prevent the plus sign (+) is interpreted as a space by default.
+		return axios.get(`${API_URL}/day?targeted_date=${encodeURIComponent(formatDate)}`, { headers: authHeader() });
+	};

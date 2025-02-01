@@ -1,28 +1,50 @@
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle } from 'lucide-react';
+import { AlertCircle, LucideIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 interface ComponentProps {
-  variant: 'default' | 'destructive';
-  title: string;
-  description: string;
-  subDescription?: string;
-  className?: string;
+  title?: string | JSX.Element;
+  description?: string | JSX.Element;
+  Icon?: LucideIcon;
+  variant?: 'default' | 'destructive';
 }
 
-const AppAlert = (props: ComponentProps): JSX.Element => {
-  const { variant, title, description, subDescription, className } = props;
+type RequiredProps =
+  | { title: string | JSX.Element; description?: string | JSX.Element }
+  | { title?: string | JSX.Element; description: string | JSX.Element };
+
+type AppAlertProps = ComponentProps & RequiredProps;
+
+const AppAlert = ({
+  title,
+  description,
+  Icon,
+  variant = 'default',
+}: AppAlertProps) => {
+  if (!title && !description) {
+    throw new Error('Either title or description must be provided.');
+  }
 
   return (
-    <div className={`inline-flex ${className}`}>
-      <Alert variant={variant}>
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>{title}</AlertTitle>
-        <AlertDescription>{description}</AlertDescription>
-        {subDescription && (
-          <AlertDescription className="mt-2">{subDescription}</AlertDescription>
+    <Alert
+      variant={variant}
+      className={cn(
+        'flex items-start gap-2',
+        variant === 'destructive' && 'bg-red-100'
+      )}
+    >
+      <div className="flex-shrink-0">
+        {Icon ? (
+          <Icon className="h-4 w-4" />
+        ) : (
+          <AlertCircle className="h-4 w-4" />
         )}
-      </Alert>
-    </div>
+      </div>
+      <div className="flex flex-col justify-center">
+        {title && <AlertTitle>{title}</AlertTitle>}
+        {description && <AlertDescription>{description}</AlertDescription>}
+      </div>
+    </Alert>
   );
 };
 

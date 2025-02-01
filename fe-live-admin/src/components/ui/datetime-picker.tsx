@@ -17,18 +17,20 @@ interface ComponentProps {
 	isError?: boolean;
 	onDateChange?: (date: Date) => void;
 	disabled?: boolean;
-	within72hours?: boolean;
 	value?: Date;
+	disableHourAndMinuteSelection?: boolean,
+	disableDate?: (date: Date) => boolean; // For adding any custom date disable function
 }
 
 export const DateTimePicker = (props: ComponentProps) => {
 	const {
 		disabled = false,
-		within72hours = false,
 		placeholder,
 		width = "w-full",
 		onDateChange,
-		value
+		value,
+		disableHourAndMinuteSelection = false,
+		disableDate,
 	} = props;
 	const [date, setDate] = React.useState<Date | undefined>(value);
 	const [isOpen, setIsOpen] = React.useState(false);
@@ -43,11 +45,12 @@ export const DateTimePicker = (props: ComponentProps) => {
 			onDateChange?.(selectedDate);
 		}
 	};
-	
-	const currentDay = new Date();
-	currentDay.setDate(currentDay.getDate() - 1)
-	const threeDaysAfter = new Date();
-	threeDaysAfter.setDate(threeDaysAfter.getDate() + 3);
+	const isDateDisabled = (theDate: Date) => {
+		if (disableDate?.(theDate)) {
+			return true;
+		}
+		return false;
+	};
 
 	const handleTimeChange = (
 		type: "hour" | "minute" | "ampm",
@@ -94,9 +97,13 @@ export const DateTimePicker = (props: ComponentProps) => {
 							month: "2-digit",
 							day: "2-digit",
 							year: "numeric",
-							hour: "2-digit",
-							minute: "2-digit",
-							hour12: true
+							...(disableHourAndMinuteSelection
+								? {} // Exclude time if disableTimeSelection is true
+								: {
+									hour: "2-digit",
+									minute: "2-digit",
+									hour12: true,
+								}),
 						}).format(date)
 					) : (
 						<span>{placeholder}</span>
@@ -110,83 +117,83 @@ export const DateTimePicker = (props: ComponentProps) => {
 						selected={date}
 						onSelect={handleDateSelect}
 						initialFocus
-						disabled={(date) =>
-							within72hours
-							&& date < currentDay
-							|| date > threeDaysAfter
-						}
+						disabled={isDateDisabled}
 					/>
-					<div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-						<ScrollArea className="w-64 sm:w-auto">
-							<div className="flex sm:flex-col p-2">
-								{hours.reverse().map((hour) => (
-									<Button
-										disabled={!date}
-										type="button"
-										key={hour}
-										size="icon"
-										variant={
-											date && date.getHours() % 12 === hour % 12
-												? "default"
-												: "ghost"
-										}
-										className="sm:w-full shrink-0 aspect-square"
-										onClick={() => handleTimeChange("hour", hour.toString())}
-									>
-										{hour}
-									</Button>
-								))}
+					{
+						!disableHourAndMinuteSelection && (
+							<div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
+								<ScrollArea className="w-64 sm:w-auto">
+									<div className="flex sm:flex-col p-2">
+										{hours.reverse().map((hour) => (
+											<Button
+												disabled={!date}
+												type="button"
+												key={hour}
+												size="icon"
+												variant={
+													date && date.getHours() % 12 === hour % 12
+														? "default"
+														: "ghost"
+												}
+												className="sm:w-full shrink-0 aspect-square"
+												onClick={() => handleTimeChange("hour", hour.toString())}
+											>
+												{hour}
+											</Button>
+										))}
+									</div>
+									<ScrollBar orientation="horizontal" className="sm:hidden" />
+								</ScrollArea>
+								<ScrollArea className="w-64 sm:w-auto">
+									<div className="flex sm:flex-col p-2">
+										{minutes.map((minute) => (
+											<Button
+												disabled={!date}
+												type="button"
+												key={minute}
+												size="icon"
+												variant={
+													date && date.getMinutes() === minute
+														? "default"
+														: "ghost"
+												}
+												className="sm:w-full shrink-0 aspect-square"
+												onClick={() =>
+													handleTimeChange("minute", minute.toString())
+												}
+											>
+												{minute}
+											</Button>
+										))}
+									</div>
+									<ScrollBar orientation="horizontal" className="sm:hidden" />
+								</ScrollArea>
+								<ScrollArea className="">
+									<div className="flex sm:flex-col p-2">
+										{["AM", "PM"].map((ampm) => (
+											<Button
+												disabled={!date}
+												type="button"
+												key={ampm}
+												size="icon"
+												variant={
+													date &&
+													((ampm === "AM" && date.getHours() < 12) ||
+														(ampm === "PM" && date.getHours() >= 12))
+														? "default"
+														: "ghost"
+												}
+												className="sm:w-full shrink-0 aspect-square"
+												onClick={() => handleTimeChange("ampm", ampm)}
+											>
+												{ampm}
+											</Button>
+										))}
+									</div>
+								</ScrollArea>
 							</div>
-							<ScrollBar orientation="horizontal" className="sm:hidden" />
-						</ScrollArea>
-						<ScrollArea className="w-64 sm:w-auto">
-							<div className="flex sm:flex-col p-2">
-								{minutes.map((minute) => (
-									<Button
-										disabled={!date}
-										type="button"
-										key={minute}
-										size="icon"
-										variant={
-											date && date.getMinutes() === minute
-												? "default"
-												: "ghost"
-										}
-										className="sm:w-full shrink-0 aspect-square"
-										onClick={() =>
-											handleTimeChange("minute", minute.toString())
-										}
-									>
-										{minute}
-									</Button>
-								))}
-							</div>
-							<ScrollBar orientation="horizontal" className="sm:hidden" />
-						</ScrollArea>
-						<ScrollArea className="">
-							<div className="flex sm:flex-col p-2">
-								{["AM", "PM"].map((ampm) => (
-									<Button
-										disabled={!date}
-										type="button"
-										key={ampm}
-										size="icon"
-										variant={
-											date &&
-											((ampm === "AM" && date.getHours() < 12) ||
-												(ampm === "PM" && date.getHours() >= 12))
-												? "default"
-												: "ghost"
-										}
-										className="sm:w-full shrink-0 aspect-square"
-										onClick={() => handleTimeChange("ampm", ampm)}
-									>
-										{ampm}
-									</Button>
-								))}
-							</div>
-						</ScrollArea>
-					</div>
+						)
+					}
 				</div>
 			</PopoverContentLayout>
 		</Popover>

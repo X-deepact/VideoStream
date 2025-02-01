@@ -47,7 +47,7 @@ interface ComponentProps {
 const inputPlaceholders = {
   title: 'Add a title that describes your stream',
   description: 'Tell viewers more about your stream',
-  category: `Select ${MAX_CATEGORY_COUNT} categories at most`,
+  category: `Select up to ${MAX_CATEGORY_COUNT} categories`,
 };
 
 const validationRules = {
@@ -397,6 +397,12 @@ const DetailsForm = (props: ComponentProps) => {
         <DialogHeader className="p-5 px-7 pb-0">
           <DialogTitle>{formTitle}</DialogTitle>
           <DialogDescription>{formDescription}</DialogDescription>
+          {!isViewMode && categories?.length === 0 && (
+            <AppAlert
+              variant="destructive"
+              title="Sorry. No category available. Can't stream at the moment."
+            />
+          )}
         </DialogHeader>
         <Separator />
         <div className="grid gap-1 p-5 px-7 pt-2">
@@ -644,6 +650,7 @@ const DetailsForm = (props: ComponentProps) => {
             )}
             {isCreateMode && (
               <Button
+                disabled={categories?.length === 0}
                 size="sm"
                 onClick={() => handleStreamDetailsSave(FORM_MODE.CREATE)}
                 className="bg-green-600 hover:bg-green-800"
@@ -661,6 +668,7 @@ const DetailsForm = (props: ComponentProps) => {
                   Cancel Edit
                 </Button>
                 <Button
+                  disabled={categories?.length === 0}
                   size="sm"
                   onClick={() => handleStreamDetailsSave(FORM_MODE.EDIT)}
                 >

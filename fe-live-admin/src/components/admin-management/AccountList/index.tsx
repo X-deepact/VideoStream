@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -88,21 +88,6 @@ const AccountList = () => {
     keyword,
   });
 
-  // table columns
-  const columns = () =>
-    getAccountsListTableColumns({
-      onChangePassword: handelChangePasswordClick,
-      onDelete: handleDelete,
-      onBlock: handleBlock,
-      onReactivate: handleReactivate,
-      sort: {
-        sortBy,
-        sortOrder,
-        setSortBy,
-        setSortOrder,
-      },
-    });
-
   const handleSearch = (_keyword: string): void => setKeyword(_keyword);
 
   const handleFilterByRole = (role: ROLE | string): void =>
@@ -125,12 +110,12 @@ const AccountList = () => {
   };
 
   // change password
-  const handelChangePasswordClick = (account: UserResponse) => {
+  const handelChangePasswordClick = useCallback((account: UserResponse) => {
     setIsResetPasswordModalOpen(true);
     setFormData((prev) => {
       return { ...prev, id: account.id?.toString() };
     });
-  };
+  }, []);
   const handelChangePassword = async () => {
     try {
       if (formData.password !== formData.confirmPassword) {
@@ -172,10 +157,10 @@ const AccountList = () => {
   };
 
   // delete account
-  const handleDelete = async (user: UserResponse) => {
+  const handleDelete = useCallback((user: UserResponse) => {
     setIsDeleteModalOpen(true);
     setSelectedUser(user);
-  };
+  }, []);
   const handleDeleteAccount = async () => {
     if (!selectedUser) {
       toast({
@@ -202,10 +187,10 @@ const AccountList = () => {
   };
 
   // block account
-  const handleBlock = async (user: UserResponse) => {
+  const handleBlock = useCallback((user: UserResponse) => {
     setIsBlockModalOpen(true);
     setSelectedUser(user);
-  };
+  }, []);
   const handleBlockAccount = async () => {
     if (!selectedUser) {
       toast({
@@ -243,10 +228,10 @@ const AccountList = () => {
   };
 
   // reactivate account
-  const handleReactivate = async (user: UserResponse) => {
+  const handleReactivate = useCallback((user: UserResponse) => {
     setIsReactivateModalOpen(true);
     setSelectedUser(user);
-  };
+  }, []);
   const handleReactivateAccount = async () => {
     if (!selectedUser) {
       toast({
@@ -304,6 +289,31 @@ const AccountList = () => {
     refetchData();
   };
 
+  // table columns
+  const columns = useMemo(() => {
+    return getAccountsListTableColumns({
+      onChangePassword: handelChangePasswordClick,
+      onDelete: handleDelete,
+      onBlock: handleBlock,
+      onReactivate: handleReactivate,
+      sort: {
+        sortBy,
+        sortOrder,
+        setSortBy,
+        setSortOrder,
+      },
+    });
+  }, [
+    handelChangePasswordClick,
+    handleDelete,
+    handleBlock,
+    handleReactivate,
+    sortBy,
+    sortOrder,
+    setSortBy,
+    setSortOrder,
+  ]);
+
   return (
     <div className="px-8 pb-4">
       <div className="py-4">
@@ -327,7 +337,7 @@ const AccountList = () => {
         data={data}
         totalCount={totalItems}
         canToggleColumns={false}
-        columns={columns()}
+        columns={columns}
         isLoading={isLoading}
         onRefresh={refetchData}
         actions={{
